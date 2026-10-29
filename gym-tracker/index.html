@@ -318,7 +318,7 @@ nav.tabs a.on svg { filter: drop-shadow(0 0 8px rgba(47, 230, 181, .6)); }
 
 <script>
 // App version: shown in More. Bump `n` together with VERSION in sw.js on every update.
-const APP_VERSION = { n: 7, date: '2026-10-29' };
+const APP_VERSION = { n: 8, date: '2026-10-29' };
 
 // ---------- Your guide (from GYM GUIDE.pdf) ----------
 // Names, targets and tips are editable in the app (Class → Edit).
@@ -491,8 +491,19 @@ const AVATARS = [
   { hair: 'short', skin: ['#C98E66', '#9A603D', '#683E26'], hairC: ['#3A3036', '#110D10'], bg: ['#9ED4FF', '#3C8EE8'], top: ['#59403A', '#2A1C19'] },
   { hair: 'bun', skin: ['#C98E66', '#9A603D', '#683E26'], hairC: ['#3A3036', '#110D10'], bg: ['#FFD98A', '#F29E1F'], top: ['#3B4652', '#1A2028'] },
 ];
+// Fun picture avatars (images/avatars/). Their numbers come after the drawn ones: 4, 5, 6…
+const PHOTO_AVATARS = [
+  { file: 'hamster', name: 'Gym hamster' },
+  { file: 'cat', name: 'Cat' },
+  { file: 'mike', name: 'Mike Wazowski' },
+  { file: 'squidward', name: 'Handsome Squidward' },
+  { file: 'gigachad', name: 'Gigachad' },
+  { file: 'dumbbelldore', name: 'Dumbbelldore' },
+];
 let avatarSeq = 0;
 function avatar(i = 0, size = 48) {
+  const pic = PHOTO_AVATARS[i - AVATARS.length];
+  if (pic) return `<img class="avatar" src="images/avatars/${pic.file}.jpg" width="${size}" height="${size}" alt="" style="object-fit:cover;background:#fff">`;
   const a = AVATARS[i] || AVATARS[0], k = 'av' + (++avatarSeq);
   const [sl, sb, ss] = a.skin;
   const hairBack = a.hair === 'bun'
@@ -1118,7 +1129,9 @@ function viewMore() {
       <div class="row between"><div><div class="muted small">Height</div><b>${heightText() || 'Not set'}</b>${(() => { const lw = latestWeight(), b = lw && bmiOf(lw.w); return b ? `<span class="muted small"> · BMI ${b} (${bmiCat(b).name})</span>` : ''; })()}</div>
         <button class="btn sm" data-act="set-height">${heightCm() ? 'Edit' : '+ Add'}</button></div>
       <div><div class="muted small" style="margin-bottom:8px">Avatar</div>
-        <div class="avatars">${AVATARS.map((_, i) => `<button class="${(db.settings.avatar || 0) === i ? 'on' : ''}" data-act="avatar" data-i="${i}" aria-label="Avatar ${i + 1}">${avatar(i, 58)}</button>`).join('')}</div></div>
+        <div class="avatars">${AVATARS.map((_, i) => `<button class="${(db.settings.avatar || 0) === i ? 'on' : ''}" data-act="avatar" data-i="${i}" aria-label="Avatar ${i + 1}">${avatar(i, 58)}</button>`).join('')}</div>
+        <div class="muted small" style="margin:14px 0 8px">Fun avatars 😄</div>
+        <div class="avatars">${PHOTO_AVATARS.map((p, n) => { const i = AVATARS.length + n; return `<button class="${db.settings.avatar === i ? 'on' : ''}" data-act="avatar" data-i="${i}" aria-label="${esc(p.name)}" title="${esc(p.name)}">${avatar(i, 58)}</button>`; }).join('')}</div></div>
     </div>
     <h2>Settings</h2>
     <div class="card stack">
