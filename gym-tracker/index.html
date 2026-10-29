@@ -261,6 +261,25 @@ svg.chart { width: 100%; height: auto; display: block; overflow: visible; }
 svg.chart text { fill: var(--muted); font-size: 20px; font-family: var(--font); }
 svg.chart .tip-label { fill: #0B0E10; font-weight: 800; font-size: 19px; }
 
+/* 3D cutout pictures (file names with -3d.) sit on the glass with a soft glow instead of the pastel panel */
+.photo:has(img[src*="-3d."]) { background: radial-gradient(60% 55% at 50% 45%, rgba(255, 255, 255, .13), rgba(255, 255, 255, .02) 75%); }
+.photo img[src*="-3d."] { mix-blend-mode: normal; filter: drop-shadow(0 10px 16px rgba(0, 0, 0, .45)); }
+.ex .pic img[src*="-3d."] { height: 280px; }
+/* exercises with a tutorial video */
+.has-video { position: relative; cursor: pointer; }
+.has-video::after {
+  content: "▶"; position: absolute; right: 6px; bottom: 6px; width: 24px; height: 24px; border-radius: 50%;
+  display: grid; place-items: center; font-size: 10px; color: #fff; padding-left: 2px;
+  background: rgba(7, 9, 12, .72); box-shadow: 0 0 0 1px rgba(255, 255, 255, .18);
+}
+.ex .pic.has-video::after {
+  content: "▶  Watch tutorial"; width: auto; height: auto; padding: 8px 14px; right: 12px; bottom: 12px; font-size: 13px; font-weight: 700;
+  background: rgba(7, 9, 12, .7); -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px); border-radius: 99px;
+}
+.video-box { width: min(100%, 420px); display: grid; gap: 12px; }
+.video-box video { width: 100%; max-height: 74vh; border-radius: 22px; background: #fff; display: block; object-fit: contain; box-shadow: 0 20px 50px rgba(0, 0, 0, .6); }
+.video-box .btn { background: rgba(20, 25, 29, .8); }
+
 /* BMI */
 .bmi-tag { font-size: 13px; font-weight: 800; padding: 4px 11px; border-radius: 99px; color: var(--bc); background: color-mix(in srgb, var(--bc) 16%, transparent); border: 1px solid color-mix(in srgb, var(--bc) 35%, transparent); }
 .bmi-scale { position: relative; height: 10px; border-radius: 99px; margin-top: 16px;
@@ -318,14 +337,14 @@ nav.tabs a.on svg { filter: drop-shadow(0 0 8px rgba(47, 230, 181, .6)); }
 
 <script>
 // App version: shown in More. Bump `n` together with VERSION in sw.js on every update.
-const APP_VERSION = { n: 8, date: '2026-10-29' };
+const APP_VERSION = { n: 9, date: '2026-10-29' };
 
 // ---------- Your guide (from GYM GUIDE.pdf) ----------
 // Names, targets and tips are editable in the app (Class → Edit).
 // `alt` = the exercise to do instead (no machine, or training at home).
 const PLANS = [
   { id: 'shoulder', name: 'Shoulder Day', short: 'SHO', group: 'shoulder', exercises: [
-    { id: 'shoulder-press-machine', name: 'Machine Shoulder Press', img: 'shoulder-press-machine', muscles: ['Front delts', 'Triceps'], sets: 3, reps: '10-12', tip: 'Back flat on the pad. Press up without slamming the elbows locked.' },
+    { id: 'shoulder-press-machine', name: 'Machine Shoulder Press', img: 'shoulder-press-machine-3d.webp', video: 'shoulder-press-machine/shoulder-press-machine.mp4', muscles: ['Front delts', 'Triceps'], sets: 3, reps: '10-12', tip: 'Back flat on the pad. Press up without slamming the elbows locked.' },
     { id: 'lateral-raise-machine', name: 'Machine Lateral Raise', img: 'lateral-raise-machine', muscles: ['Side delts'], sets: 3, reps: '12-15', tip: 'Lead with your elbows and pause at shoulder height.',
       altLabels: ['No machine? Do this instead', 'Machine free? Do this instead'],
       alt: { id: 'dumbbell-lateral-raise', name: 'Dumbbell Lateral Raise', img: 'dumbbell-lateral-raise', muscles: ['Side delts'], sets: 3, reps: '12-15', tip: 'Slight bend in the elbows, raise to shoulder height, lower slowly.' } },
@@ -443,7 +462,9 @@ function lastSetsFor(exId) {
 const setText = s => (s.m !== undefined ? `${s.m} min${num(s.v) ? ` @ ${s.v} km/h` : ''}${num(s.i) ? ` · ${s.i}%` : ''}` : num(s.w) ? `${s.w}×${s.r}` : `${s.r} reps`);
 // guide pictures are .jpg; drawn ones (like the treadmill) give their own extension
 const src = img => `images/${img.includes('.') ? img : img + '.jpg'}`;
-const photo = (img, cls = '', zoom = false) => `<div class="photo ${cls}" ${zoom ? `data-zoom="${src(img)}"` : ''}><img src="${src(img)}" alt="" loading="lazy"></div>`;
+// tapping a picture shows it bigger, or plays its tutorial video when the exercise has one
+const tapAttrs = (img, video) => (video ? `data-video="images/${video}"` : `data-zoom="${src(img)}"`);
+const photo = (img, cls = '', zoom = false, video = '') => `<div class="photo ${cls} ${zoom && video ? 'has-video' : ''}" ${zoom ? tapAttrs(img, video) : ''}><img src="${src(img)}" alt="" loading="lazy"></div>`;
 const isCardio = e => e.type === 'cardio';
 const exCount = p => `${p.exercises.length} exercise${p.exercises.length === 1 ? '' : 's'}`;
 const findEx = id => { for (const p of PLANS) for (const e of withAlts(p.exercises)) if (e.id === id) return e; };
@@ -727,7 +748,7 @@ function viewClass(id) {
       const e = ex(chosen(slot)), prev = lastSetsFor(e.id);
       const other = slot.alt && ex(chosen(slot) === slot ? slot.alt : slot);
       return `<div class="card ex">
-        <button class="pic photo" data-zoom="${src(e.img)}"><img src="${src(e.img)}" alt="${esc(e.name)}" loading="lazy"></button>
+        <button class="pic photo ${e.video ? 'has-video' : ''}" ${tapAttrs(e.img, e.video)} aria-label="${e.video ? 'Play tutorial: ' : ''}${esc(e.name)}"><img src="${src(e.img)}" alt="${esc(e.name)}" loading="lazy"></button>
         <div class="body">
           <div class="num">EXERCISE ${i + 1}</div>
           ${editing ? `<div class="edit-grid">
@@ -739,7 +760,7 @@ function viewClass(id) {
           <div class="tip">💡 ${esc(e.tip)}</div>
           ${prev ? `<div class="small" style="margin-top:8px"><span class="muted">Last time:</span> <b>${prev.map(s => setText(s)).join(', ')}</b> ${isCardio(e) ? `· ${round1(km(prev))} km` : num(prev[0].w) ? unit() : ''}</div>` : ''}
           ${other ? `<div class="alt">
-            ${photo(other.img, '', true)}
+            ${photo(other.img, '', true, other.video)}
             <div style="flex:1;min-width:0"><div class="muted small">${esc(slot.altLabels[other.id === slot.alt.id ? 0 : 1])}</div><b>${esc(other.name)}</b></div>
             <button class="btn sm" data-act="swap-plan" data-plan="${p.id}" data-slot="${slot.id}">Use this</button>
           </div>` : ''}
@@ -768,7 +789,7 @@ function viewWorkout() {
       const slot = slotOf(p, we.exId), e = ex(slot.alt?.id === we.exId ? slot.alt : slot), prev = lastSetsFor(e.id) || [];
       const other = slot.alt && ex(slot.alt.id === we.exId ? slot : slot.alt);
       return `<div class="card wo-ex">
-        <div class="top">${photo(e.img, '', true)}
+        <div class="top">${photo(e.img, '', true, e.video)}
           <div style="flex:1"><div class="name">${esc(e.name)}</div><div class="small muted">Target <span class="target">${targetText(e)}</span></div></div></div>
         ${isCardio(e) ? `<div class="sets cardio">
           <div class="hdr"><span style="text-align:center">#</span><span>Previous</span><span style="text-align:center">Min</span><span style="text-align:center">km/h</span><span style="text-align:center">Incl %</span><span></span></div>
@@ -1233,6 +1254,14 @@ function tick() {
 setInterval(tick, 1000);
 
 document.addEventListener('click', e => {
+  const vid = e.target.closest('[data-video]');
+  if (vid) {
+    // silent, looping tutorial; tap outside or Close to stop
+    const o = sheet(`<div class="video-box"><video src="${vid.dataset.video}" autoplay muted loop playsinline disablepictureinpicture preload="auto"></video>
+      <button class="btn block" data-close>Close</button></div>`, 'center');
+    const v = o.querySelector('video'); v.muted = true; v.play().catch(() => { v.controls = true; });
+    return;
+  }
   const zoom = e.target.closest('[data-zoom]');
   if (zoom) return sheet(`<img src="${zoom.dataset.zoom}" alt="">`, 'center');
   const go = e.target.closest('[data-go]');
