@@ -86,6 +86,8 @@ h2 { font-size: 17px; margin: 24px 0 10px; }
 .ex .title { font-weight: 700; font-size: 17px; }
 .target { font-weight: 700; color: var(--accent); }
 .tip { font-size: 13px; color: var(--muted); margin-top: 6px; }
+.alt { display: flex; align-items: center; gap: 10px; margin-top: 12px; padding: 10px; border: 1px dashed var(--line); border-radius: 12px; }
+.alt img { width: 64px; height: 46px; object-fit: contain; background: #fff; border-radius: 8px; flex: none; cursor: zoom-in; }
 .edit-grid { display: grid; grid-template-columns: 1fr 70px 90px; gap: 8px; margin-top: 8px; }
 .edit-grid label { font-size: 11px; color: var(--muted); display: block; }
 .field { width: 100%; background: var(--surface2); border: 1px solid var(--line); border-radius: 10px; padding: 9px 10px; }
@@ -179,8 +181,9 @@ nav.tabs a.on .i { filter: none; opacity: 1; }
 const PLANS = [
   { id: 'shoulder', name: 'Shoulder Day', short: 'SHO', group: 'shoulder', exercises: [
     { id: 'shoulder-press-machine', name: 'Machine Shoulder Press', img: 'shoulder-press-machine', muscles: ['Front delts', 'Triceps'], sets: 3, reps: '10-12', tip: 'Back flat on the pad. Press up without slamming the elbows locked.' },
-    { id: 'lateral-raise-machine', name: 'Machine Lateral Raise', img: 'lateral-raise-machine', muscles: ['Side delts'], sets: 3, reps: '12-15', tip: 'Lead with your elbows and pause at shoulder height.' },
-    { id: 'dumbbell-lateral-raise', name: 'Dumbbell Lateral Raise', img: 'dumbbell-lateral-raise', muscles: ['Side delts'], sets: 3, reps: '12-15', tip: 'Slight bend in the elbows, raise to shoulder height, lower slowly.' },
+    { id: 'lateral-raise-machine', name: 'Machine Lateral Raise', img: 'lateral-raise-machine', muscles: ['Side delts'], sets: 3, reps: '12-15', tip: 'Lead with your elbows and pause at shoulder height.',
+      // no machine? do this one instead
+      alt: { id: 'dumbbell-lateral-raise', name: 'Dumbbell Lateral Raise', img: 'dumbbell-lateral-raise', muscles: ['Side delts'], sets: 3, reps: '12-15', tip: 'Slight bend in the elbows, raise to shoulder height, lower slowly.' } },
     { id: 'seated-front-raise', name: 'Seated Dumbbell Front Raise', img: 'seated-front-raise', muscles: ['Front delts'], sets: 3, reps: '10-12', tip: 'Raise to eye level. No swinging.' },
     { id: 'face-pull', name: 'Cable Face Pull', img: 'face-pull', muscles: ['Rear delts', 'Upper back'], sets: 3, reps: '15', tip: 'Pull the rope to your face with elbows high, squeeze the shoulder blades.' },
     { id: 'hammer-curl', name: 'Dumbbell Hammer Curl', img: 'hammer-curl', muscles: ['Biceps', 'Forearms'], sets: 3, reps: '10-12', tip: 'Palms face each other, elbows stay by your sides.' },
@@ -244,7 +247,13 @@ const num = v => { const n = parseFloat(String(v).replace(',', '.')); return isF
 const unit = () => db.settings.unit;
 const planById = id => PLANS.find(p => p.id === id);
 const ex = e => Object.assign({}, e, db.overrides[e.id] || {});
-const exName = id => { for (const p of PLANS) for (const e of p.exercises) if (e.id === id) return ex(e).name; return id; };
+// every exercise in a plan, including the "instead" versions
+const withAlts = list => list.flatMap(e => e.alt ? [e, e.alt] : [e]);
+const exName = id => { for (const p of PLANS) for (const e of withAlts(p.exercises)) if (e.id === id) return ex(e).name; return id; };
+// slot = the exercise position in the plan; chosen = the version you picked for it
+const slotOf = (p, id) => p.exercises.find(x => x.id === id || x.alt?.id === id);
+const useAlt = () => (db.settings.useAlt = db.settings.useAlt || {});
+const chosen = slot => (slot.alt && useAlt()[slot.id] ? slot.alt : slot);
 const daysAgo = k => Math.round((fromKey(dayKey()) - fromKey(k)) / 864e5);
 const agoText = k => { const n = daysAgo(k); return n === 0 ? 'today' : n === 1 ? 'yesterday' : `${n} days ago`; };
 const sessionsOn = k => db.sessions.filter(s => s.date === k);
@@ -353,8 +362,9 @@ function viewClass(id) {
       <button class="btn sm" data-act="toggle-edit">${editing ? 'Done' : 'Edit'}</button></div>
     <div class="muted small">${p.exercises.length} exercises · ${last ? 'last done ' + agoText(last.date) : 'not done yet'}</div>
     <div class="stack" style="margin-top:14px">
-    ${p.exercises.map((raw, i) => {
-      const e = ex(raw), prev = lastSetsFor(e.id);
+    ${p.exercises.map((slot, i) => {
+      const e = ex(chosen(slot)), prev = lastSetsFor(e.id);
+      const other = slot.alt && ex(chosen(slot) === slot ? slot.alt : slot);
       return `<div class="card ex">
         <button class="pic" data-zoom="images/${e.img}.jpg"><img src="images/${e.img}.jpg" alt="${esc(e.name)}" loading="lazy"></button>
         <div class="body">
@@ -367,6 +377,11 @@ function viewClass(id) {
           <div style="margin-top:4px">${e.muscles.map(m => `<span class="chip">${esc(m)}</span>`).join('')}</div>
           <div class="tip">💡 ${esc(e.tip)}</div>
           ${prev ? `<div class="small" style="margin-top:6px"><span class="muted">Last time:</span> ${prev.map(s => setText(s)).join(', ')} ${num(prev[0].w) ? unit() : ''}</div>` : ''}
+          ${other ? `<div class="alt">
+            <img src="images/${other.img}.jpg" alt="" data-zoom="images/${other.img}.jpg">
+            <div style="flex:1;min-width:0"><div class="muted small">${other.id === slot.alt.id ? 'No machine? Do this instead' : 'Machine free? Do this instead'}</div><b>${esc(other.name)}</b></div>
+            <button class="btn sm" data-act="swap-plan" data-slot="${slot.id}">Use this</button>
+          </div>` : ''}
         </div></div>`;
     }).join('')}
     </div>
@@ -389,7 +404,8 @@ function viewWorkout() {
     </div></div>
     <div class="stack">
     ${a.exercises.map((we, i) => {
-      const raw = p.exercises.find(x => x.id === we.exId), e = ex(raw), prev = lastSetsFor(e.id) || [];
+      const slot = slotOf(p, we.exId), e = ex(slot.alt?.id === we.exId ? slot.alt : slot), prev = lastSetsFor(e.id) || [];
+      const other = slot.alt && ex(slot.alt.id === we.exId ? slot : slot.alt);
       return `<div class="card wo-ex">
         <div class="top"><img src="images/${e.img}.jpg" alt="" data-zoom="images/${e.img}.jpg">
           <div style="flex:1"><div style="font-weight:700">${esc(e.name)}</div><div class="small muted">Target <span class="target">${esc(e.sets)} × ${esc(e.reps)}</span></div></div></div>
@@ -409,6 +425,7 @@ function viewWorkout() {
         <div class="row" style="margin-top:8px">
           <button class="btn sm" data-act="add-set" data-i="${i}">+ Add set</button>
           ${we.sets.length > 1 ? `<button class="btn sm ghost" data-act="del-set" data-i="${i}">− Remove set</button>` : ''}
+          ${other ? `<button class="btn sm ghost" data-act="swap-wo" data-i="${i}" title="Switch to ${esc(other.name)}">⇄ ${esc(other.name)}</button>` : ''}
         </div>
       </div>`;
     }).join('')}
@@ -479,7 +496,7 @@ const volume = s => s.exercises.reduce((v, e) => v + e.sets.reduce((a, x) => a +
 let progEx = null, progMetric = 'top';
 function viewProgress() {
   const all = [];
-  PLANS.forEach(p => p.exercises.forEach(e => { if (!all.some(a => a.id === e.id)) all.push({ id: e.id, plan: p }); }));
+  PLANS.forEach(p => withAlts(p.exercises).forEach(e => { if (!all.some(a => a.id === e.id)) all.push({ id: e.id, plan: p }); }));
   const logged = new Set(db.sessions.flatMap(s => (s.exercises || []).filter(e => e.sets.length).map(e => e.exId)));
   if (!progEx) progEx = all.find(a => logged.has(a.id))?.id || all[0].id;
 
@@ -515,7 +532,7 @@ function viewProgress() {
     </div>
     <h2>Exercise</h2>
     <select class="field" data-act="prog-ex">
-      ${PLANS.map(p => `<optgroup label="${esc(p.name)}">${p.exercises.map(e => `<option value="${e.id}" ${e.id === progEx ? 'selected' : ''}>${esc(ex(e).name)}${logged.has(e.id) ? '' : ' (no data)'}</option>`).join('')}</optgroup>`).join('')}
+      ${PLANS.map(p => `<optgroup label="${esc(p.name)}">${withAlts(p.exercises).map(e => `<option value="${e.id}" ${e.id === progEx ? 'selected' : ''}>${esc(ex(e).name)}${logged.has(e.id) ? '' : ' (no data)'}</option>`).join('')}</optgroup>`).join('')}
     </select>
     <div class="seg" style="margin-top:10px">${metrics.map(([k, l]) => `<button class="${k === progMetric ? 'on' : ''}" data-act="metric" data-m="${k}">${l}</button>`).join('')}</div>
     <div class="card" style="margin-top:10px">
@@ -597,7 +614,7 @@ window.addEventListener('hashchange', () => { editing = false; render(); window.
 // ---------- Actions ----------
 function startWorkout(planId) {
   const p = planById(planId);
-  db.active = { planId, date: dayKey(), start: Date.now(), exercises: p.exercises.map(e => ({ exId: e.id, sets: [...Array(Math.max(1, parseInt(ex(e).sets) || 3))].map(() => ({ w: '', r: '', done: false })) })) };
+  db.active = { planId, date: dayKey(), start: Date.now(), exercises: p.exercises.map(chosen).map(e => ({ exId: e.id, sets: [...Array(Math.max(1, parseInt(ex(e).sets) || 3))].map(() => ({ w: '', r: '', done: false })) })) };
   db.planned = db.planned.filter(x => !(x.date === dayKey() && x.planId === planId));
   save();
   location.hash = '#/workout';
@@ -690,6 +707,18 @@ document.addEventListener('click', e => {
       if (!pv) return;
       const s = a.exercises[row.dataset.i].sets[row.dataset.j];
       s.w = pv.w || ''; s.r = pv.r; save(); render();
+      break;
+    }
+    case 'swap-plan': {
+      const slot = planById(location.hash.split('/')[2]).exercises.find(x => x.id === b.dataset.slot);
+      useAlt()[slot.id] = !useAlt()[slot.id]; save(); render();
+      break;
+    }
+    case 'swap-wo': {
+      // keeps the numbers you already typed, and remembers the choice for next time
+      const we = a.exercises[b.dataset.i], slot = slotOf(planById(a.planId), we.exId);
+      we.exId = we.exId === slot.id ? slot.alt.id : slot.id;
+      useAlt()[slot.id] = we.exId !== slot.id; save(); render();
       break;
     }
     case 'add-set': { const sets = a.exercises[b.dataset.i].sets; const l = sets.at(-1); sets.push({ w: l?.w || '', r: '', done: false }); save(); render(); break; }
