@@ -1,7 +1,7 @@
 // Offline support: keeps the app and your guide pictures on the phone.
 // Bump VERSION when you change any file so phones pick up the new version.
 // Keep the number the same as APP_VERSION.n in index.html.
-const VERSION = 'gym-v4';
+const VERSION = 'gym-v5';
 const FILES = [
   './', 'index.html', 'manifest.webmanifest',
   'icons/icon-192.png', 'icons/icon-512.png', 'icons/icon-maskable-512.png', 'icons/apple-touch-icon.png',
@@ -27,11 +27,14 @@ self.addEventListener('activate', e => {
 
 // Serve from the phone first (works with no signal), refresh from the internet in the background.
 self.addEventListener('fetch', e => {
-  if (e.request.method !== 'GET' || new URL(e.request.url).origin !== location.origin) return;
+  const { origin } = new URL(e.request.url);
+  // also keep the Google Fonts files, so the app looks the same with no signal
+  const font = origin === 'https://fonts.googleapis.com' || origin === 'https://fonts.gstatic.com';
+  if (e.request.method !== 'GET' || (origin !== location.origin && !font)) return;
   e.respondWith(caches.open(VERSION).then(async cache => {
     const cached = await cache.match(e.request, { ignoreSearch: true });
     const fresh = fetch(e.request).then(res => {
-      if (res.ok) cache.put(e.request, res.clone());
+      if (res.ok || res.type === 'opaque') cache.put(e.request, res.clone());
       return res;
     }).catch(() => cached);
     return cached || fresh;
