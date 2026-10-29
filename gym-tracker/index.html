@@ -107,6 +107,10 @@ h2 .muted { font-weight: 600; }
 /* Guide pictures have white backgrounds: put them on a soft pastel panel */
 .photo { background: linear-gradient(135deg, var(--photo-a), var(--photo-b)); display: flex; align-items: center; justify-content: center; overflow: hidden; }
 .photo img { mix-blend-mode: multiply; object-fit: contain; display: block; }
+/* real photos (file names ending in -photo.jpg) keep their own colours: shown whole on the exercise card, cropped around the person in small previews */
+.photo:has(img[src*="-photo."]) { background: #16191c; }
+.photo img[src*="-photo."] { mix-blend-mode: normal; object-fit: cover; object-position: 62% 38%; padding: 0 !important; }
+.ex .pic img[src*="-photo."] { object-fit: contain; height: 260px; }
 
 /* 3D avatar */
 .avatar { display: block; border-radius: 50%; box-shadow: 0 8px 22px rgba(0, 0, 0, .45), inset 0 0 0 1px rgba(255, 255, 255, .15); }
@@ -257,6 +261,17 @@ svg.chart { width: 100%; height: auto; display: block; overflow: visible; }
 svg.chart text { fill: var(--muted); font-size: 20px; font-family: var(--font); }
 svg.chart .tip-label { fill: #0B0E10; font-weight: 800; font-size: 19px; }
 
+/* BMI */
+.bmi-tag { font-size: 13px; font-weight: 800; padding: 4px 11px; border-radius: 99px; color: var(--bc); background: color-mix(in srgb, var(--bc) 16%, transparent); border: 1px solid color-mix(in srgb, var(--bc) 35%, transparent); }
+.bmi-scale { position: relative; height: 10px; border-radius: 99px; margin-top: 16px;
+  background: linear-gradient(90deg, var(--sky) 0 14%, var(--accent) 14% 40%, var(--amber) 40% 60%, var(--coral) 60% 100%); }
+.bmi-scale i { position: absolute; top: 50%; width: 20px; height: 20px; border-radius: 50%; transform: translate(-50%, -50%);
+  background: #fff; box-shadow: 0 0 0 4px rgba(7, 9, 12, .65), 0 4px 12px rgba(0, 0, 0, .5); }
+.bmi-ticks { position: relative; height: 16px; margin-top: 6px; font-size: 11px; color: var(--muted); font-weight: 600; }
+.bmi-ticks span { position: absolute; transform: translateX(-50%); }
+.bmi-ticks span:first-child { left: 0; transform: none; }
+.bmi-ticks span:last-child { transform: none; }
+
 /* Profile */
 .profile { display: flex; flex-direction: column; align-items: center; text-align: center; gap: 8px; padding: 22px 16px; border-radius: 28px; }
 .profile .ring-av { padding: 3px; border-radius: 50%; background: linear-gradient(135deg, var(--accent), var(--coral)); }
@@ -303,7 +318,7 @@ nav.tabs a.on svg { filter: drop-shadow(0 0 8px rgba(47, 230, 181, .6)); }
 
 <script>
 // App version: shown in More. Bump `n` together with VERSION in sw.js on every update.
-const APP_VERSION = { n: 6, date: '2026-10-29' };
+const APP_VERSION = { n: 7, date: '2026-10-29' };
 
 // ---------- Your guide (from GYM GUIDE.pdf) ----------
 // Names, targets and tips are editable in the app (Class → Edit).
@@ -348,7 +363,7 @@ const PLANS = [
   ]},
   // Optional: extra classes you can add any day. Not suggested and not counted in the week goal.
   { id: 'cardio', name: 'Cardio', short: 'CAR', group: 'cardio', optional: true, exercises: [
-    { id: 'treadmill', type: 'cardio', name: 'Treadmill', img: 'treadmill.svg', muscles: ['Heart', 'Legs', 'Fat burn'], sets: 1, reps: '20-30 min', tip: 'Start with 5 min walking to warm up, then walk fast or run. Add incline for extra burn. Log each part (warm-up, run, cool-down) as its own row.' },
+    { id: 'treadmill', type: 'cardio', name: 'Treadmill', img: 'treadmill-photo', muscles: ['Heart', 'Legs', 'Fat burn'], sets: 1, reps: '20-30 min', tip: 'Start with 5 min walking to warm up, then walk fast or run. Add incline for extra burn. Log each part (warm-up, run, cool-down) as its own row.' },
   ]},
 ];
 const GROUPS = { shoulder: 'Shoulders', chest: 'Chest', back: 'Back', legs: 'Legs' };
@@ -357,7 +372,7 @@ const COLOR = id => `var(--c-${id})`;
 // ---------- Storage ----------
 const KEY = 'gymtracker.v1';
 // weights: your body weight log, one entry per day [{ date, w }]
-const blank = () => ({ sessions: [], planned: [], weights: [], overrides: {}, settings: { unit: 'kg', rest: 90, useAlt: {}, goalWeight: null }, active: null });
+const blank = () => ({ sessions: [], planned: [], weights: [], overrides: {}, settings: { unit: 'kg', rest: 90, useAlt: {}, goalWeight: null, heightCm: null }, active: null });
 let db = load();
 function load() {
   try {
@@ -651,7 +666,8 @@ function viewToday() {
           <span style="font-size:28px">⚖️</span>
           <span><span class="muted small" style="display:block">Body weight</span>
             <b class="display" style="font-size:20px">${lw ? `${lw.w} ${unit()}` : 'Not logged yet'}</b>
-            <span class="muted small">${lw ? ` · ${lw.date === today ? 'today' : agoText(lw.date)}` : ''}</span></span>
+            <span class="muted small">${lw ? ` · ${lw.date === today ? 'today' : agoText(lw.date)}` : ''}</span>
+            ${lw && bmiOf(lw.w) ? `<span class="small" style="display:block">BMI <b>${bmiOf(lw.w)}</b> · <span style="color:${bmiCat(bmiOf(lw.w)).color}">${bmiCat(bmiOf(lw.w)).name}</span></span>` : ''}</span>
         </button>
         <button class="btn primary sm" data-act="log-weight">${lw && lw.date === today ? 'Update' : '+ Log'}</button>
       </div>`;
@@ -914,6 +930,71 @@ const progressTabs = on => `<div class="seg glass" style="margin-top:14px">
 // ---------- Body weight ----------
 const weightsSorted = () => db.weights.slice().sort((a, b) => a.date.localeCompare(b.date));
 const latestWeight = () => weightsSorted().at(-1);
+
+// ---------- Height & BMI ----------
+// Height is stored in cm; weights are stored in whatever unit you use (kg or lb).
+const LB = 0.45359237;
+const toKg = w => (unit() === 'lb' ? w * LB : w);
+const fromKg = kg => (unit() === 'lb' ? kg / LB : kg);
+const heightCm = () => num(db.settings.heightCm) || 0;
+const heightText = () => {
+  const cm = heightCm(); if (!cm) return '';
+  if (unit() === 'lb') { const inch = Math.round(cm / 2.54); return `${Math.floor(inch / 12)}′${inch % 12}″`; }
+  return `${Math.round(cm)} cm`;
+};
+const bmiOf = w => { const m = heightCm() / 100; return m && w ? round1(toKg(w) / (m * m)) : null; };
+// WHO categories for adults
+const BMI_CATS = [
+  { max: 18.5, name: 'Underweight', color: 'var(--sky)' },
+  { max: 25, name: 'Healthy', color: 'var(--accent)' },
+  { max: 30, name: 'Overweight', color: 'var(--amber)' },
+  { max: Infinity, name: 'Obesity', color: 'var(--coral)' },
+];
+const bmiCat = b => BMI_CATS.find(c => b < c.max);
+// weight range that gives a healthy BMI (18.5 – 24.9) at your height, in your unit
+const healthyRange = () => { const m = heightCm() / 100; return m ? [fromKg(18.5 * m * m), fromKg(24.9 * m * m)].map(x => Math.round(x)) : null; };
+function bmiCard() {
+  const lw = latestWeight(), b = lw && bmiOf(lw.w), cat = b && bmiCat(b), range = healthyRange();
+  if (!heightCm()) return `<div class="card bmi" style="margin-top:12px">
+      <div class="row between"><div><div class="eyebrow">BMI</div><b>Add your height to see your BMI</b></div>
+      <button class="btn primary sm" data-act="set-height">+ Height</button></div></div>`;
+  if (!b) return `<div class="card bmi" style="margin-top:12px">
+      <div class="row between"><div><div class="eyebrow">BMI · height ${heightText()}</div><b>Log your weight to see your BMI</b></div>
+      <button class="btn primary sm" data-act="log-weight">+ Log</button></div></div>`;
+  const pos = Math.min(100, Math.max(0, (b - 15) / (40 - 15) * 100));
+  return `<div class="card bmi" style="margin-top:12px">
+      <div class="row between" style="align-items:flex-start">
+        <div><div class="eyebrow">BMI</div>
+          <div class="row" style="gap:10px;align-items:baseline"><span class="display" style="font-size:40px;line-height:1.1">${b}</span>
+          <span class="bmi-tag" style="--bc:${cat.color}">${cat.name}</span></div></div>
+        <button class="btn sm" data-act="set-height">Height ${heightText()}</button>
+      </div>
+      <div class="bmi-scale" role="img" aria-label="BMI ${b}, ${cat.name}"><i style="left:${pos.toFixed(1)}%"></i></div>
+      <div class="bmi-ticks"><span>15</span><span style="left:14%">18.5</span><span style="left:40%">25</span><span style="left:60%">30</span><span style="right:0">40</span></div>
+      <div class="muted small" style="margin-top:12px">Healthy BMI for your height: <b style="color:var(--text)">${range[0]}–${range[1]} ${unit()}</b></div>
+      <div class="muted small" style="margin-top:6px">BMI is a rough guide for adults. It can't tell muscle from fat, so if you lift a lot it can read higher than your body fat really is.</div>
+    </div>`;
+}
+function heightSheet() {
+  const cm = heightCm(), lb = unit() === 'lb', inch = Math.round(cm / 2.54);
+  const o = sheet(`<h2 style="margin-top:0">📏 Your height</h2>
+    <div class="stack">
+      ${lb ? `<div class="row"><label class="small muted" style="flex:1">Feet<input class="field" id="hFt" inputmode="numeric" value="${cm ? Math.floor(inch / 12) : ''}" placeholder="5" style="font-size:22px;font-weight:800"></label>
+        <label class="small muted" style="flex:1">Inches<input class="field" id="hIn" inputmode="numeric" value="${cm ? inch % 12 : ''}" placeholder="8" style="font-size:22px;font-weight:800"></label></div>`
+      : `<label class="small muted">Height (cm)<input class="field" id="hCm" inputmode="decimal" value="${cm ? Math.round(cm) : ''}" placeholder="e.g. 170" style="font-size:22px;font-weight:800"></label>`}
+      <div class="muted small" id="hErr"></div>
+      <button class="btn primary block" id="hSave">Save</button>
+      ${cm ? '<button class="btn block ghost danger" id="hClear">Remove height</button>' : ''}
+      <button class="btn block ghost" data-close>Cancel</button>
+    </div>`);
+  setTimeout(() => o.querySelector(lb ? '#hFt' : '#hCm').focus(), 50);
+  o.querySelector('#hSave').addEventListener('click', () => {
+    const v = lb ? (num(o.querySelector('#hFt').value) * 12 + num(o.querySelector('#hIn').value)) * 2.54 : num(o.querySelector('#hCm').value);
+    if (!(v >= 90 && v <= 250)) { o.querySelector('#hErr').textContent = lb ? 'Enter a height between 3′0″ and 8′2″.' : 'Enter a height between 90 and 250 cm.'; return; }
+    db.settings.heightCm = round1(v); save(); o.remove(); render();
+  });
+  o.querySelector('#hClear')?.addEventListener('click', () => { db.settings.heightCm = null; save(); o.remove(); render(); });
+}
 let wRange = 90; // days shown in the chart; 0 = all
 function viewWeight() {
   const all = weightsSorted(), last = all.at(-1), goal = db.settings.goalWeight;
@@ -934,8 +1015,9 @@ function viewWeight() {
           <div class="muted small">${last ? `Logged ${agoText(last.date)}${weekAgo ? ` · ${signed(last.w - weekAgo.w)} ${u} vs a week ago` : ''}` : 'Log your first weight to start the chart'}</div></div>
         <button class="btn primary sm" data-act="log-weight">+ Log</button>
       </div>
-      ${goal ? `<div class="muted small" style="margin-top:10px">🎯 Goal <b style="color:var(--text)">${goal} ${u}</b>${last ? ` · ${round1(Math.abs(last.w - goal)) === 0 ? 'reached! 🎉' : `${round1(Math.abs(last.w - goal))} ${u} to go`}` : ''}</div>` : ''}
+      ${goal ? `<div class="muted small" style="margin-top:10px">🎯 Goal <b style="color:var(--text)">${goal} ${u}</b>${bmiOf(goal) ? ` (BMI ${bmiOf(goal)})` : ''}${last ? ` · ${round1(Math.abs(last.w - goal)) === 0 ? 'reached! 🎉' : `${round1(Math.abs(last.w - goal))} ${u} to go`}` : ''}</div>` : ''}
     </div>
+    ${bmiCard()}
     <div class="seg glass" style="margin-top:12px">${[[30, '1M'], [90, '3M'], [180, '6M'], [0, 'All']].map(([d, l]) => `<button class="${wRange === d ? 'on' : ''}" data-act="wrange" data-d="${d}">${l}</button>`).join('')}</div>
     <div class="card glass" style="margin-top:10px">
       ${shown.length ? chart(shown.map(x => ({ x: x.date, y: x.w })), u, { goal, time: true }) : `<div class="empty">${all.length ? 'No weights in this period.' : 'No weights logged yet.<br>Tap “+ Log” to add today\'s weight.'}</div>`}
@@ -950,7 +1032,7 @@ function viewWeight() {
     <div class="card glass stack small">${all.slice().reverse().slice(0, 30).map((x, i, arr) => {
       const prev = arr[i + 1];
       return `<div class="row between"><span class="muted">${fmtDay(x.date)}</span>
-        <span class="row" style="gap:12px"><b>${x.w} ${u}</b>${prev ? `<span class="muted" style="min-width:42px;text-align:right">${signed(x.w - prev.w)}</span>` : '<span style="min-width:42px"></span>'}
+        <span class="row" style="gap:12px">${bmiOf(x.w) ? `<span class="muted">BMI ${bmiOf(x.w)}</span>` : ''}<b>${x.w} ${u}</b>${prev ? `<span class="muted" style="min-width:42px;text-align:right">${signed(x.w - prev.w)}</span>` : '<span style="min-width:42px"></span>'}
         <button class="btn sm ghost danger" data-act="del-weight" data-date="${x.date}" aria-label="Delete">✕</button></span></div>`;
     }).join('')}</div>` : ''}
   `;
@@ -1033,6 +1115,8 @@ function viewMore() {
     <div class="card stack">
       <div><label class="muted small" for="nameIn">Name</label>
         <input id="nameIn" class="field" style="margin-top:6px" data-act="name" maxlength="24" placeholder="What should we call you?" value="${esc(db.settings.name || '')}"></div>
+      <div class="row between"><div><div class="muted small">Height</div><b>${heightText() || 'Not set'}</b>${(() => { const lw = latestWeight(), b = lw && bmiOf(lw.w); return b ? `<span class="muted small"> · BMI ${b} (${bmiCat(b).name})</span>` : ''; })()}</div>
+        <button class="btn sm" data-act="set-height">${heightCm() ? 'Edit' : '+ Add'}</button></div>
       <div><div class="muted small" style="margin-bottom:8px">Avatar</div>
         <div class="avatars">${AVATARS.map((_, i) => `<button class="${(db.settings.avatar || 0) === i ? 'on' : ''}" data-act="avatar" data-i="${i}" aria-label="Avatar ${i + 1}">${avatar(i, 58)}</button>`).join('')}</div></div>
     </div>
@@ -1238,6 +1322,7 @@ document.addEventListener('click', e => {
     case 'del-plan': db.planned = db.planned.filter(p => p.id !== b.dataset.id); save(); render(); break;
     case 'metric': progMetric = b.dataset.m; render(); break;
     case 'log-weight': logWeightSheet(); break;
+    case 'set-height': heightSheet(); break;
     case 'weight-goal': goalSheet(); break;
     case 'wrange': wRange = Number(b.dataset.d); render(); break;
     case 'del-weight': if (confirm('Delete this weight entry?')) { db.weights = db.weights.filter(x => x.date !== b.dataset.date); save(); render(); } break;
