@@ -137,6 +137,11 @@ h2 .muted { font-style: normal; }
   display: none; align-items: center; gap: 12px; box-shadow: 0 10px 40px rgba(0,0,0,.6);
 }
 .rest.on { display: flex; }
+.toast {
+  position: fixed; left: 50%; transform: translateX(-50%); top: 14px; z-index: 60; width: calc(100% - 32px); max-width: 528px;
+  background: var(--accent); color: var(--accent-ink); border: 0; border-radius: 16px; padding: 13px 16px;
+  font-weight: 900; font-style: italic; text-transform: uppercase; text-align: left; box-shadow: 0 10px 40px rgba(0,0,0,.6);
+}
 
 /* Calendar */
 .cal { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; }
@@ -198,6 +203,9 @@ nav.tabs a.on { color: var(--accent); }
 </nav>
 
 <script>
+// App version: shown in More. Bump `n` together with VERSION in sw.js on every update.
+const APP_VERSION = { n: 4, date: '2026-10-29' };
+
 // ---------- Your guide (from GYM GUIDE.pdf) ----------
 // Names, targets and tips are editable in the app (Class → Edit).
 // `alt` = the exercise to do instead (no machine, or training at home).
@@ -674,7 +682,11 @@ function viewMore() {
     </div>
     <h2>Danger zone</h2>
     <div class="card"><button class="btn danger" data-act="reset">Delete all my data</button></div>
-    <p class="muted small" style="text-align:center;margin-top:24px">${db.sessions.length} workouts saved · Gym Tracker</p>
+    <div class="card" style="margin-top:28px;text-align:center">
+      <div class="display" style="font-size:18px">Gym Tracker <span style="color:var(--accent)">v${APP_VERSION.n}</span></div>
+      <div class="muted small">Version ${APP_VERSION.n} · ${fmtDay(APP_VERSION.date, { day: 'numeric', month: 'long', year: 'numeric' })} · ${db.sessions.length} workouts saved</div>
+      <button class="btn sm" style="margin-top:10px" data-act="check-update">Check for update</button>
+    </div>
   `;
 }
 
@@ -840,6 +852,7 @@ document.addEventListener('click', e => {
       break;
     }
     case 'import': $('#importFile').click(); break;
+    case 'check-update': checkForUpdate(true); break;
     case 'reset': if (confirm('Delete ALL workouts, plans and settings? Export a backup first if you want to keep them.') && confirm('Are you sure? This cannot be undone.')) { db = blank(); save(); render(); } break;
   }
 });
@@ -879,9 +892,43 @@ document.addEventListener('change', e => {
 save(); // stores any migration of older data
 render();
 
+// ---------- Updates ----------
+function toast(text, onTap, ms = 0) {
+  document.querySelector('.toast')?.remove();
+  const t = Object.assign(document.createElement('button'), { className: 'toast', textContent: text });
+  t.addEventListener('click', () => { t.remove(); onTap?.(); });
+  document.body.appendChild(t);
+  if (ms) setTimeout(() => t.remove(), ms);
+}
+// After an update, confirm once which version is now running
+try {
+  const seen = Number(localStorage.getItem('gymtracker.version'));
+  // versions before 4 didn't store a number: an app already running offline counts as an update
+  const returning = seen || navigator.serviceWorker?.controller;
+  if (returning && seen < APP_VERSION.n) toast(`✓ Updated to version ${APP_VERSION.n}`, null, 5000);
+  localStorage.setItem('gymtracker.version', APP_VERSION.n);
+} catch (e) {}
+
+let swReg = null;
+async function checkForUpdate(manual) {
+  if (!swReg) { if (manual) alert(`You have version ${APP_VERSION.n}.\n\nUpdates are checked when the app is opened from its link or icon.`); return; }
+  if (manual) toast('Checking for update…', null, 3000);
+  try { await swReg.update(); } catch (e) { if (manual) toast('No internet. Try again later.', null, 3000); return; }
+  if (manual && !swReg.installing && !swReg.waiting) setTimeout(() => { if (!document.querySelector('.toast.ready')) toast(`✓ You have the latest version (v${APP_VERSION.n})`, null, 3000); }, 1500);
+}
+
 // Installable app: offline support, and ask the phone not to clear your saved workouts
 if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
-  navigator.serviceWorker.register('sw.js').catch(err => console.warn('Offline support unavailable', err));
+  const hadController = !!navigator.serviceWorker.controller;
+  navigator.serviceWorker.register('sw.js').then(reg => { swReg = reg; }).catch(err => console.warn('Offline support unavailable', err));
+  // a new version finished downloading and took over: offer a reload (not on the very first install)
+  navigator.serviceWorker.addEventListener('controllerchange', () => {
+    if (!hadController) return;
+    toast('🔄 New version ready · tap to update', () => location.reload());
+    document.querySelector('.toast').classList.add('ready');
+  });
+  // check again whenever you come back to the app
+  document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') checkForUpdate(false); });
 }
 try { navigator.storage?.persist?.(); } catch (e) {}
 </script>
