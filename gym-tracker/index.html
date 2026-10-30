@@ -27,7 +27,7 @@
   --danger: #FF5C6C;
   --photo-a: #E4F1EE; --photo-b: #F3E3DC;
   --radius: 24px;
-  --c-shoulder: #FFB547; --c-chest: #FF6B81; --c-back: #5AB8FF; --c-legs: #3EE59B; --c-legs-home: #2DD4D4; --c-cardio: #B197FC; --c-running: #F7A6FF;
+  --c-shoulder: #FFB547; --c-chest: #FF6B81; --c-back: #5AB8FF; --c-legs: #3EE59B; --c-legs-home: #2DD4D4; --c-shoulder-home: #E8C27A; --c-chest-home: #F2A0AE; --c-back-home: #8FCBF5; --c-cardio: #B197FC; --c-running: #F7A6FF;
   --font: "Plus Jakarta Sans", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
   --tabs-h: 66px;
   color-scheme: dark;
@@ -358,9 +358,14 @@ nav.tabs a.on svg { filter: drop-shadow(0 0 8px rgba(47, 230, 181, .6)); }
 
 <script>
 // App version: shown in More. Bump `n` together with VERSION in sw.js on every update.
-const APP_VERSION = { n: 11.1, date: '2026-10-30' };
+const APP_VERSION = { n: 12, date: '2026-10-30' };
 // What's new, shown in Profile under the version. Add the new version at the top.
 const CHANGELOG = [
+  { n: 12, date: '2026-10-30', groups: [
+    ['🏠 Home versions', ['Shoulder, Chest and Back Day now have a Gym / Home switch, like Leg Day', 'Every machine exercise has a home version that only needs dumbbells, a chair or sofa, and the floor', 'Pictures for all 9 new home exercises']],
+    ['🏋️ Smart reps for light dumbbells', ['Tell the app your home dumbbell weight once (saved in Profile)', 'Lighter than at the gym? The target reps go up automatically, with a tip', 'Rest timer is 60 seconds at home']],
+    ['📸 New pictures & videos', ['New 3D pictures for Pec Deck Fly, Chest Press, Hammer Curl, Face Pull, Cable Row, Lat Pulldown and Treadmill', 'Tutorial videos for Lat Pulldown and Treadmill (no sound)']],
+  ]},
   { n: 11.1, date: '2026-10-30', groups: [
     ['🐛 Fix', ['Opening a class while another workout isn’t finished (like Running while a Treadmill workout is open) now tells you which one is open', 'You can start the new class or continue the unfinished one, instead of always being sent back to it']],
   ]},
@@ -386,47 +391,68 @@ const CHANGELOG = [
 // ---------- Your guide (from GYM GUIDE.pdf) ----------
 // Names, targets and tips are editable in the app (Class → Edit).
 // `alt` = the exercise to do instead (no machine, or training at home).
+const HOME_LABELS = ['At home? Do this instead', 'At the gym? Do this instead'];
 const PLANS = [
-  { id: 'shoulder', name: 'Shoulder Day', short: 'SHO', group: 'shoulder', exercises: [
-    { id: 'shoulder-press-machine', name: 'Machine Shoulder Press', img: 'shoulder-press-machine-3d.webp', video: 'shoulder-press-machine/shoulder-press-machine.mp4', muscles: ['Front delts', 'Triceps'], sets: 3, reps: '10-12', tip: 'Back flat on the pad. Press up without slamming the elbows locked.' },
+  // Home versions (`alt`) only need dumbbells, a chair/sofa and the floor.
+  // db: uses dumbbells (gets rep tips at home) · light: normally done with light dumbbells · bw: bodyweight, no dumbbells
+  { id: 'shoulder', name: 'Shoulder Day', short: 'SHO', group: 'shoulder', modes: ['🏋️ Gym', '🏠 Home'], homeName: 'Shoulder Day · Home', homeShort: 'SHO🏠', exercises: [
+    { id: 'shoulder-press-machine', name: 'Machine Shoulder Press', img: 'shoulder-press-machine-3d.webp', video: 'shoulder-press-machine/shoulder-press-machine.mp4', muscles: ['Front delts', 'Triceps'], sets: 3, reps: '10-12', tip: 'Back flat on the pad. Press up without slamming the elbows locked.',
+      altLabels: HOME_LABELS,
+      alt: { id: 'seated-dumbbell-press', name: 'Seated Dumbbell Shoulder Press', img: 'home/seated-dumbbell-press.svg', db: true, muscles: ['Front delts', 'Triceps'], sets: 3, reps: '10-12', tip: 'Sit tall on a chair with your back supported. Press the dumbbells up until your arms are almost straight.' } },
     { id: 'lateral-raise-machine', name: 'Machine Lateral Raise', img: 'lateral-raise-machine', muscles: ['Side delts'], sets: 3, reps: '12-15', tip: 'Lead with your elbows and pause at shoulder height.',
-      altLabels: ['No machine? Do this instead', 'Machine free? Do this instead'],
-      alt: { id: 'dumbbell-lateral-raise', name: 'Dumbbell Lateral Raise', img: 'dumbbell-lateral-raise', muscles: ['Side delts'], sets: 3, reps: '12-15', tip: 'Slight bend in the elbows, raise to shoulder height, lower slowly.' } },
-    { id: 'seated-front-raise', name: 'Seated Dumbbell Front Raise', img: 'seated-front-raise', muscles: ['Front delts'], sets: 3, reps: '10-12', tip: 'Raise to eye level. No swinging.' },
-    { id: 'face-pull', name: 'Cable Face Pull', img: 'face-pull', muscles: ['Rear delts', 'Upper back'], sets: 3, reps: '15', tip: 'Pull the rope to your face with elbows high, squeeze the shoulder blades.' },
-    { id: 'hammer-curl', name: 'Dumbbell Hammer Curl', img: 'hammer-curl', muscles: ['Biceps', 'Forearms'], sets: 3, reps: '10-12', tip: 'Palms face each other, elbows stay by your sides.' },
+      altLabels: ['No machine / at home? Do this instead', 'At the gym? Do this instead'],
+      alt: { id: 'dumbbell-lateral-raise', name: 'Dumbbell Lateral Raise', img: 'dumbbell-lateral-raise', db: true, light: true, muscles: ['Side delts'], sets: 3, reps: '12-15', tip: 'Slight bend in the elbows, raise to shoulder height, lower slowly.' } },
+    { id: 'seated-front-raise', name: 'Seated Dumbbell Front Raise', img: 'seated-front-raise', db: true, light: true, muscles: ['Front delts'], sets: 3, reps: '10-12', tip: 'Raise to eye level. No swinging. Works at the gym and at home.' },
+    { id: 'face-pull', name: 'Cable Face Pull', img: 'face-pull-3d.webp', muscles: ['Rear delts', 'Upper back'], sets: 3, reps: '15', tip: 'Pull the rope to your face with elbows high, squeeze the shoulder blades.',
+      altLabels: HOME_LABELS,
+      alt: { id: 'dumbbell-reverse-fly', name: 'Bent-over Dumbbell Reverse Fly', img: 'home/dumbbell-reverse-fly.svg', db: true, light: true, muscles: ['Rear delts', 'Upper back'], sets: 3, reps: '12-15', tip: 'Hinge forward with a flat back. Raise the dumbbells out to the sides and squeeze your shoulder blades together.' } },
+    { id: 'hammer-curl', name: 'Dumbbell Hammer Curl', img: 'hammer-curl-3d.webp', db: true, muscles: ['Biceps', 'Forearms'], sets: 3, reps: '10-12', tip: 'Palms face each other, elbows stay by your sides. Works at the gym and at home.' },
   ]},
-  { id: 'chest', name: 'Chest Day', short: 'CHE', group: 'chest', exercises: [
-    { id: 'chest-press-machine', name: 'Machine Chest Press', img: 'chest-press-machine', muscles: ['Chest', 'Triceps', 'Front delts'], sets: 3, reps: '8-12', tip: 'Handles at mid-chest height. Push out, control the way back.' },
-    { id: 'pec-deck-fly', name: 'Pec Deck Fly', img: 'pec-deck-fly', muscles: ['Chest'], sets: 3, reps: '12-15', tip: 'Soft elbows. Squeeze the chest in the middle for 1 second.' },
-    { id: 'hammer-curl', name: 'Dumbbell Hammer Curl', img: 'hammer-curl-2', muscles: ['Biceps', 'Forearms'], sets: 3, reps: '10-12', tip: 'Palms face each other, elbows stay by your sides.' },
-    { id: 'ab-crunch-machine', name: 'Machine Ab Crunch', img: 'ab-crunch-machine', muscles: ['Abs'], sets: 3, reps: '15', tip: 'Curl your spine and breathe out as you crunch. Don\'t pull with the arms.' },
+  { id: 'chest', name: 'Chest Day', short: 'CHE', group: 'chest', modes: ['🏋️ Gym', '🏠 Home'], homeName: 'Chest Day · Home', homeShort: 'CHE🏠', exercises: [
+    { id: 'chest-press-machine', name: 'Machine Chest Press', img: 'chest-press-machine-3d.webp', muscles: ['Chest', 'Triceps', 'Front delts'], sets: 3, reps: '8-12', tip: 'Handles at mid-chest height. Push out, control the way back.',
+      altLabels: HOME_LABELS,
+      alt: { id: 'push-up', name: 'Push-ups', img: 'home/push-up.svg', bw: true, muscles: ['Chest', 'Triceps', 'Front delts'], sets: 3, reps: 'max', tip: 'Body in one straight line. Lower your chest close to the floor. Too hard? Do them with your knees on the floor.' } },
+    { id: 'pec-deck-fly', name: 'Pec Deck Fly', img: 'pec-deck-fly-3d.webp', muscles: ['Chest'], sets: 3, reps: '12-15', tip: 'Soft elbows. Squeeze the chest in the middle for 1 second.',
+      altLabels: HOME_LABELS,
+      alt: { id: 'dumbbell-floor-fly', name: 'Dumbbell Floor Fly', img: 'home/dumbbell-floor-fly.svg', db: true, light: true, muscles: ['Chest'], sets: 3, reps: '12-15', tip: 'Lie on the floor, slight bend in the elbows. Open your arms until they touch the floor, then squeeze back up.' } },
+    { id: 'hammer-curl', name: 'Dumbbell Hammer Curl', img: 'hammer-curl-3d.webp', db: true, muscles: ['Biceps', 'Forearms'], sets: 3, reps: '10-12', tip: 'Palms face each other, elbows stay by your sides. Works at the gym and at home.' },
+    { id: 'ab-crunch-machine', name: 'Machine Ab Crunch', img: 'ab-crunch-machine', muscles: ['Abs'], sets: 3, reps: '15', tip: 'Curl your spine and breathe out as you crunch. Don\'t pull with the arms.',
+      altLabels: HOME_LABELS,
+      alt: { id: 'floor-crunch', name: 'Floor Crunch', img: 'home/floor-crunch.svg', bw: true, muscles: ['Abs'], sets: 3, reps: '15-20', tip: 'Knees bent, hands lightly behind your head. Lift your shoulders off the floor and breathe out.' } },
   ]},
-  { id: 'back', name: 'Back Day', short: 'BAC', group: 'back', exercises: [
-    { id: 'lat-pulldown', name: 'Lat Pulldown', img: 'lat-pulldown', muscles: ['Lats', 'Biceps'], sets: 3, reps: '10-12', tip: 'Pull the bar to your upper chest. Chest up, don\'t lean far back.' },
-    { id: 'seated-cable-row', name: 'Seated Cable Row', img: 'seated-cable-row', muscles: ['Mid back', 'Lats'], sets: 3, reps: '10-12', tip: 'Straight back, pull to your belly, squeeze the shoulder blades.' },
-    { id: 'deadlift', name: 'Barbell Deadlift', img: 'deadlift', muscles: ['Lower back', 'Glutes', 'Hamstrings'], sets: 4, reps: '5-8', tip: 'Flat back, bar close to the legs, push the floor away.' },
-    { id: 'triceps-pushdown', name: 'Cable Triceps Pushdown', img: 'triceps-pushdown', muscles: ['Triceps'], sets: 3, reps: '12-15', tip: 'Elbows pinned to your sides, straighten fully at the bottom.' },
+  { id: 'back', name: 'Back Day', short: 'BAC', group: 'back', modes: ['🏋️ Gym', '🏠 Home'], homeName: 'Back Day · Home', homeShort: 'BAC🏠', exercises: [
+    { id: 'lat-pulldown', name: 'Lat Pulldown', img: 'lat-pulldown-3d.webp', video: 'lat-pulldown/lat-pulldown.mp4', muscles: ['Lats', 'Biceps'], sets: 3, reps: '10-12', tip: 'Pull the bar to your upper chest. Chest up, don\'t lean far back.',
+      altLabels: HOME_LABELS,
+      alt: { id: 'dumbbell-pullover', name: 'Dumbbell Pullover', img: 'home/dumbbell-pullover.svg', db: true, muscles: ['Lats', 'Chest'], sets: 3, reps: '10-12', tip: 'Lie on the floor holding one dumbbell with both hands. Lower it behind your head, then pull it back over your chest.' } },
+    { id: 'seated-cable-row', name: 'Seated Cable Row', img: 'seated-cable-row-3d.webp', muscles: ['Mid back', 'Lats'], sets: 3, reps: '10-12', tip: 'Straight back, pull to your belly, squeeze the shoulder blades.',
+      altLabels: HOME_LABELS,
+      alt: { id: 'one-arm-dumbbell-row', name: 'One-arm Dumbbell Row', img: 'home/one-arm-dumbbell-row.svg', db: true, muscles: ['Mid back', 'Lats'], sets: 3, reps: '10-12 / arm', tip: 'One hand and knee on the sofa, flat back. Pull the dumbbell to your hip and squeeze.' } },
+    { id: 'deadlift', name: 'Barbell Deadlift', img: 'deadlift', muscles: ['Lower back', 'Glutes', 'Hamstrings'], sets: 4, reps: '5-8', tip: 'Flat back, bar close to the legs, push the floor away.',
+      altLabels: HOME_LABELS,
+      alt: { id: 'dumbbell-rdl', name: 'Dumbbell Romanian Deadlift', img: 'home/dumbbell-rdl.svg', db: true, muscles: ['Hamstrings', 'Glutes', 'Lower back'], sets: 3, reps: '10-12', tip: 'Soft knees, push your hips back and keep the dumbbells close to your legs. Stand up by squeezing your glutes.' } },
+    { id: 'triceps-pushdown', name: 'Cable Triceps Pushdown', img: 'triceps-pushdown', muscles: ['Triceps'], sets: 3, reps: '12-15', tip: 'Elbows pinned to your sides, straighten fully at the bottom.',
+      altLabels: HOME_LABELS,
+      alt: { id: 'chair-dips', name: 'Chair Dips', img: 'home/chair-dips.svg', bw: true, muscles: ['Triceps'], sets: 3, reps: 'max', tip: 'Hands on the front edge of a sturdy chair. Lower until your elbows bend about 90°, then push back up.' } },
   ]},
   // Leg Day and Leg Day · House Edition combined: each gym exercise has its home version as `alt`
   { id: 'legs', name: 'Leg Day', short: 'LEG', group: 'legs', modes: ['🏋️ Gym', '🏠 Home'], homeName: 'Leg Day · Home', homeShort: 'LEG🏠', exercises: [
     { id: 'barbell-squat', name: 'Barbell Back Squat', img: 'barbell-squat', muscles: ['Quads', 'Glutes'], sets: 4, reps: '6-10', tip: 'Chest up, knees follow the toes, go down to at least parallel.',
       altLabels: ['At home? Do this instead', 'At the gym? Do this instead'],
-      alt: { id: 'bodyweight-squat', name: 'Bodyweight Squat', img: 'bodyweight-squat', muscles: ['Quads', 'Glutes'], sets: 3, reps: '15-20', tip: 'Arms forward for balance, sit back and down.' } },
+      alt: { id: 'bodyweight-squat', name: 'Bodyweight Squat', img: 'bodyweight-squat', bw: true, muscles: ['Quads', 'Glutes'], sets: 3, reps: '15-20', tip: 'Arms forward for balance, sit back and down.' } },
     { id: 'leg-extension', name: 'Leg Extension', img: 'leg-extension', muscles: ['Quads'], sets: 3, reps: '12-15', tip: 'Pause and squeeze at the top, lower slowly.',
       altLabels: ['At home? Do this instead', 'At the gym? Do this instead'],
-      alt: { id: 'bulgarian-split-squat', name: 'Bulgarian Split Squat', img: 'bulgarian-split-squat', muscles: ['Quads', 'Glutes'], sets: 3, reps: '10 / leg', tip: 'Back foot on a bench or sofa. Front knee over the foot.' } },
+      alt: { id: 'bulgarian-split-squat', name: 'Bulgarian Split Squat', img: 'bulgarian-split-squat', db: true, muscles: ['Quads', 'Glutes'], sets: 3, reps: '10 / leg', tip: 'Back foot on a bench or sofa. Front knee over the foot.' } },
     { id: 'lying-leg-curl', name: 'Lying Leg Curl', img: 'lying-leg-curl', muscles: ['Hamstrings'], sets: 3, reps: '10-12', tip: 'Hips stay down on the pad. Curl your heels to your glutes.',
       altLabels: ['At home? Do this instead', 'At the gym? Do this instead'],
-      alt: { id: 'single-leg-rdl', name: 'Single-Leg Romanian Deadlift', img: 'single-leg-rdl', muscles: ['Hamstrings', 'Glutes'], sets: 3, reps: '10 / leg', tip: 'Hinge at the hip with a flat back, slight bend in the standing knee.' } },
+      alt: { id: 'single-leg-rdl', name: 'Single-Leg Romanian Deadlift', img: 'single-leg-rdl', db: true, muscles: ['Hamstrings', 'Glutes'], sets: 3, reps: '10 / leg', tip: 'Hinge at the hip with a flat back, slight bend in the standing knee.' } },
     { id: 'leg-press', name: 'Leg Press', img: 'leg-press', muscles: ['Quads', 'Glutes'], sets: 3, reps: '10-12', tip: 'Don\'t lock the knees at the top. Lower back stays on the pad.',
       altLabels: ['At home? Do this instead', 'At the gym? Do this instead'],
-      alt: { id: 'glute-bridge', name: 'Glute Bridge', img: 'glute-bridge', muscles: ['Glutes', 'Hamstrings'], sets: 3, reps: '15', tip: 'Push through the heels, squeeze glutes at the top for 1 second.' } },
-    { id: 'calf-raise', name: 'Dumbbell Calf Raise', img: 'calf-raise', muscles: ['Calves'], sets: 3, reps: '15-20', tip: 'Use a step. Full stretch at the bottom, pause at the top. Works at the gym and at home.' },
+      alt: { id: 'glute-bridge', name: 'Glute Bridge', img: 'glute-bridge', bw: true, muscles: ['Glutes', 'Hamstrings'], sets: 3, reps: '15', tip: 'Push through the heels, squeeze glutes at the top for 1 second.' } },
+    { id: 'calf-raise', name: 'Dumbbell Calf Raise', img: 'calf-raise', db: true, muscles: ['Calves'], sets: 3, reps: '15-20', tip: 'Use a step. Full stretch at the bottom, pause at the top. Works at the gym and at home.' },
   ]},
   // Optional: extra classes you can add any day. Not suggested and not counted in the week goal.
   { id: 'cardio', name: 'Cardio', short: 'CAR', group: 'cardio', optional: true, exercises: [
-    { id: 'treadmill', type: 'cardio', name: 'Treadmill', img: 'treadmill-photo', muscles: ['Heart', 'Legs', 'Fat burn'], sets: 1, reps: '20-30 min', tip: 'Start with 5 min walking to warm up, then walk fast or run. Add incline for extra burn. Log each part (warm-up, run, cool-down) as its own row.' },
+    { id: 'treadmill', type: 'cardio', name: 'Treadmill', img: 'treadmill-3d.webp', video: 'treadmill/treadmill.mp4', muscles: ['Heart', 'Legs', 'Fat burn'], sets: 1, reps: '20-30 min', tip: 'Start with 5 min walking to warm up, then walk fast or run. Add incline for extra burn. Log each part (warm-up, run, cool-down) as its own row.' },
   ]},
   // Outdoor running: you log distance and time (from your watch or running app), the app works out your pace
   { id: 'running', name: 'Running', short: 'RUN', group: 'running', optional: true, exercises: [
@@ -521,7 +547,45 @@ const paceOf = x => (num(x.d) > 0 && num(x.m) > 0 ? num(x.m) / num(x.d) : 0);
 const fmtPace = p => { if (!p) return '–'; let mm = Math.floor(p), ss = Math.round((p - mm) * 60); if (ss === 60) { mm++; ss = 0; } return `${mm}:${pad(ss)}`; };
 const exCount = p => `${p.exercises.length} exercise${p.exercises.length === 1 ? '' : 's'}`;
 const findEx = id => { for (const p of PLANS) for (const e of withAlts(p.exercises)) if (e.id === id) return e; };
-const targetText = e => (isCardio(e) ? esc(e.reps) : `${esc(e.sets)} × ${esc(e.reps)}`);
+const targetText = e => (isCardio(e) ? esc(e.reps) : e.reps === 'max' ? `${esc(e.sets)} × max reps` : `${esc(e.sets)} × ${esc(e.reps)}`);
+
+// ---------- Home dumbbells ----------
+// Saved in Profile: the one pair you have at home, and what you usually lift at the gym (kg).
+const homeDb = () => num(db.settings.homeDb), gymDb = () => num(db.settings.gymDb);
+// Lighter than at the gym → more reps. "light" moves (raises, flies) are normally done with ~60% of your usual weight.
+function repAdvice(e, w) {
+  if (!e.db || !gymDb() || !(w > 0)) return null;
+  const r = w / (gymDb() * (e.light ? 0.6 : 1)), per = (String(e.reps).match(/\/\s*\w+/) || [''])[0];
+  if (r >= 0.8) return null;
+  if (r >= 0.6) return { reps: `12-15${per && ' ' + per}`, note: `${w} kg is a bit lighter than usual → a few more reps` };
+  if (r >= 0.4) return { reps: `15-20${per && ' ' + per}`, note: `${w} kg is light for you → lower it in 3 seconds` };
+  return { reps: `20-25${per && ' ' + per}`, note: `${w} kg is very light → slow reps with a 1-second pause` };
+}
+// the weight to judge a home exercise by: the heaviest one typed so far, else your home dumbbells
+const workingWeight = we => Math.max(0, ...we.sets.map(s => num(s.w))) || homeDb();
+function recFor(a, e, we) {
+  const adv = a.home && repAdvice(e, workingWeight(we));
+  return { target: adv ? `${esc(e.sets)} × ${esc(adv.reps)}` : targetText(e), note: adv ? `💡 ${adv.note}` : '', reps: adv ? adv.reps : e.reps };
+}
+function dumbbellSheet(onDone) {
+  const o = sheet(`<h2 style="margin-top:0">🏠 Your home dumbbells</h2>
+    <div class="muted small" style="margin-bottom:12px">So the app can tell you how many reps to do when your home weights are lighter than at the gym.</div>
+    <div class="stack">
+      <label class="small muted">Weight of your dumbbells at home (kg, each)<input class="field" id="dbHome" inputmode="decimal" value="${homeDb() || ''}" placeholder="e.g. 5" style="font-size:22px;font-weight:800"></label>
+      <label class="small muted">What you usually lift at the gym with dumbbells (kg, each)<input class="field" id="dbGym" inputmode="decimal" value="${gymDb() || ''}" placeholder="e.g. 10" style="font-size:22px;font-weight:800"></label>
+      <button class="btn primary block" id="dbSave">Save</button>
+      <button class="btn block ghost" id="dbSkip">Skip for now</button>
+    </div>`);
+  setTimeout(() => o.querySelector('#dbHome').focus(), 50);
+  const done = () => { db.settings.dbAsked = true; save(); o.remove(); render(); onDone?.(); };
+  o.querySelector('#dbSave').addEventListener('click', () => {
+    db.settings.homeDb = round1(num(o.querySelector('#dbHome').value)) || null;
+    db.settings.gymDb = round1(num(o.querySelector('#dbGym').value)) || null;
+    done();
+  });
+  o.querySelector('#dbSkip').addEventListener('click', done);
+}
+const needsDumbbells = () => !homeDb() && !db.settings.dbAsked;
 // cardio rows: m = minutes, v = speed (km/h), i = incline (%)
 const km = sets => sets.reduce((a, x) => a + (x.d !== undefined ? num(x.d) : num(x.m) / 60 * num(x.v)), 0);
 const mins = sets => sets.reduce((a, x) => a + num(x.m), 0);
@@ -907,7 +971,8 @@ function viewWorkout() {
       const other = slot.alt && ex(slot.alt.id === we.exId ? slot : slot.alt);
       return `<div class="card wo-ex">
         <div class="top">${photo(e.img, '', true, e.video)}
-          <div style="flex:1"><div class="name">${esc(e.name)}</div><div class="small muted">Target <span class="target">${targetText(e)}</span></div></div></div>
+          <div style="flex:1"><div class="name">${esc(e.name)}</div><div class="small muted">Target <span class="target" data-rec="${i}">${recFor(a, e, we).target}</span></div>
+            <div class="small" data-recnote="${i}" style="color:var(--amber)">${recFor(a, e, we).note}</div></div></div>
         ${isRun(e) ? `<div class="sets cardio">
           <div class="hdr"><span style="text-align:center">#</span><span>Previous</span><span style="text-align:center">km</span><span style="text-align:center">Min</span><span style="text-align:center">Pace</span><span></span></div>
           ${we.sets.map((s, j) => {
@@ -943,8 +1008,8 @@ function viewWorkout() {
             return `<div class="setrow ${s.done ? 'done' : ''}" data-i="${i}" data-j="${j}">
               <span class="sn">${j + 1}</span>
               <button class="prev" data-act="copy-prev" ${pv ? '' : 'disabled'}>${pv ? esc(setText(pv)) : '—'}</button>
-              <input inputmode="decimal" data-f="w" value="${esc(s.w)}" placeholder="${pv ? esc(pv.w || '') : ''}">
-              <input inputmode="numeric" data-f="r" value="${esc(s.r)}" placeholder="${pv ? esc(pv.r) : esc(String(e.reps).match(/\d+/)?.[0] || '')}">
+              <input inputmode="decimal" data-f="w" value="${esc(s.w)}" placeholder="${pv ? esc(pv.w || '') : a.home && e.db && homeDb() ? homeDb() : ''}">
+              <input inputmode="numeric" data-f="r" value="${esc(s.r)}" placeholder="${pv ? esc(pv.r) : esc(String(recFor(a, e, we).reps).match(/\d+/)?.[0] || '')}">
               <button class="chk" data-act="check">✓</button>
             </div>`;
           }).join('')}
@@ -1284,6 +1349,8 @@ function viewMore() {
         <input id="nameIn" class="field" style="margin-top:6px" data-act="name" maxlength="24" placeholder="What should we call you?" value="${esc(db.settings.name || '')}"></div>
       <div class="row between"><div><div class="muted small">Height</div><b>${heightText() || 'Not set'}</b>${(() => { const lw = latestWeight(), b = lw && bmiOf(lw.w); return b ? `<span class="muted small"> · BMI ${b} (${bmiCat(b).name})</span>` : ''; })()}</div>
         <button class="btn sm" data-act="set-height">${heightCm() ? 'Edit' : '+ Add'}</button></div>
+      <div class="row between"><div><div class="muted small">🏠 Home dumbbells</div><b>${homeDb() ? `${homeDb()} kg` : 'Not set'}</b>${gymDb() ? `<span class="muted small"> · gym ${gymDb()} kg</span>` : ''}</div>
+        <button class="btn sm" data-act="set-dumbbells">${homeDb() ? 'Edit' : '+ Add'}</button></div>
       <div><div class="muted small" style="margin-bottom:8px">Avatar</div>
         <div class="avatars">${AVATARS.map((_, i) => `<button class="${(db.settings.avatar || 0) === i ? 'on' : ''}" data-act="avatar" data-i="${i}" aria-label="Avatar ${i + 1}">${avatar(i, 58)}</button>`).join('')}</div>
         <div class="muted small" style="margin:14px 0 8px">Fun avatars 😄</div>
@@ -1352,6 +1419,9 @@ function startWorkout(planId, opts = {}) {
   }
   const p = planById(planId), date = opts.edit?.date || opts.date || dayKey();
   if (p.modes && (opts.home !== undefined || opts.edit)) setMode(p, (opts.edit ? opts.edit.home : opts.home) ? 'alt' : 'main');
+  const home = !!p.modes && planMode(p) === 'alt';
+  // first home workout: ask which dumbbells you have, then start
+  if (home && !opts.edit && needsDumbbells()) { dumbbellSheet(() => startWorkout(planId, opts)); return; }
   const emptyRow = e => (isRun(e) ? { d: '', m: '', done: false } : isCardio(e) ? { m: '', v: '', i: '', done: false } : { w: '', r: '', done: false });
   const exercises = p.exercises.map(slot => {
     const saved = opts.edit?.exercises.find(x => slotOf(p, x.exId) === slot);
@@ -1359,7 +1429,7 @@ function startWorkout(planId, opts = {}) {
     const sets = saved?.sets.length ? saved.sets.map(s => ({ ...s, done: true })) : [...Array(Math.max(1, parseInt(ex(e).sets) || 3))].map(() => emptyRow(e));
     return { exId: e.id, sets };
   });
-  db.active = { planId, date, start: opts.edit?.start || Date.now(), exercises, ...(opts.edit ? { editId: opts.edit.id } : {}) };
+  db.active = { planId, date, start: opts.edit?.start || Date.now(), exercises, ...(home ? { home } : {}), ...(opts.edit ? { editId: opts.edit.id } : {}) };
   db.planned = db.planned.filter(x => !(x.date === date && x.planId === planId));
   save();
   location.hash = '#/workout';
@@ -1413,7 +1483,8 @@ function finishWorkout() {
 }
 
 let restEnd = 0;
-function startRest() { if (db.settings.rest) { restEnd = Date.now() + db.settings.rest * 1000; tick(); } }
+// at home, rest is 60 seconds (lighter weights, keep the muscles working)
+function startRest() { const secs = db.active?.home ? Math.min(60, db.settings.rest) : db.settings.rest; if (secs) { restEnd = Date.now() + secs * 1000; tick(); } }
 function stopRest() { restEnd = 0; $('#rest').classList.remove('on'); }
 function tick() {
   const el = $('[data-elapsed]');
@@ -1451,7 +1522,11 @@ document.addEventListener('click', e => {
   switch (act) {
     case 'start': startWorkout(b.dataset.plan); break;
     case 'toggle-edit': editing = !editing; render(); break;
-    case 'mode': setMode(planById(b.dataset.plan), b.dataset.mode); save(); render(); break;
+    case 'mode':
+      setMode(planById(b.dataset.plan), b.dataset.mode); save(); render();
+      if (b.dataset.mode === 'alt' && needsDumbbells()) dumbbellSheet(); // first time at home: ask about your dumbbells
+      break;
+    case 'set-dumbbells': dumbbellSheet(); break;
     case 'finish': finishWorkout(); break;
     case 'cancel': {
       const back = isLive(a) ? '#/' : '#/calendar/' + a.date;
@@ -1578,6 +1653,13 @@ document.addEventListener('input', e => {
     const s = db.active.exercises[row.dataset.i].sets[row.dataset.j];
     s[t.dataset.f] = t.value; save();
     const pace = row.querySelector('.pace'); if (pace) pace.textContent = fmtPace(paceOf(s)); // runs: pace updates as you type
+    if (t.dataset.f === 'w' && db.active.home) {
+      // home workout: the rep target follows the weight you type
+      const we = db.active.exercises[row.dataset.i], slot = slotOf(planById(db.active.planId), we.exId);
+      const r = recFor(db.active, ex(slot.alt?.id === we.exId ? slot.alt : slot), we);
+      $(`[data-rec="${row.dataset.i}"]`).innerHTML = r.target;
+      $(`[data-recnote="${row.dataset.i}"]`).textContent = r.note;
+    }
     return;
   }
   if (t.dataset.ov) {
