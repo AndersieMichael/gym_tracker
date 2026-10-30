@@ -358,9 +358,12 @@ nav.tabs a.on svg { filter: drop-shadow(0 0 8px rgba(47, 230, 181, .6)); }
 
 <script>
 // App version: shown in More. Bump `n` together with VERSION in sw.js on every update.
-const APP_VERSION = { n: 11, date: '2026-10-30' };
+const APP_VERSION = { n: 11.1, date: '2026-10-30' };
 // What's new, shown in Profile under the version. Add the new version at the top.
 const CHANGELOG = [
+  { n: 11.1, date: '2026-10-30', groups: [
+    ['🐛 Fix', ['Opening a class while another workout isn’t finished (like Running while a Treadmill workout is open) now tells you which one is open', 'You can start the new class or continue the unfinished one, instead of always being sent back to it']],
+  ]},
   { n: 11, date: '2026-10-30', groups: [
     ['🏃 Running', ['New optional class for outdoor runs', 'Log distance and time, the app works out your pace (min/km)', 'Progress chart for distance, minutes and pace']],
     ['📋 What’s new', ['This list! Tap the “Updated” message after an update to see what changed']],
@@ -874,9 +877,16 @@ function viewClass(id) {
     }).join('')}
     </div>
     <div style="height:84px"></div>
-    <div class="sticky"><div>${db.active
-      ? `<button class="btn primary block" data-go="#/workout">▶ Continue current workout</button>`
-      : `<button class="btn primary block" data-act="start" data-plan="${p.id}">▶ Start ${esc(p.modes && mode === 'alt' ? p.homeName : p.name)}</button>`}</div></div>
+    <div class="sticky"><div>${(() => {
+      const startBtn = `<button class="btn primary block" data-act="start" data-plan="${p.id}">▶ Start ${esc(p.modes && mode === 'alt' ? p.homeName : p.name)}</button>`;
+      if (!db.active) return startBtn;
+      if (db.active.planId === p.id) return `<button class="btn primary block" data-go="#/workout">▶ Continue ${esc(p.name)}</button>`;
+      // another class is still open: say which one, and let you pick
+      const other = planById(db.active.planId).name;
+      return `<div class="small" style="text-align:center;margin-bottom:8px;color:var(--amber)">⚠️ Your ${esc(other)} workout isn’t finished</div>
+        <div class="row">${startBtn.replace('btn primary block', 'btn primary').replace('<button', '<button style="flex:1"')}
+        <button class="btn" style="flex:1" data-go="#/workout">Continue ${esc(other)}</button></div>`;
+    })()}</div></div>
   `;
 }
 
@@ -1333,7 +1343,13 @@ window.addEventListener('hashchange', () => { editing = false; render(); window.
 // opts.date: log for another day (from the calendar); opts.home: Leg Day at home;
 // opts.edit: an existing session to change (its sets are filled in)
 function startWorkout(planId, opts = {}) {
-  if (db.active) { alert('Finish or cancel your current workout first.'); location.hash = '#/workout'; return; }
+  if (db.active) {
+    // the same class is already open: just go back to it
+    if (db.active.planId === planId && !opts.edit && !opts.date) { location.hash = '#/workout'; return; }
+    const other = planById(db.active.planId).name;
+    if (!confirm(`Your ${other} workout isn’t finished.\n\nDiscard it and start ${planById(planId).name}?`)) { location.hash = '#/workout'; return; }
+    db.active = null; stopRest();
+  }
   const p = planById(planId), date = opts.edit?.date || opts.date || dayKey();
   if (p.modes && (opts.home !== undefined || opts.edit)) setMode(p, (opts.edit ? opts.edit.home : opts.home) ? 'alt' : 'main');
   const emptyRow = e => (isRun(e) ? { d: '', m: '', done: false } : isCardio(e) ? { m: '', v: '', i: '', done: false } : { w: '', r: '', done: false });
