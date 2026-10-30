@@ -1,7 +1,7 @@
 // Offline support: keeps the app and your guide pictures on the phone.
 // Bump VERSION when you change any file so phones pick up the new version.
 // Keep the number the same as APP_VERSION.n in index.html.
-const VERSION = 'gym-v10';
+const VERSION = 'gym-v11';
 const FILES = [
   './', 'index.html', 'manifest.webmanifest',
   'icons/icon-192.png', 'icons/icon-512.png', 'icons/icon-maskable-512.png', 'icons/apple-touch-icon.png',
@@ -13,6 +13,7 @@ const FILES = [
     'bodyweight-squat', 'bulgarian-split-squat', 'single-leg-rdl', 'glute-bridge', 'calf-raise',
   ].map(n => `images/${n}.jpg`),
   'images/treadmill-photo.jpg',
+  'images/outdoor-run.svg',
   'images/shoulder-press-machine-3d.webp',
   'images/shoulder-press-machine/shoulder-press-machine.mp4',
   ...['hamster', 'cat', 'mike', 'squidward', 'gigachad', 'dumbbelldore'].map(n => `images/avatars/${n}.jpg`),

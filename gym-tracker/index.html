@@ -27,7 +27,7 @@
   --danger: #FF5C6C;
   --photo-a: #E4F1EE; --photo-b: #F3E3DC;
   --radius: 24px;
-  --c-shoulder: #FFB547; --c-chest: #FF6B81; --c-back: #5AB8FF; --c-legs: #3EE59B; --c-legs-home: #2DD4D4; --c-cardio: #B197FC;
+  --c-shoulder: #FFB547; --c-chest: #FF6B81; --c-back: #5AB8FF; --c-legs: #3EE59B; --c-legs-home: #2DD4D4; --c-cardio: #B197FC; --c-running: #F7A6FF;
   --font: "Plus Jakarta Sans", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
   --tabs-h: 66px;
   color-scheme: dark;
@@ -324,6 +324,13 @@ nav.tabs a.on svg { filter: drop-shadow(0 0 8px rgba(47, 230, 181, .6)); }
 .overlay.center img { max-width: 100%; max-height: 80vh; background: #fff; border-radius: 18px; }
 @keyframes rise { from { transform: translateY(40px); opacity: .4; } }
 @keyframes fade { from { opacity: 0; } }
+/* What's new (Profile) */
+.wn-group { margin-top: 12px; }
+.wn-title { font-weight: 800; }
+.wn-list { margin: 4px 0 0; padding-left: 20px; color: var(--muted); font-size: 14px; }
+.wn-list li { margin: 3px 0; }
+.wn-older { margin-top: 14px; border-top: 1px solid var(--glass-line); padding-top: 10px; }
+.wn-older summary { cursor: pointer; font-weight: 700; color: var(--accent); }
 /* Motivation: quote card and the once-a-day splash */
 .quote .qtext { font-size: 17px; font-weight: 700; line-height: 1.35; margin-top: 6px; letter-spacing: -.01em; }
 .splash {
@@ -351,7 +358,27 @@ nav.tabs a.on svg { filter: drop-shadow(0 0 8px rgba(47, 230, 181, .6)); }
 
 <script>
 // App version: shown in More. Bump `n` together with VERSION in sw.js on every update.
-const APP_VERSION = { n: 10, date: '2026-10-30' };
+const APP_VERSION = { n: 11, date: '2026-10-30' };
+// What's new, shown in Profile under the version. Add the new version at the top.
+const CHANGELOG = [
+  { n: 11, date: '2026-10-30', groups: [
+    ['🏃 Running', ['New optional class for outdoor runs', 'Log distance and time, the app works out your pace (min/km)', 'Progress chart for distance, minutes and pace']],
+    ['📋 What’s new', ['This list! Tap the “Updated” message after an update to see what changed']],
+  ]},
+  { n: 10, date: '2026-10-30', groups: [
+    ['📅 Better calendar', ['Log sets and weights for any past day', 'Each day shows only class names, tap one for details, Edit or Delete', 'No more “mark as done”: every workout needs real details']],
+    ['💬 Motivation', ['Splash screen once a day with a greeting and the quote of the day', 'Quote of the day on Home', 'A message after each workout: records, streaks, week goal']],
+  ]},
+  { n: 9, date: '2026-10-30', items: ['3D picture and tutorial video for the Machine Shoulder Press'] },
+  { n: 8, date: '2026-10-29', items: ['Fun avatars in Profile 😄'] },
+  { n: 7, date: '2026-10-29', items: ['Height and BMI', 'Real treadmill photo'] },
+  { n: 6, date: '2026-10-29', items: ['Body weight tracker with chart and goal weight', 'Treadmill (Cardio) as an optional class'] },
+  { n: 5, date: '2026-10-29', items: ['New glass design'] },
+  { n: 4, date: '2026-10-29', items: ['Version number and “New version ready” update bar'] },
+  { n: 3, date: '2026-10-29', items: ['Leg Day with a Gym / Home switch'] },
+  { n: 2, date: '2026-10-29', items: ['Dumbbell lateral raise as the “no machine” option'] },
+  { n: 1, date: '2026-10-29', items: ['First version: your gym guide, workout log, calendar and progress'] },
+];
 
 // ---------- Your guide (from GYM GUIDE.pdf) ----------
 // Names, targets and tips are editable in the app (Class → Edit).
@@ -397,6 +424,10 @@ const PLANS = [
   // Optional: extra classes you can add any day. Not suggested and not counted in the week goal.
   { id: 'cardio', name: 'Cardio', short: 'CAR', group: 'cardio', optional: true, exercises: [
     { id: 'treadmill', type: 'cardio', name: 'Treadmill', img: 'treadmill-photo', muscles: ['Heart', 'Legs', 'Fat burn'], sets: 1, reps: '20-30 min', tip: 'Start with 5 min walking to warm up, then walk fast or run. Add incline for extra burn. Log each part (warm-up, run, cool-down) as its own row.' },
+  ]},
+  // Outdoor running: you log distance and time (from your watch or running app), the app works out your pace
+  { id: 'running', name: 'Running', short: 'RUN', group: 'running', optional: true, exercises: [
+    { id: 'outdoor-run', type: 'run', name: 'Outdoor Run', img: 'outdoor-run.svg', muscles: ['Heart', 'Legs', 'Endurance'], sets: 1, reps: '3-5 km', tip: 'Start with 5 min easy jogging. Run at a pace where you can still talk. Copy distance and time from your watch or running app. Log intervals or laps as separate rows.' },
   ]},
 ];
 const GROUPS = { shoulder: 'Shoulders', chest: 'Chest', back: 'Back', legs: 'Legs' };
@@ -473,18 +504,23 @@ function lastSetsFor(exId) {
     .sort((a, b) => b.date.localeCompare(a.date) || b.start - a.start)[0];
   return s ? s.exercises.find(e => e.exId === exId).sets : null;
 }
-const setText = s => (s.m !== undefined ? `${s.m} min${num(s.v) ? ` @ ${s.v} km/h` : ''}${num(s.i) ? ` · ${s.i}%` : ''}` : num(s.w) ? `${s.w}×${s.r}` : `${s.r} reps`);
+const setText = s => (s.d !== undefined ? `${s.d} km · ${s.m} min${paceOf(s) ? ` · ${fmtPace(paceOf(s))}/km` : ''}` : s.m !== undefined ? `${s.m} min${num(s.v) ? ` @ ${s.v} km/h` : ''}${num(s.i) ? ` · ${s.i}%` : ''}` : num(s.w) ? `${s.w}×${s.r}` : `${s.r} reps`);
 // guide pictures are .jpg; drawn ones (like the treadmill) give their own extension
 const src = img => `images/${img.includes('.') ? img : img + '.jpg'}`;
 // tapping a picture shows it bigger, or plays its tutorial video when the exercise has one
 const tapAttrs = (img, video) => (video ? `data-video="images/${video}"` : `data-zoom="${src(img)}"`);
 const photo = (img, cls = '', zoom = false, video = '') => `<div class="photo ${cls} ${zoom && video ? 'has-video' : ''}" ${zoom ? tapAttrs(img, video) : ''}><img src="${src(img)}" alt="" loading="lazy"></div>`;
-const isCardio = e => e.type === 'cardio';
+// cardio-like exercises (treadmill, outdoor run) have no weight, reps or rest timer
+const isCardio = e => e.type === 'cardio' || e.type === 'run';
+const isRun = e => e.type === 'run';
+// run rows: d = distance (km), m = minutes. Pace = minutes per km, shown as 5:30
+const paceOf = x => (num(x.d) > 0 && num(x.m) > 0 ? num(x.m) / num(x.d) : 0);
+const fmtPace = p => { if (!p) return '–'; let mm = Math.floor(p), ss = Math.round((p - mm) * 60); if (ss === 60) { mm++; ss = 0; } return `${mm}:${pad(ss)}`; };
 const exCount = p => `${p.exercises.length} exercise${p.exercises.length === 1 ? '' : 's'}`;
 const findEx = id => { for (const p of PLANS) for (const e of withAlts(p.exercises)) if (e.id === id) return e; };
 const targetText = e => (isCardio(e) ? esc(e.reps) : `${esc(e.sets)} × ${esc(e.reps)}`);
 // cardio rows: m = minutes, v = speed (km/h), i = incline (%)
-const km = sets => sets.reduce((a, x) => a + num(x.m) / 60 * num(x.v), 0);
+const km = sets => sets.reduce((a, x) => a + (x.d !== undefined ? num(x.d) : num(x.m) / 60 * num(x.v)), 0);
 const mins = sets => sets.reduce((a, x) => a + num(x.m), 0);
 const round1 = n => Math.round(n * 10) / 10;
 function sessionSummary(s) {
@@ -828,7 +864,7 @@ function viewClass(id) {
             </div>` : `<div class="row between" style="align-items:flex-start"><div class="title">${esc(e.name)}</div><div class="target">${targetText(e)}</div></div>`}
           <div style="margin-top:6px">${e.muscles.map(m => `<span class="chip">${esc(m)}</span>`).join('')}</div>
           <div class="tip">💡 ${esc(e.tip)}</div>
-          ${prev ? `<div class="small" style="margin-top:8px"><span class="muted">Last time:</span> <b>${prev.map(s => setText(s)).join(', ')}</b> ${isCardio(e) ? `· ${round1(km(prev))} km` : num(prev[0].w) ? unit() : ''}</div>` : ''}
+          ${prev ? `<div class="small" style="margin-top:8px"><span class="muted">Last time:</span> <b>${prev.map(s => setText(s)).join(', ')}</b> ${isRun(e) ? '' : isCardio(e) ? `· ${round1(km(prev))} km` : num(prev[0].w) ? unit() : ''}</div>` : ''}
           ${other ? `<div class="alt">
             ${photo(other.img, '', true, other.video)}
             <div style="flex:1;min-width:0"><div class="muted small">${esc(slot.altLabels[other.id === slot.alt.id ? 0 : 1])}</div><b>${esc(other.name)}</b></div>
@@ -862,7 +898,21 @@ function viewWorkout() {
       return `<div class="card wo-ex">
         <div class="top">${photo(e.img, '', true, e.video)}
           <div style="flex:1"><div class="name">${esc(e.name)}</div><div class="small muted">Target <span class="target">${targetText(e)}</span></div></div></div>
-        ${isCardio(e) ? `<div class="sets cardio">
+        ${isRun(e) ? `<div class="sets cardio">
+          <div class="hdr"><span style="text-align:center">#</span><span>Previous</span><span style="text-align:center">km</span><span style="text-align:center">Min</span><span style="text-align:center">Pace</span><span></span></div>
+          ${we.sets.map((s, j) => {
+            const pv = prev[j];
+            return `<div class="setrow ${s.done ? 'done' : ''}" data-i="${i}" data-j="${j}">
+              <span class="sn">${j + 1}</span>
+              <button class="prev" data-act="copy-prev" ${pv ? '' : 'disabled'}>${pv ? `${esc(pv.d)} km · ${esc(pv.m)}′` : '—'}</button>
+              <input inputmode="decimal" data-f="d" value="${esc(s.d)}" placeholder="${pv ? esc(pv.d) : esc(String(e.reps).match(/\d+/)?.[0] || '')}">
+              <input inputmode="decimal" data-f="m" value="${esc(s.m)}" placeholder="${pv ? esc(pv.m) : ''}">
+              <span class="pace" style="text-align:center;font-weight:800;font-variant-numeric:tabular-nums">${fmtPace(paceOf(s))}</span>
+              <button class="chk" data-act="check">✓</button>
+            </div>`;
+          }).join('')}
+          ${km(we.sets) ? `<div class="small muted" style="margin-top:6px">Total: <b style="color:var(--text)">${round1(km(we.sets))} km · ${mins(we.sets)} min${mins(we.sets) ? ` · ${fmtPace(mins(we.sets) / km(we.sets))}/km` : ''}</b></div>` : ''}
+        </div>` : isCardio(e) ? `<div class="sets cardio">
           <div class="hdr"><span style="text-align:center">#</span><span>Previous</span><span style="text-align:center">Min</span><span style="text-align:center">km/h</span><span style="text-align:center">Incl %</span><span></span></div>
           ${we.sets.map((s, j) => {
             const pv = prev[j];
@@ -980,16 +1030,22 @@ function viewProgress() {
         min: mins(sets),
         km: km(sets),
         speed: Math.max(...sets.map(x => num(x.v))),
+        // best pace of the day (lowest minutes per km)
+        pace: Math.min(...sets.map(paceOf).filter(Boolean), Infinity),
         sets,
       };
     });
-  const cardio = isCardio(findEx(progEx) || {});
+  const cardio = isCardio(findEx(progEx) || {}), run = isRun(findEx(progEx) || {});
+  if (run) pts.forEach(p => { if (p.pace === Infinity) p.pace = 0; });
   const bw = !cardio && pts.length && pts.every(p => p.top === 0);
-  const metrics = cardio ? [['min', 'Minutes'], ['km', 'Distance'], ['speed', 'Top speed']]
+  const metrics = run ? [['km', 'Distance'], ['min', 'Minutes'], ['pace', 'Pace']]
+    : cardio ? [['min', 'Minutes'], ['km', 'Distance'], ['speed', 'Top speed']]
     : bw ? [['reps', 'Total reps']] : [['top', 'Top weight'], ['e1rm', 'Est. 1RM'], ['vol', 'Volume'], ['reps', 'Total reps']];
   if (!metrics.some(([k]) => k === progMetric)) progMetric = metrics[0][0];
-  const best = pts.length ? Math.max(...pts.map(p => p[progMetric])) : 0;
-  const u = { reps: 'reps', min: 'min', km: 'km', speed: 'km/h' }[progMetric] || unit();
+  // for pace, lower is better
+  const paced = progMetric === 'pace' ? pts.filter(p => p.pace) : pts;
+  const best = paced.length ? (progMetric === 'pace' ? Math.min(...paced.map(p => p.pace)) : Math.max(...pts.map(p => p[progMetric]))) : 0;
+  const u = { reps: 'reps', min: 'min', km: 'km', speed: 'km/h', pace: 'min/km' }[progMetric] || unit();
 
   const workoutsTotal = db.sessions.length;
   const thisMonth = db.sessions.filter(s => s.date.slice(0, 7) === dayKey().slice(0, 7)).length;
@@ -1012,12 +1068,12 @@ function viewProgress() {
     </select>
     <div class="seg" style="margin-top:10px">${metrics.map(([k, l]) => `<button class="${k === progMetric ? 'on' : ''}" data-act="metric" data-m="${k}">${l}</button>`).join('')}</div>
     <div class="card" style="margin-top:10px">
-      ${pts.length >= 1 ? chart(pts.map(p => ({ x: p.date, y: Math.round(p[progMetric] * 10) / 10 })), u) : `<div class="empty">No sets logged for this exercise yet.<br>Start a workout and your progress will show here.</div>`}
+      ${paced.length >= 1 ? chart(paced.map(p => ({ x: p.date, y: Math.round(p[progMetric] * 100) / 100 })), u) : `<div class="empty">No sets logged for this exercise yet.<br>Start a workout and your progress will show here.</div>`}
     </div>
     ${pts.length ? `<div class="stats" style="margin-top:10px">
-      <div class="stat"><div class="v">${Math.round(best * 10) / 10}</div><div class="l">Best (${u})</div></div>
+      <div class="stat"><div class="v">${progMetric === 'pace' ? fmtPace(best) : Math.round(best * 10) / 10}</div><div class="l">Best (${u})</div></div>
       <div class="stat"><div class="v">${pts.length}</div><div class="l">Sessions</div></div>
-      <div class="stat"><div class="v">${pts.length > 1 ? signed(pts.at(-1)[progMetric] - pts[0][progMetric]) : '–'}</div><div class="l">Since first</div></div>
+      <div class="stat"><div class="v">${paced.length > 1 ? (progMetric === 'pace' ? (d => `${d > 0 ? '+' : '−'}${fmtPace(Math.abs(d))}`)(paced.at(-1).pace - paced[0].pace) : signed(paced.at(-1)[progMetric] - paced[0][progMetric])) : '–'}</div><div class="l">Since first</div></div>
     </div>
     <h2>History</h2>
     <div class="card stack small">${pts.slice().reverse().slice(0, 15).map(p => `<div class="row between"><span class="muted">${fmtDay(p.date)}</span><b>${p.sets.map(setText).join(', ')}</b></div>`).join('')}</div>` : ''}
@@ -1243,6 +1299,18 @@ function viewMore() {
       <div class="muted small">Version ${APP_VERSION.n} · ${fmtDay(APP_VERSION.date, { day: 'numeric', month: 'long', year: 'numeric' })} · ${db.sessions.length} workouts saved</div>
       <button class="btn sm" style="margin-top:10px" data-act="check-update">Check for update</button>
     </div>
+    ${(() => {
+      const [latest, ...older] = CHANGELOG;
+      const list = items => `<ul class="wn-list">${items.map(x => `<li>${esc(x)}</li>`).join('')}</ul>`;
+      return `<div class="card whatsnew" id="whatsnew" style="margin-top:12px">
+        <div class="row between"><b>📋 What’s new in v${latest.n}</b><span class="muted small">${fmtDay(latest.date, { day: 'numeric', month: 'short' })}</span></div>
+        ${latest.groups.map(([title, items]) => `<div class="wn-group"><div class="wn-title">${esc(title)}</div>${list(items)}</div>`).join('')}
+        <details class="wn-older"><summary>Earlier versions</summary>
+          ${older.map(v => `<div class="wn-group"><div class="wn-title">v${v.n} <span class="muted small">· ${fmtDay(v.date, { day: 'numeric', month: 'short' })}</span></div>
+            ${list(v.items || v.groups.flatMap(([t, items]) => items))}</div>`).join('')}
+        </details>
+      </div>`;
+    })()}
   `;
 }
 
@@ -1268,7 +1336,7 @@ function startWorkout(planId, opts = {}) {
   if (db.active) { alert('Finish or cancel your current workout first.'); location.hash = '#/workout'; return; }
   const p = planById(planId), date = opts.edit?.date || opts.date || dayKey();
   if (p.modes && (opts.home !== undefined || opts.edit)) setMode(p, (opts.edit ? opts.edit.home : opts.home) ? 'alt' : 'main');
-  const emptyRow = e => (isCardio(e) ? { m: '', v: '', i: '', done: false } : { w: '', r: '', done: false });
+  const emptyRow = e => (isRun(e) ? { d: '', m: '', done: false } : isCardio(e) ? { m: '', v: '', i: '', done: false } : { w: '', r: '', done: false });
   const exercises = p.exercises.map(slot => {
     const saved = opts.edit?.exercises.find(x => slotOf(p, x.exId) === slot);
     const e = saved ? findEx(saved.exId) : chosen(slot);
@@ -1284,7 +1352,9 @@ function startWorkout(planId, opts = {}) {
 const isLive = a => !a.editId && a.date === dayKey();
 function finishWorkout() {
   const a = db.active, p = planById(a.planId);
-  const exercises = a.exercises.map(e => (isCardio(findEx(e.exId))
+  const exercises = a.exercises.map(e => (isRun(findEx(e.exId))
+    ? { exId: e.exId, sets: e.sets.filter(s => num(s.d) > 0).map(s => ({ d: num(s.d), m: num(s.m) })) }
+    : isCardio(findEx(e.exId))
     ? { exId: e.exId, sets: e.sets.filter(s => num(s.m) > 0).map(s => ({ m: num(s.m), v: num(s.v), i: num(s.i) })) }
     : { exId: e.exId, sets: e.sets.filter(s => num(s.r) > 0).map(s => ({ w: num(s.w), r: num(s.r) })) }));
   const count = exercises.reduce((n, e) => n + e.sets.length, 0);
@@ -1375,12 +1445,11 @@ document.addEventListener('click', e => {
     case 'check': {
       const sets = a.exercises[row.dataset.i].sets, s = sets[row.dataset.j];
       if (isCardio(findEx(a.exercises[row.dataset.i].exId))) {
-        // cardio: fill empty boxes from last time / the target; no rest timer
+        // cardio / run: fill empty boxes from last time / the target; the first box (minutes, or km for a run) is required; no rest timer
         if (!s.done) {
-          const [mi, vi, ii] = row.querySelectorAll('input');
-          s.m = s.m || mi.placeholder; s.v = s.v || vi.placeholder; s.i = s.i || ii.placeholder;
-          mi.value = s.m; vi.value = s.v; ii.value = s.i;
-          if (!num(s.m)) { mi.focus(); return; }
+          const ins = [...row.querySelectorAll('input')];
+          ins.forEach(inp => { s[inp.dataset.f] = s[inp.dataset.f] || inp.placeholder; inp.value = s[inp.dataset.f]; });
+          if (!num(s[ins[0].dataset.f])) { ins[0].focus(); return; }
         }
         s.done = !s.done; save(); render();
         break;
@@ -1400,7 +1469,8 @@ document.addEventListener('click', e => {
       const pv = (lastSetsFor(a.exercises[row.dataset.i].exId) || [])[row.dataset.j];
       if (!pv) return;
       const s = a.exercises[row.dataset.i].sets[row.dataset.j];
-      if (pv.m !== undefined) Object.assign(s, { m: pv.m, v: pv.v || '', i: pv.i || '' });
+      if (pv.d !== undefined) Object.assign(s, { d: pv.d, m: pv.m || '' });
+      else if (pv.m !== undefined) Object.assign(s, { m: pv.m, v: pv.v || '', i: pv.i || '' });
       else Object.assign(s, { w: pv.w || '', r: pv.r });
       save(); render();
       break;
@@ -1419,7 +1489,8 @@ document.addEventListener('click', e => {
     }
     case 'add-set': {
       const sets = a.exercises[b.dataset.i].sets, l = sets.at(-1);
-      sets.push(isCardio(findEx(a.exercises[b.dataset.i].exId)) ? { m: '', v: l?.v || '', i: l?.i || '', done: false } : { w: l?.w || '', r: '', done: false });
+      const e = findEx(a.exercises[b.dataset.i].exId);
+      sets.push(isRun(e) ? { d: '', m: '', done: false } : isCardio(e) ? { m: '', v: l?.v || '', i: l?.i || '', done: false } : { w: l?.w || '', r: '', done: false });
       save(); render(); break;
     }
     case 'del-set': a.exercises[b.dataset.i].sets.pop(); save(); render(); break;
@@ -1487,7 +1558,12 @@ document.addEventListener('click', e => {
 document.addEventListener('input', e => {
   const t = e.target;
   const row = t.closest('.setrow');
-  if (row && t.dataset.f) { db.active.exercises[row.dataset.i].sets[row.dataset.j][t.dataset.f] = t.value; save(); return; }
+  if (row && t.dataset.f) {
+    const s = db.active.exercises[row.dataset.i].sets[row.dataset.j];
+    s[t.dataset.f] = t.value; save();
+    const pace = row.querySelector('.pace'); if (pace) pace.textContent = fmtPace(paceOf(s)); // runs: pace updates as you type
+    return;
+  }
   if (t.dataset.ov) {
     const o = db.overrides[t.dataset.ov] = db.overrides[t.dataset.ov] || {};
     o[t.dataset.k] = t.dataset.k === 'sets' ? (parseInt(t.value) || '') : t.value;
@@ -1553,7 +1629,11 @@ try {
   const seen = Number(localStorage.getItem('gymtracker.version'));
   // versions before 4 didn't store a number: an app already running offline counts as an update
   const returning = seen || navigator.serviceWorker?.controller;
-  if (returning && seen < APP_VERSION.n) toast(`✓ Updated to version ${APP_VERSION.n}`, null, 5000);
+  // tap it to jump to the "What's new" list in Profile
+  if (returning && seen < APP_VERSION.n) toast(`✓ Updated to version ${APP_VERSION.n} · tap to see what’s new`, () => {
+    location.hash = '#/more';
+    setTimeout(() => document.getElementById('whatsnew')?.scrollIntoView({ block: 'start' }), 150);
+  }, 8000);
   localStorage.setItem('gymtracker.version', APP_VERSION.n);
 } catch (e) {}
 
