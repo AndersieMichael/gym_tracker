@@ -27,7 +27,7 @@
   --danger: #FF5C6C;
   --photo-a: #E4F1EE; --photo-b: #F3E3DC;
   --radius: 24px;
-  --c-shoulder: #FFB547; --c-chest: #FF6B81; --c-back: #5AB8FF; --c-legs: #3EE59B; --c-legs-home: #2DD4D4; --c-shoulder-home: #E8C27A; --c-chest-home: #F2A0AE; --c-back-home: #8FCBF5; --c-cardio: #B197FC; --c-running: #F7A6FF;
+  --c-shoulder: #FFB547; --c-chest: #FF6B81; --c-back: #5AB8FF; --c-legs: #3EE59B; --c-cardio: #B197FC; --c-running: #F7A6FF;
   --font: "Plus Jakarta Sans", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
   --tabs-h: 66px;
   color-scheme: dark;
@@ -244,8 +244,8 @@ select.field option, select.field optgroup { background: #15191d; color: var(--t
 .cal .c .n { font-size: 13px; font-weight: 700; }
 .cal .tag { font-size: 9.5px; font-weight: 800; border-radius: 6px; padding: 1px 4px; color: #0B0E10; line-height: 1.3; max-width: 100%; overflow: hidden; white-space: nowrap; }
 .cal .tag.plan { background: transparent !important; border: 1.5px dashed; color: var(--text); }
-.legend { display: flex; flex-wrap: wrap; gap: 6px 14px; font-size: 12px; color: var(--muted); margin-top: 12px; }
-.legend span { display: inline-flex; align-items: center; gap: 5px; }
+.month-sum { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-top: 12px; }
+.month-sum .chip-c { display: inline-flex; align-items: center; gap: 6px; font-size: 12.5px; padding: 4px 10px; border-radius: 99px; background: rgba(255, 255, 255, .07); border: 1px solid var(--glass-line); }
 .sess-detail { margin-top: 8px; font-size: 13px; }
 .sess-detail div { padding: 5px 0; border-top: 1px solid var(--glass-line); }
 .sess-row { display: flex; align-items: center; gap: 10px; width: 100%; text-align: left; color: inherit; font: inherit; cursor: pointer; }
@@ -333,6 +333,20 @@ nav.tabs a.on svg { filter: drop-shadow(0 0 8px rgba(47, 230, 181, .6)); }
 .wn-older summary { cursor: pointer; font-weight: 700; color: var(--accent); }
 /* Motivation: quote card and the once-a-day splash */
 .quote .qtext { font-size: 17px; font-weight: 700; line-height: 1.35; margin-top: 6px; letter-spacing: -.01em; }
+/* Stats: class balance bars and the exercise list */
+.bal-row { display: grid; grid-template-columns: 96px 1fr 26px; align-items: center; gap: 10px; width: 100%; background: none; border: 0; padding: 2px 0; color: inherit; font: inherit; text-align: left; cursor: pointer; }
+.bal-name { display: inline-flex; align-items: center; gap: 7px; font-weight: 700; font-size: 14px; white-space: nowrap; overflow: hidden; }
+.bal-track { height: 10px; border-radius: 99px; background: rgba(255, 255, 255, .08); overflow: hidden; }
+.bal-track i { display: block; height: 100%; border-radius: 99px; }
+.bal-n { text-align: right; }
+.bal-warn { grid-column: 2 / 4; font-size: 12px; color: var(--amber); margin-top: -4px; }
+.ex-row { display: flex; align-items: center; gap: 10px; width: 100%; text-align: left; color: inherit; font: inherit; cursor: pointer; padding: 12px 14px; }
+.ex-row .ex-info { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px; }
+.ex-row .chev { font-size: 22px; line-height: 1; color: var(--muted); }
+.spark { width: 84px; height: 30px; flex: none; }
+/* Stats history rows */
+.hist-row { display: block; width: 100%; text-align: left; color: inherit; font: inherit; cursor: pointer; padding: 12px 14px; }
+.hist-row .chev { font-size: 22px; line-height: 1; color: var(--muted); }
 /* inputs inside a grey label still show their value in white */
 label .field, label input { color: var(--text); }
 /* Warm-up / cool-down */
@@ -371,9 +385,15 @@ label .field, label input { color: var(--text); }
 
 <script>
 // App version: shown in More. Bump `n` together with VERSION in sw.js on every update.
-const APP_VERSION = { n: 13, date: '2026-10-30' };
+const APP_VERSION = { n: 14, date: '2026-10-30' };
 // What's new, shown in Profile under the version. Add the new version at the top.
 const CHANGELOG = [
+  { n: 14, date: '2026-10-30', groups: [
+    ['📊 New Stats overview', ['Workouts per week for the last 12 weeks, with your week goal', 'Class balance for the last 30 days, with a ⚠️ on classes you’re skipping', 'Your recent records 🏆 across all exercises', 'Time and sets this month, and your week streak']],
+    ['💪 Exercises list', ['Every exercise you trained in one list, most trained first, with a mini chart and how much you improved', 'Tap one for its full chart and history']],
+    ['📈 Clearer exercise history', ['Each session shows which class it was from (gym or home), the day, and how long ago', 'Your best session gets a 🏆', 'Tap a session to see the whole workout']],
+    ['📅 Simpler calendar', ['One color per class, gym or home (tap a day to see if it was at home)', 'The long color list is replaced by a short “This month” summary: only the classes you did, and how often']],
+  ]},
   { n: 13, date: '2026-10-30', groups: [
     ['🔥 Warm-up', ['Every class has its own warm-up (about 4–5 minutes), shown when you start a workout', 'Guided with a timer and a picture for each move. Skip it if you already warmed up']],
     ['🧘 Cool-down', ['Optional stretching after you finish, matched to the muscles you trained', 'Warm-up and cool-down are marked on the workout in your calendar']],
@@ -415,7 +435,7 @@ const HOME_LABELS = ['At home? Do this instead', 'At the gym? Do this instead'];
 const PLANS = [
   // Home versions (`alt`) only need dumbbells, a chair/sofa and the floor.
   // db: uses dumbbells (gets rep tips at home) · light: normally done with light dumbbells · bw: bodyweight, no dumbbells
-  { id: 'shoulder', name: 'Shoulder Day', short: 'SHO', group: 'shoulder', modes: ['🏋️ Gym', '🏠 Home'], homeName: 'Shoulder Day · Home', homeShort: 'SHO🏠', exercises: [
+  { id: 'shoulder', name: 'Shoulder Day', short: 'SHO', group: 'shoulder', modes: ['🏋️ Gym', '🏠 Home'], homeName: 'Shoulder Day · Home', exercises: [
     { id: 'shoulder-press-machine', name: 'Machine Shoulder Press', img: 'shoulder-press-machine-3d.webp', video: 'shoulder-press-machine/shoulder-press-machine.mp4', muscles: ['Front delts', 'Triceps'], sets: 3, reps: '10-12', tip: 'Back flat on the pad. Press up without slamming the elbows locked.',
       altLabels: HOME_LABELS,
       alt: { id: 'seated-dumbbell-press', name: 'Seated Dumbbell Shoulder Press', img: 'home/seated-dumbbell-press.svg', db: true, muscles: ['Front delts', 'Triceps'], sets: 3, reps: '10-12', tip: 'Sit tall on a chair with your back supported. Press the dumbbells up until your arms are almost straight.' } },
@@ -428,7 +448,7 @@ const PLANS = [
       alt: { id: 'dumbbell-reverse-fly', name: 'Bent-over Dumbbell Reverse Fly', img: 'home/dumbbell-reverse-fly.svg', db: true, light: true, muscles: ['Rear delts', 'Upper back'], sets: 3, reps: '12-15', tip: 'Hinge forward with a flat back. Raise the dumbbells out to the sides and squeeze your shoulder blades together.' } },
     { id: 'hammer-curl', name: 'Dumbbell Hammer Curl', img: 'hammer-curl-3d.webp', db: true, muscles: ['Biceps', 'Forearms'], sets: 3, reps: '10-12', tip: 'Palms face each other, elbows stay by your sides. Works at the gym and at home.' },
   ]},
-  { id: 'chest', name: 'Chest Day', short: 'CHE', group: 'chest', modes: ['🏋️ Gym', '🏠 Home'], homeName: 'Chest Day · Home', homeShort: 'CHE🏠', exercises: [
+  { id: 'chest', name: 'Chest Day', short: 'CHE', group: 'chest', modes: ['🏋️ Gym', '🏠 Home'], homeName: 'Chest Day · Home', exercises: [
     { id: 'chest-press-machine', name: 'Machine Chest Press', img: 'chest-press-machine-3d.webp', muscles: ['Chest', 'Triceps', 'Front delts'], sets: 3, reps: '8-12', tip: 'Handles at mid-chest height. Push out, control the way back.',
       altLabels: HOME_LABELS,
       alt: { id: 'push-up', name: 'Push-ups', img: 'home/push-up.svg', bw: true, muscles: ['Chest', 'Triceps', 'Front delts'], sets: 3, reps: 'max', tip: 'Body in one straight line. Lower your chest close to the floor. Too hard? Do them with your knees on the floor.' } },
@@ -440,7 +460,7 @@ const PLANS = [
       altLabels: HOME_LABELS,
       alt: { id: 'floor-crunch', name: 'Floor Crunch', img: 'home/floor-crunch.svg', bw: true, muscles: ['Abs'], sets: 3, reps: '15-20', tip: 'Knees bent, hands lightly behind your head. Lift your shoulders off the floor and breathe out.' } },
   ]},
-  { id: 'back', name: 'Back Day', short: 'BAC', group: 'back', modes: ['🏋️ Gym', '🏠 Home'], homeName: 'Back Day · Home', homeShort: 'BAC🏠', exercises: [
+  { id: 'back', name: 'Back Day', short: 'BAC', group: 'back', modes: ['🏋️ Gym', '🏠 Home'], homeName: 'Back Day · Home', exercises: [
     { id: 'lat-pulldown', name: 'Lat Pulldown', img: 'lat-pulldown-3d.webp', video: 'lat-pulldown/lat-pulldown.mp4', muscles: ['Lats', 'Biceps'], sets: 3, reps: '10-12', tip: 'Pull the bar to your upper chest. Chest up, don\'t lean far back.',
       altLabels: HOME_LABELS,
       alt: { id: 'dumbbell-pullover', name: 'Dumbbell Pullover', img: 'home/dumbbell-pullover.svg', db: true, muscles: ['Lats', 'Chest'], sets: 3, reps: '10-12', tip: 'Lie on the floor holding one dumbbell with both hands. Lower it behind your head, then pull it back over your chest.' } },
@@ -455,7 +475,7 @@ const PLANS = [
       alt: { id: 'chair-dips', name: 'Chair Dips', img: 'home/chair-dips.svg', bw: true, muscles: ['Triceps'], sets: 3, reps: 'max', tip: 'Hands on the front edge of a sturdy chair. Lower until your elbows bend about 90°, then push back up.' } },
   ]},
   // Leg Day and Leg Day · House Edition combined: each gym exercise has its home version as `alt`
-  { id: 'legs', name: 'Leg Day', short: 'LEG', group: 'legs', modes: ['🏋️ Gym', '🏠 Home'], homeName: 'Leg Day · Home', homeShort: 'LEG🏠', exercises: [
+  { id: 'legs', name: 'Leg Day', short: 'LEG', group: 'legs', modes: ['🏋️ Gym', '🏠 Home'], homeName: 'Leg Day · Home', exercises: [
     { id: 'barbell-squat', name: 'Barbell Back Squat', img: 'barbell-squat', muscles: ['Quads', 'Glutes'], sets: 4, reps: '6-10', tip: 'Chest up, knees follow the toes, go down to at least parallel.',
       altLabels: ['At home? Do this instead', 'At the gym? Do this instead'],
       alt: { id: 'bodyweight-squat', name: 'Bodyweight Squat', img: 'bodyweight-squat', bw: true, muscles: ['Quads', 'Glutes'], sets: 3, reps: '15-20', tip: 'Arms forward for balance, sit back and down.' } },
@@ -535,12 +555,11 @@ function planMode(p) {
   return n === 0 ? 'main' : n === slots.length ? 'alt' : 'mix';
 }
 function setMode(p, mode) { p.exercises.filter(x => x.alt).forEach(x => { useAlt()[x.id] = mode === 'alt'; }); }
-// how a session/plan entry is shown: home leg days get their own name, tag and color
+// how a session/plan entry is shown: one color and tag per class (gym or home);
+// the name still says "· Home" so the details show where you trained
 function look(x) {
   const p = planById(x.planId);
-  return x.home && p.modes
-    ? { name: p.homeName, short: p.homeShort, color: COLOR(`${p.id}-home`) }
-    : { name: p.name, short: p.short, color: COLOR(p.id) };
+  return { name: x.home && p.modes ? p.homeName : p.name, short: p.short, color: COLOR(p.id) };
 }
 const daysAgo = k => Math.round((fromKey(dayKey()) - fromKey(k)) / 864e5);
 const agoText = k => { const n = daysAgo(k); return n === 0 ? 'today' : n === 1 ? 'yesterday' : `${n} days ago`; };
@@ -1193,7 +1212,10 @@ function viewCalendar(sel) {
   const monthTotal = db.sessions.filter(s => fromKey(s.date).getMonth() === first.getMonth() && fromKey(s.date).getFullYear() === first.getFullYear()).length;
   const ss = sessionsOn(calSel), pl = plannedOn(calSel);
   const future = calSel > today;
-  const legend = PLANS.flatMap(p => p.modes ? [look({ planId: p.id }), look({ planId: p.id, home: true })] : [look({ planId: p.id })]);
+  // "This month": only the classes you actually did this month, with how often (stays short however many classes there are)
+  const inMonth = k => fromKey(k).getMonth() === first.getMonth() && fromKey(k).getFullYear() === first.getFullYear();
+  const monthCounts = PLANS.map(p => ({ p, n: db.sessions.filter(s => s.planId === p.id && inMonth(s.date)).length })).filter(x => x.n).sort((a, b) => b.n - a.n);
+  const plannedInMonth = db.planned.some(x => inMonth(x.date));
   return `
     <div class="eyebrow">${monthTotal} workout${monthTotal === 1 ? '' : 's'} this month</div>
     <h1>Calendar</h1>
@@ -1213,7 +1235,11 @@ function viewCalendar(sel) {
         </button>`;
       }).join('')}
     </div>
-    <div class="legend">${legend.map(l => `<span><span class="dot" style="background:${l.color}"></span>${esc(l.name)}</span>`).join('')}<span><span class="dot" style="border:1.5px dashed var(--muted)"></span>Planned</span></div>
+    <div class="month-sum">
+      ${monthCounts.length ? `<span class="muted small" style="margin-right:2px">This month</span>${monthCounts.map(({ p, n }) => `<span class="chip-c"><span class="dot" style="background:${COLOR(p.id)}"></span>${esc(p.name.replace(/ Day$/, ''))} <b>×${n}</b></span>`).join('')}`
+        : '<span class="muted small">No workouts this month yet</span>'}
+      ${plannedInMonth ? '<span class="muted small" style="display:inline-flex;align-items:center;gap:5px"><span class="dot" style="border:1.5px dashed var(--muted)"></span>planned</span>' : ''}
+    </div>
 
     <h2>${fmtDay(calSel, { weekday: 'long', day: 'numeric', month: 'long' })}${calSel === today ? ' · Today' : ''}</h2>
     <div class="stack">
@@ -1239,79 +1265,214 @@ function viewCalendar(sel) {
 
 const volume = s => s.exercises.reduce((v, e) => v + e.sets.reduce((a, x) => a + num(x.w) * num(x.r), 0), 0);
 
+// ---------- Stats ----------
+// Three tabs: Overview (the big picture), Exercises (list with mini charts → detail), Body weight.
 let progEx = null, progMetric = 'top';
-function viewProgress() {
-  const all = [];
-  PLANS.forEach(p => withAlts(p.exercises).forEach(e => { if (!all.some(a => a.id === e.id)) all.push({ id: e.id, plan: p }); }));
-  const logged = new Set(db.sessions.flatMap(s => (s.exercises || []).filter(e => e.sets.length).map(e => e.exId)));
-  if (!progEx) progEx = all.find(a => logged.has(a.id))?.id || all[0].id;
+const statsTabs = on => `<div class="seg glass" style="margin-top:14px">
+    <button class="${on === 'overview' ? 'on' : ''}" data-go="#/progress">📊 Overview</button>
+    <button class="${on === 'ex' ? 'on' : ''}" data-go="#/progress/ex">💪 Exercises</button>
+    <button class="${on === 'weight' ? 'on' : ''}" data-go="#/progress/weight">⚖️ Weight</button></div>`;
+const loggedExIds = () => [...new Set(db.sessions.flatMap(s => (s.exercises || []).filter(e => e.sets.length).map(e => e.exId)))];
 
-  const pts = db.sessions.filter(s => s.exercises?.some(e => e.exId === progEx && e.sets.length))
+// one point per session for an exercise, with every number we can chart
+function exPoints(exId) {
+  const pts = db.sessions.filter(s => s.exercises?.some(e => e.exId === exId && e.sets.length))
     .sort((a, b) => a.date.localeCompare(b.date) || a.start - b.start)
     .map(s => {
-      const sets = s.exercises.find(e => e.exId === progEx).sets;
+      const sets = s.exercises.find(e => e.exId === exId).sets;
       return {
+        sess: s,
         date: s.date,
         top: Math.max(...sets.map(x => num(x.w))),
         e1rm: Math.max(...sets.map(x => num(x.w) * (1 + num(x.r) / 30))),
         vol: sets.reduce((a, x) => a + num(x.w) * num(x.r), 0),
         reps: sets.reduce((a, x) => a + num(x.r), 0),
+        maxReps: Math.max(...sets.map(x => num(x.r))),
         min: mins(sets),
         km: km(sets),
         speed: Math.max(...sets.map(x => num(x.v))),
-        // best pace of the day (lowest minutes per km)
+        // best pace of the day (lowest minutes per km); 0 = no pace
         pace: Math.min(...sets.map(paceOf).filter(Boolean), Infinity),
         sets,
       };
     });
-  const cardio = isCardio(findEx(progEx) || {}), run = isRun(findEx(progEx) || {});
-  if (run) pts.forEach(p => { if (p.pace === Infinity) p.pace = 0; });
-  const bw = !cardio && pts.length && pts.every(p => p.top === 0);
-  const metrics = run ? [['km', 'Distance'], ['min', 'Minutes'], ['pace', 'Pace']]
-    : cardio ? [['min', 'Minutes'], ['km', 'Distance'], ['speed', 'Top speed']]
-    : bw ? [['reps', 'Total reps']] : [['top', 'Top weight'], ['e1rm', 'Est. 1RM'], ['vol', 'Volume'], ['reps', 'Total reps']];
+  pts.forEach(p => { if (p.pace === Infinity) p.pace = 0; });
+  return pts;
+}
+// which numbers make sense for an exercise (the first one is what the list shows)
+function exMetrics(exId, pts) {
+  const e = findEx(exId) || {};
+  if (isRun(e)) return [['km', 'Distance'], ['min', 'Minutes'], ['pace', 'Pace']];
+  if (isCardio(e)) return [['min', 'Minutes'], ['km', 'Distance'], ['speed', 'Top speed']];
+  if (pts.length && pts.every(p => p.top === 0)) return [['maxReps', 'Best set'], ['reps', 'Total reps']];
+  return [['top', 'Top weight'], ['e1rm', 'Est. 1RM'], ['vol', 'Volume'], ['reps', 'Total reps']];
+}
+const metricUnit = k => ({ reps: 'reps', maxReps: 'reps', min: 'min', km: 'km', speed: 'km/h', pace: '/km' }[k] || unit());
+const metricText = (k, v) => (k === 'pace' ? fmtPace(v) : `${round1(v)}`);
+
+// personal records over time: a new heaviest weight, more reps (bodyweight), a longer or faster run
+function findRecords() {
+  const best = {}, out = [];
+  for (const s of db.sessions.slice().sort((a, b) => a.date.localeCompare(b.date) || a.start - b.start)) {
+    for (const e of s.exercises || []) {
+      if (!e.sets.length) continue;
+      const x = findEx(e.exId) || {}, b = best[e.exId] = best[e.exId] || {};
+      const add = (kind, val, prev, better) => { if (prev !== undefined && better) out.push({ s, exId: e.exId, kind, val, prev }); };
+      if (isRun(x)) {
+        const d = km(e.sets), p = Math.min(...e.sets.map(paceOf).filter(Boolean), Infinity);
+        add('km', d, b.km, d > b.km); if (b.km === undefined || d > b.km) b.km = d;
+        if (p < Infinity) { add('pace', p, b.pace, p < b.pace); if (b.pace === undefined || p < b.pace) b.pace = p; }
+      } else if (isCardio(x)) {
+        const m = mins(e.sets); add('min', m, b.min, m > b.min); if (b.min === undefined || m > b.min) b.min = m;
+      } else {
+        const w = Math.max(...e.sets.map(y => num(y.w)));
+        if (w > 0) { add('top', w, b.top, w > b.top); if (b.top === undefined || w > b.top) b.top = w; }
+        else { const r = Math.max(...e.sets.map(y => num(y.r))); add('maxReps', r, b.reps, r > b.reps); if (b.reps === undefined || r > b.reps) b.reps = r; }
+      }
+    }
+  }
+  return out.reverse();
+}
+function recordText(r) {
+  const u = metricUnit(r.kind), diff = r.kind === 'pace' ? `−${fmtPace(r.prev - r.val)}` : `+${round1(r.val - r.prev)}`;
+  return `${metricText(r.kind, r.val)} ${u} <span class="muted">(${diff})</span>`;
+}
+
+function viewOverview() {
+  const today = dayKey(), ws = monday(new Date());
+  if (!db.sessions.length) return `<div class="eyebrow">Your numbers</div><h1>Stats</h1>${statsTabs('overview')}
+    <div class="card empty" style="margin-top:14px">📊 Your stats will show here after your first workout.<br>Go crush one! 💪</div>`;
+  const month = db.sessions.filter(s => s.date.slice(0, 7) === today.slice(0, 7));
+  const minutes = Math.round(month.reduce((a, s) => a + (s.duration || 0), 0) / 60);
+  const setCount = month.reduce((a, s) => a + (s.exercises || []).reduce((n, e) => n + e.sets.length, 0), 0);
+  const thisWeek = db.sessions.filter(s => s.date >= dayKey(ws)).length;
+
+  // workouts per week, last 12 weeks (dashed line = your week goal of 4 classes)
+  const weeks = [...Array(12)].map((_, i) => { const st = addDays(ws, -7 * (11 - i)), a = dayKey(st), b = dayKey(addDays(st, 6)); return { st, n: db.sessions.filter(s => s.date >= a && s.date <= b).length }; });
+  const goal = Object.keys(GROUPS).length, top = Math.max(goal + 1, ...weeks.map(w => w.n));
+  const W = 600, H = 210, L = 10, R = 10, T = 22, B = 30, bw = (W - L - R) / 12;
+  const yy = v => T + (1 - v / top) * (H - T - B);
+  const weekChart = `<svg class="chart" viewBox="0 0 ${W} ${H}" role="img" aria-label="Workouts per week">
+    <line x1="${L}" x2="${W - R}" y1="${yy(goal)}" y2="${yy(goal)}" stroke="var(--accent)" stroke-width="2" stroke-dasharray="8 7" opacity=".7"/>
+    <text x="${L}" y="${yy(goal) - 6}" text-anchor="start" style="fill:var(--accent);font-size:17px">goal ${goal}</text>
+    ${weeks.map((w, i) => { const x = L + i * bw + bw * .18, h = (H - T - B) * w.n / top, cur = i === 11;
+      return `<rect x="${x.toFixed(1)}" y="${(H - B - h).toFixed(1)}" width="${(bw * .64).toFixed(1)}" height="${Math.max(h, 3).toFixed(1)}" rx="7" fill="${w.n >= goal ? 'var(--accent)' : cur ? '#FF7A59' : 'rgba(255,255,255,.22)'}"/>
+        ${w.n ? `<text x="${(x + bw * .32).toFixed(1)}" y="${(H - B - h - 6).toFixed(1)}" text-anchor="middle" style="fill:var(--text);font-size:17px;font-weight:700">${w.n}</text>` : ''}
+        ${i % 3 === 2 || cur ? `<text x="${(x + bw * .32).toFixed(1)}" y="${H - 8}" text-anchor="middle" style="font-size:16px">${cur ? 'now' : fmtDay(dayKey(w.st), { day: 'numeric', month: 'short' })}</text>` : ''}`; }).join('')}
+  </svg>`;
+
+  // class balance, last 30 days: main classes always, optional ones when you did them
+  const from = dayKey(addDays(new Date(), -29)), recent = db.sessions.filter(s => s.date >= from);
+  const rows = PLANS.map(p => ({ p, n: recent.filter(s => s.planId === p.id).length, last: lastSessionOf(p.id) })).filter(r => !r.p.optional || r.n);
+  const most = Math.max(1, ...rows.map(r => r.n));
+  const balance = rows.map(({ p, n, last }) => `<button class="bal-row" data-go="#/class/${p.id}">
+      <span class="bal-name"><span class="dot" style="background:${COLOR(p.id)}"></span>${esc(p.name.replace(/ Day$/, ''))}</span>
+      <span class="bal-track"><i style="width:${n ? Math.max(6, n / most * 100) : 0}%;background:${COLOR(p.id)}"></i></span>
+      <b class="bal-n">${n}</b>
+      ${!p.optional && !n ? `<span class="bal-warn">⚠️ ${last ? `last ${agoText(last.date)}` : 'not done yet'}</span>` : ''}
+    </button>`).join('');
+
+  const records = findRecords().slice(0, 5);
+  return `
+    <div class="eyebrow">Your numbers</div>
+    <h1>Stats</h1>
+    ${statsTabs('overview')}
+    <div class="stats" style="margin-top:14px">
+      <div class="stat"><div class="v">${thisWeek}</div><div class="l">This week</div></div>
+      <div class="stat"><div class="v">${month.length}</div><div class="l">This month</div></div>
+      <div class="stat"><div class="v">${weekStreak()}🔥</div><div class="l">Week streak</div></div>
+    </div>
+    <div class="stats" style="margin-top:8px;grid-template-columns:repeat(2,1fr)">
+      <div class="stat"><div class="v">${minutes >= 60 ? `${Math.floor(minutes / 60)}h ${minutes % 60}m` : `${minutes}m`}</div><div class="l">Time this month</div></div>
+      <div class="stat"><div class="v">${setCount}</div><div class="l">Sets this month</div></div>
+    </div>
+    <h2>Workouts per week</h2>
+    <div class="card">${weekChart}<div class="muted small" style="margin-top:4px">Green = you hit your week goal of ${goal} classes</div></div>
+    <h2>Class balance <span class="muted">· last 30 days</span></h2>
+    <div class="card stack">${balance}</div>
+    <h2>Recent records 🏆</h2>
+    ${records.length ? `<div class="stack">${records.map(r => `<button class="card hist-row" data-go="#/progress/ex/${r.exId}">
+        <div class="row between"><b>${esc(exName(r.exId))}</b><span class="chev">›</span></div>
+        <div class="small" style="margin-top:4px">🏆 ${recordText(r)}</div>
+        <div class="muted small" style="margin-top:2px">${esc(look(r.s).name)} · ${agoText(r.s.date)}</div>
+      </button>`).join('')}</div>`
+      : `<div class="card empty">Beat a previous weight, reps or run and your records show up here. 💪</div>`}
+  `;
+}
+
+// a tiny line chart for the exercise list
+function sparkline(vals) {
+  if (!vals.length) return '';
+  const w = 84, h = 30, lo = Math.min(...vals), hi = Math.max(...vals), sp = hi - lo || 1;
+  const pts = vals.map((v, i) => [vals.length === 1 ? w / 2 : 3 + i * (w - 6) / (vals.length - 1), 3 + (1 - (v - lo) / sp) * (h - 6)]);
+  return `<svg class="spark" viewBox="0 0 ${w} ${h}" aria-hidden="true">${vals.length > 1 ? `<polyline points="${pts.map(p => p.map(n => n.toFixed(1)).join(',')).join(' ')}" fill="none" stroke="#FF7A59" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>` : ''}
+    <circle cx="${pts.at(-1)[0].toFixed(1)}" cy="${pts.at(-1)[1].toFixed(1)}" r="3.5" fill="#FF7A59"/></svg>`;
+}
+function viewExercises() {
+  const ids = loggedExIds();
+  const rows = ids.map(id => {
+    const pts = exPoints(id), [key] = exMetrics(id, pts)[0], vals = pts.map(p => p[key]).filter(v => v > 0);
+    return { id, pts, key, vals, last: pts.at(-1) };
+  }).sort((a, b) => b.pts.length - a.pts.length || b.last.date.localeCompare(a.last.date));
+  const total = new Set(PLANS.flatMap(p => withAlts(p.exercises).map(e => e.id))).size;
+  return `
+    <div class="eyebrow">Your numbers</div>
+    <h1>Stats</h1>
+    ${statsTabs('ex')}
+    <div class="muted small" style="margin:14px 0 10px">${rows.length ? 'Most trained first. Tap one for its chart and history.' : ''}</div>
+    ${rows.length ? `<div class="stack">${rows.map(({ id, pts, key, vals, last }) => {
+      const first = vals[0], now = vals.at(-1), better = key === 'pace' ? now < first : now > first, same = vals.length < 2 || now === first;
+      const pct = first && !same ? Math.round(Math.abs(now - first) / first * 100) : 0;
+      return `<button class="card ex-row" data-go="#/progress/ex/${id}">
+        <span class="ex-info"><span class="row" style="gap:8px"><span class="dot" style="background:${look(last.sess).color}"></span><b>${esc(exName(id))}</b></span>
+          <span class="muted small">${pts.length} session${pts.length === 1 ? '' : 's'} · last ${agoText(last.date)}</span>
+          <span class="small">${vals.length ? (same ? `${metricText(key, now)} ${metricUnit(key)}` : `${metricText(key, first)} → ${metricText(key, now)} ${metricUnit(key)} <b style="color:${better ? 'var(--accent)' : 'var(--coral)'}">${better ? '▲' : '▼'} ${pct}%</b>`) : ''}</span></span>
+        ${sparkline(vals)}<span class="chev">›</span>
+      </button>`;
+    }).join('')}</div>` : `<div class="card empty">No exercises logged yet.<br>Start a workout and your progress will show here.</div>`}
+    ${rows.length && total > rows.length ? `<div class="muted small" style="text-align:center;margin-top:10px">${total - rows.length} more exercises show up here once you log them</div>` : ''}
+  `;
+}
+
+// the full chart + history for one exercise
+function viewExercise(id) {
+  if (progEx !== id) { progEx = id; progMetric = null; }
+  const pts = exPoints(id), metrics = exMetrics(id, pts);
   if (!metrics.some(([k]) => k === progMetric)) progMetric = metrics[0][0];
   // for pace, lower is better
   const paced = progMetric === 'pace' ? pts.filter(p => p.pace) : pts;
   const best = paced.length ? (progMetric === 'pace' ? Math.min(...paced.map(p => p.pace)) : Math.max(...pts.map(p => p[progMetric]))) : 0;
-  const u = { reps: 'reps', min: 'min', km: 'km', speed: 'km/h', pace: 'min/km' }[progMetric] || unit();
-
-  const workoutsTotal = db.sessions.length;
-  const thisMonth = db.sessions.filter(s => s.date.slice(0, 7) === dayKey().slice(0, 7)).length;
-  const streak = weekStreak();
-
-  // shared exercises (like the hammer curl) appear once, under the first class that has them
-  const seen = new Set();
+  const u = metricUnit(progMetric);
   return `
-    <div class="eyebrow">Your numbers</div>
-    <h1>Progress</h1>
-    ${progressTabs('ex')}
-    <div class="stats" style="margin-top:14px">
-      <div class="stat"><div class="v">${workoutsTotal}</div><div class="l">Workouts</div></div>
-      <div class="stat"><div class="v">${thisMonth}</div><div class="l">This month</div></div>
-      <div class="stat"><div class="v">${streak}🔥</div><div class="l">Week streak</div></div>
-    </div>
-    <h2>Exercise</h2>
-    <select class="field" data-act="prog-ex">
-      ${PLANS.map(p => `<optgroup label="${esc(p.name)}">${withAlts(p.exercises).filter(e => !seen.has(e.id) && seen.add(e.id)).map(e => `<option value="${e.id}" ${e.id === progEx ? 'selected' : ''}>${esc(ex(e).name)}${logged.has(e.id) ? '' : ' (no data)'}</option>`).join('')}</optgroup>`).join('')}
-    </select>
-    <div class="seg" style="margin-top:10px">${metrics.map(([k, l]) => `<button class="${k === progMetric ? 'on' : ''}" data-act="metric" data-m="${k}">${l}</button>`).join('')}</div>
+    <button class="back" data-go="#/progress/ex">‹ All exercises</button>
+    <div class="eyebrow" style="margin-top:6px">Exercise</div>
+    <h1 style="font-size:26px">${esc(exName(id))}</h1>
+    <div class="seg" style="margin-top:12px">${metrics.map(([k, l]) => `<button class="${k === progMetric ? 'on' : ''}" data-act="metric" data-m="${k}">${l}</button>`).join('')}</div>
     <div class="card" style="margin-top:10px">
       ${paced.length >= 1 ? chart(paced.map(p => ({ x: p.date, y: Math.round(p[progMetric] * 100) / 100 })), u) : `<div class="empty">No sets logged for this exercise yet.<br>Start a workout and your progress will show here.</div>`}
     </div>
     ${pts.length ? `<div class="stats" style="margin-top:10px">
-      <div class="stat"><div class="v">${progMetric === 'pace' ? fmtPace(best) : Math.round(best * 10) / 10}</div><div class="l">Best (${u})</div></div>
+      <div class="stat"><div class="v">${metricText(progMetric, best)}</div><div class="l">Best (${u})</div></div>
       <div class="stat"><div class="v">${pts.length}</div><div class="l">Sessions</div></div>
       <div class="stat"><div class="v">${paced.length > 1 ? (progMetric === 'pace' ? (d => `${d > 0 ? '+' : '−'}${fmtPace(Math.abs(d))}`)(paced.at(-1).pace - paced[0].pace) : signed(paced.at(-1)[progMetric] - paced[0][progMetric])) : '–'}</div><div class="l">Since first</div></div>
     </div>
     <h2>History</h2>
-    <div class="card stack small">${pts.slice().reverse().slice(0, 15).map(p => `<div class="row between"><span class="muted">${fmtDay(p.date)}</span><b>${p.sets.map(setText).join(', ')}</b></div>`).join('')}</div>` : ''}
+    <div class="stack">${pts.slice().reverse().slice(0, 20).map(p => {
+      // each row: which class (gym or home), when, the sets, and a 🏆 on your best one. Tap to open that workout.
+      const l = look(p.sess), isBest = p[progMetric] === best && best > 0;
+      const weighted = p.sets.some(x => num(x.w) > 0);
+      return `<button class="card hist-row" data-act="open-session" data-id="${p.sess.id}">
+        <div class="row between"><span class="row" style="gap:8px;min-width:0"><span class="dot" style="background:${l.color}"></span><b>${esc(l.name)}</b></span>
+          <span class="row" style="gap:6px">${isBest ? '<span class="badge">🏆 Best</span>' : ''}<span class="chev">›</span></span></div>
+        <div class="muted small" style="margin-top:2px">${fmtDay(p.date, { weekday: 'long', day: 'numeric', month: 'short' })} · ${agoText(p.date)}</div>
+        <div class="small" style="margin-top:6px"><b>${p.sets.map(setText).join(' · ')}</b>${weighted ? ` <span class="muted">${unit()}</span>` : ''}</div>
+      </button>`;
+    }).join('')}</div>
+    ${pts.length > 20 ? `<div class="muted small" style="text-align:center;margin-top:8px">Showing your last 20 of ${pts.length} sessions</div>` : ''}` : ''}
   `;
 }
 const signed = n => (n > 0 ? '+' : '') + Math.round(n * 10) / 10;
-const progressTabs = on => `<div class="seg glass" style="margin-top:14px">
-    <button class="${on === 'ex' ? 'on' : ''}" data-go="#/progress">💪 Exercises</button>
-    <button class="${on === 'weight' ? 'on' : ''}" data-go="#/progress/weight">⚖️ Body weight</button></div>`;
+const progressTabs = statsTabs;
 
 // ---------- Body weight ----------
 const weightsSorted = () => db.weights.slice().sort((a, b) => a.date.localeCompare(b.date));
@@ -1550,13 +1711,13 @@ function viewMore() {
 
 // ---------- Router ----------
 function render() {
-  const [, route, arg] = (location.hash || '#/').split('/');
+  const [, route, arg, arg2] = (location.hash || '#/').split('/');
   const tab = route === 'calendar' ? 'calendar' : route === 'progress' ? 'progress' : route === 'more' ? 'more' : 'today';
   document.querySelectorAll('#tabs a').forEach(a => a.classList.toggle('on', a.dataset.tab === tab));
   const html = route === 'class' ? viewClass(arg)
     : route === 'workout' ? viewWorkout()
     : route === 'calendar' ? viewCalendar(arg)
-    : route === 'progress' ? (arg === 'weight' ? viewWeight() : viewProgress())
+    : route === 'progress' ? (arg === 'weight' ? viewWeight() : arg === 'ex' ? (arg2 ? viewExercise(decodeURIComponent(arg2)) : viewExercises()) : viewOverview())
     : route === 'more' ? viewMore()
     : viewToday();
   $('#app').innerHTML = html;
@@ -1866,7 +2027,6 @@ document.addEventListener('input', e => {
 
 document.addEventListener('change', e => {
   const t = e.target;
-  if (t.dataset.act === 'prog-ex') { progEx = t.value; progMetric = 'top'; render(); }
   if (t.dataset.act === 'rest-set') { db.settings.rest = Number(t.value); save(); }
   if (t.dataset.act === 'name') { db.settings.name = t.value.trim().slice(0, 24); save(); render(); }
   if (t.id === 'importFile' && t.files[0]) {
