@@ -248,6 +248,9 @@ select.field option, select.field optgroup { background: #15191d; color: var(--t
 .legend span { display: inline-flex; align-items: center; gap: 5px; }
 .sess-detail { margin-top: 8px; font-size: 13px; }
 .sess-detail div { padding: 5px 0; border-top: 1px solid var(--glass-line); }
+.sess-row { display: flex; align-items: center; gap: 10px; width: 100%; text-align: left; color: inherit; font: inherit; cursor: pointer; }
+.sess-row b { flex: 1; }
+.sess-row .chev { font-size: 24px; line-height: 1; color: var(--muted); }
 
 /* Progress */
 .seg { display: flex; border-radius: 99px; padding: 4px; gap: 4px; flex-wrap: wrap; box-shadow: none; }
@@ -321,6 +324,17 @@ nav.tabs a.on svg { filter: drop-shadow(0 0 8px rgba(47, 230, 181, .6)); }
 .overlay.center img { max-width: 100%; max-height: 80vh; background: #fff; border-radius: 18px; }
 @keyframes rise { from { transform: translateY(40px); opacity: .4; } }
 @keyframes fade { from { opacity: 0; } }
+/* Motivation: quote card and the once-a-day splash */
+.quote .qtext { font-size: 17px; font-weight: 700; line-height: 1.35; margin-top: 6px; letter-spacing: -.01em; }
+.splash {
+  position: fixed; inset: 0; z-index: 100; display: grid; place-items: center; padding: 24px; text-align: center; cursor: pointer;
+  background: radial-gradient(60% 45% at 20% 10%, rgba(47, 230, 181, .22), transparent 70%), radial-gradient(55% 40% at 90% 90%, rgba(255, 122, 89, .2), transparent 70%), var(--bg);
+  transition: opacity .35s; /* shows at once (no fade-in), so it can never stay invisible */
+}
+.splash.out { opacity: 0; pointer-events: none; }
+.splash-in { max-width: 340px; }
+.splash .ring-av { display: inline-block; }
+.splash .qtext { font-size: 22px; font-weight: 800; line-height: 1.3; margin-top: 14px; letter-spacing: -.02em; }
 .empty { text-align: center; color: var(--muted); padding: 24px 8px; }
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition: none !important; } }
 </style>
@@ -337,7 +351,7 @@ nav.tabs a.on svg { filter: drop-shadow(0 0 8px rgba(47, 230, 181, .6)); }
 
 <script>
 // App version: shown in More. Bump `n` together with VERSION in sw.js on every update.
-const APP_VERSION = { n: 9, date: '2026-10-29' };
+const APP_VERSION = { n: 10, date: '2026-10-30' };
 
 // ---------- Your guide (from GYM GUIDE.pdf) ----------
 // Names, targets and tips are editable in the app (Class → Edit).
@@ -476,12 +490,63 @@ const round1 = n => Math.round(n * 10) / 10;
 function sessionSummary(s) {
   if (s.quick) return 'Marked as done (no sets logged)';
   const cardio = s.exercises.filter(e => isCardio(findEx(e.exId) || {})).flatMap(e => e.sets);
-  const parts = [fmtDur(s.duration)];
+  const parts = s.duration ? [fmtDur(s.duration)] : [];
   if (cardio.length) parts.push(`${mins(cardio)} min`, `${round1(km(cardio))} km`);
-  if (cardio.length < s.exercises.reduce((n, e) => n + e.sets.length, 0)) parts.push(`${s.exercises.reduce((n, e) => n + e.sets.length, 0) - cardio.length} sets`, `${Math.round(volume(s))} ${unit()} volume`);
+  const strength = s.exercises.reduce((n, e) => n + e.sets.length, 0) - cardio.length;
+  if (strength) parts.push(`${strength} set${strength === 1 ? '' : 's'}`, `${Math.round(volume(s))} ${unit()} volume`);
   return parts.join(' · ');
 }
 const coverImg = p => chosen(p.exercises[0]).img;
+
+// ---------- Motivation ----------
+const QUOTES = [
+  'Consistency beats motivation. Just show up.',
+  'The only bad workout is the one that didn’t happen.',
+  'Small steps every day add up to big results.',
+  'Your body can stand almost anything. It’s your mind you have to convince.',
+  'Sweat now, shine later.',
+  'You don’t have to be extreme, just consistent.',
+  'Strong is built one rep at a time.',
+  'Discipline is choosing what you want most over what you want now.',
+  'Progress, not perfection.',
+  'The pain you feel today is the strength you feel tomorrow.',
+  'Don’t wish for it. Work for it.',
+  'Every rep counts. Every set matters.',
+  'You are one workout away from a better mood.',
+  'Fall in love with the process and the results will come.',
+  'A year from now you’ll wish you started today.',
+  'It never gets easier. You just get stronger.',
+  'Push yourself, because no one else is going to do it for you.',
+  'Tired is a feeling. Done is a decision.',
+  'The hardest lift is lifting yourself off the couch.',
+  'Motivation gets you started. Habit keeps you going.',
+  'Be stronger than your excuses.',
+  'Results happen over time, not overnight.',
+  'Don’t count the days. Make the days count.',
+  'Your only competition is who you were yesterday.',
+  'Earn your rest day.',
+  'Slow progress is still progress.',
+  'Train hard, stay humble.',
+  'Today’s effort is tomorrow’s strength.',
+  'You didn’t come this far to only come this far.',
+  'Make yourself proud.',
+];
+// the same quote all day, a new one tomorrow
+const dayNumber = (k = dayKey()) => Math.round(fromKey(k).getTime() / 864e5);
+const dailyQuote = () => QUOTES[dayNumber() % QUOTES.length];
+const greeting = () => { const h = new Date().getHours(); return h < 11 ? 'Good morning' : h < 15 ? 'Good afternoon' : h < 19 ? 'Good evening' : 'Good night'; };
+
+// a short message for the end of a workout, about what you just did
+function finishMessage(s, prs) {
+  const ws = monday(fromKey(s.date)), we = dayKey(addDays(ws, 6)), wk = dayKey(ws);
+  const groups = new Set(db.sessions.filter(x => x.date >= wk && x.date <= we).map(x => planById(x.planId)?.group));
+  const left = Object.keys(GROUPS).filter(g => !groups.has(g)).length, streak = weekStreak();
+  if (prs.length) return '🏆 New personal record! All that hard work is paying off.';
+  if (!planById(s.planId).optional && !left) return '🎯 Week goal complete! Every class done this week. Legend.';
+  if (streak >= 2) return `🔥 ${streak} weeks in a row. Consistency beats motivation, keep it going!`;
+  if (!planById(s.planId).optional && left) return `💪 ${left} more class${left === 1 ? '' : 'es'} to hit your week goal. You’ve got this!`;
+  return '💪 Great job. Every workout counts!';
+}
 
 // ---------- Modal ----------
 function sheet(html, cls = '') {
@@ -614,7 +679,7 @@ function viewToday() {
     sub = 'Your workout is still running';
     hero = `<div class="hero" style="--pc:${COLOR(p.id)}">
       <div class="htext"><span class="badge">In progress</span><div class="title">${esc(p.name)}</div>
-        <div class="muted small">Started ${fmtDur((Date.now() - db.active.start) / 1000)} ago</div>
+        <div class="muted small">${isLive(db.active) ? `Started ${fmtDur((Date.now() - db.active.start) / 1000)} ago` : `${db.active.editId ? 'Editing' : 'Logging'} ${fmtDay(db.active.date)}`}</div>
         <div class="btns"><button class="btn primary" data-go="#/workout">▶ Continue</button></div></div>
       ${photo(coverImg(p), 'hpic')}</div>`;
   } else if (todaySess.some(s => !planById(s.planId).optional)) {
@@ -674,7 +739,12 @@ function viewToday() {
       <button class="round" data-go="#/calendar" aria-label="Calendar">${ICON.cal}</button>
     </div>
 
-    <div class="card ring-card" style="margin-top:18px">${ring}
+    <div class="card quote" style="margin-top:16px">
+      <div class="muted small">💬 Today’s motivation</div>
+      <div class="qtext">“${esc(dailyQuote())}”</div>
+    </div>
+
+    <div class="card ring-card" style="margin-top:12px">${ring}
       <div><div class="row between" style="margin-bottom:10px"><b>This week</b><span class="muted small">${fmtDay(weekKeys[0], { day: 'numeric', month: 'short' })} – ${fmtDay(weekKeys[6], { day: 'numeric', month: 'short' })}</span></div>
       <div class="kv">
         <div><span class="dot" style="background:var(--accent)"></span>Classes<b>${doneCount} / ${total}</b></div>
@@ -767,7 +837,6 @@ function viewClass(id) {
         </div></div>`;
     }).join('')}
     </div>
-    <div style="text-align:center;margin-top:18px"><button class="link" data-act="quick" data-plan="${p.id}">Already did it? Mark as done today without logging</button></div>
     <div style="height:84px"></div>
     <div class="sticky"><div>${db.active
       ? `<button class="btn primary block" data-go="#/workout">▶ Continue current workout</button>`
@@ -781,8 +850,10 @@ function viewWorkout() {
   const p = planById(a.planId);
   return `
     <div class="wo-head"><div class="row between">
-      <div><div class="eyebrow">${esc(p.name)}</div><div class="timer" data-elapsed>${fmtDur((Date.now() - a.start) / 1000)}</div></div>
-      <div class="row"><button class="btn sm ghost danger" data-act="cancel">Cancel</button><button class="btn sm primary" data-act="finish">Finish</button></div>
+      ${isLive(a)
+        ? `<div><div class="eyebrow">${esc(p.name)}</div><div class="timer" data-elapsed>${fmtDur((Date.now() - a.start) / 1000)}</div></div>`
+        : `<div><div class="eyebrow">${a.editId ? '✏️ Editing' : '📝 Logging for'}</div><div class="display" style="font-size:20px">${esc(p.name)} · ${fmtDay(a.date)}</div></div>`}
+      <div class="row"><button class="btn sm ghost danger" data-act="cancel">Cancel</button><button class="btn sm primary" data-act="finish">${isLive(a) ? 'Finish' : 'Save'}</button></div>
     </div></div>
     <div class="stack">
     ${a.exercises.map((we, i) => {
@@ -868,13 +939,11 @@ function viewCalendar(sel) {
     <h2>${fmtDay(calSel, { weekday: 'long', day: 'numeric', month: 'long' })}${calSel === today ? ' · Today' : ''}</h2>
     <div class="stack">
       ${ss.map(s => {
+        // just the class name here; tap it for the details, Edit and Delete
         const l = look(s);
-        return `<div class="card"><div class="row between">
-            <div class="row"><span class="dot" style="background:${l.color}"></span><b class="display">${esc(l.name)}</b></div>
-            <button class="btn sm ghost danger" data-act="del-session" data-id="${s.id}">Delete</button></div>
-          <div class="muted small">${sessionSummary(s)}</div>
-          ${s.quick ? '' : `<div class="sess-detail">${s.exercises.filter(e => e.sets.length).map(e => `<div><b>${esc(exName(e.exId))}</b> <span class="muted">${e.sets.map(setText).join(', ')}</span></div>`).join('')}</div>`}
-        </div>`;
+        return `<button class="card sess-row" data-act="open-session" data-id="${s.id}">
+            <span class="dot" style="background:${l.color}"></span><b class="display">${esc(l.name)}</b>
+            ${s.quick ? '<span class="small" style="color:var(--amber)">⚠️ add details</span>' : ''}<span class="chev">›</span></button>`;
       }).join('')}
       ${pl.map(x => {
         const l = look(x);
@@ -1193,14 +1262,26 @@ function render() {
 window.addEventListener('hashchange', () => { editing = false; render(); window.scrollTo(0, 0); });
 
 // ---------- Actions ----------
-function startWorkout(planId) {
-  const p = planById(planId);
+// opts.date: log for another day (from the calendar); opts.home: Leg Day at home;
+// opts.edit: an existing session to change (its sets are filled in)
+function startWorkout(planId, opts = {}) {
+  if (db.active) { alert('Finish or cancel your current workout first.'); location.hash = '#/workout'; return; }
+  const p = planById(planId), date = opts.edit?.date || opts.date || dayKey();
+  if (p.modes && (opts.home !== undefined || opts.edit)) setMode(p, (opts.edit ? opts.edit.home : opts.home) ? 'alt' : 'main');
   const emptyRow = e => (isCardio(e) ? { m: '', v: '', i: '', done: false } : { w: '', r: '', done: false });
-  db.active = { planId, date: dayKey(), start: Date.now(), exercises: p.exercises.map(chosen).map(e => ({ exId: e.id, sets: [...Array(Math.max(1, parseInt(ex(e).sets) || 3))].map(() => emptyRow(e)) })) };
-  db.planned = db.planned.filter(x => !(x.date === dayKey() && x.planId === planId));
+  const exercises = p.exercises.map(slot => {
+    const saved = opts.edit?.exercises.find(x => slotOf(p, x.exId) === slot);
+    const e = saved ? findEx(saved.exId) : chosen(slot);
+    const sets = saved?.sets.length ? saved.sets.map(s => ({ ...s, done: true })) : [...Array(Math.max(1, parseInt(ex(e).sets) || 3))].map(() => emptyRow(e));
+    return { exId: e.id, sets };
+  });
+  db.active = { planId, date, start: opts.edit?.start || Date.now(), exercises, ...(opts.edit ? { editId: opts.edit.id } : {}) };
+  db.planned = db.planned.filter(x => !(x.date === date && x.planId === planId));
   save();
   location.hash = '#/workout';
 }
+// a workout typed in afterwards (another day, or editing) has no live timer or rest timer
+const isLive = a => !a.editId && a.date === dayKey();
 function finishWorkout() {
   const a = db.active, p = planById(a.planId);
   const exercises = a.exercises.map(e => (isCardio(findEx(e.exId))
@@ -1208,33 +1289,39 @@ function finishWorkout() {
     : { exId: e.exId, sets: e.sets.filter(s => num(s.r) > 0).map(s => ({ w: num(s.w), r: num(s.r) })) }));
   const count = exercises.reduce((n, e) => n + e.sets.length, 0);
   if (!count) {
-    if (confirm('Nothing logged yet (enter reps, or minutes for cardio).\n\nDiscard this workout?')) { db.active = null; save(); location.hash = '#/'; }
+    if (confirm('Nothing logged yet (enter reps, or minutes for cardio).\n\nDiscard this workout?')) { db.active = null; save(); location.hash = isLive(a) ? '#/' : '#/calendar/' + a.date; }
     return;
   }
+  const old = a.editId && db.sessions.find(s => s.id === a.editId);
   const cardioSets = exercises.filter(e => isCardio(findEx(e.exId))).flatMap(e => e.sets);
   // personal records: heavier than any previous top weight for that exercise
   const prs = exercises.filter(e => e.sets.length && !isCardio(findEx(e.exId))).map(e => {
     const top = Math.max(...e.sets.map(s => s.w));
-    const prevTop = Math.max(0, ...db.sessions.flatMap(s => (s.exercises || []).filter(x => x.exId === e.exId).flatMap(x => x.sets.map(y => num(y.w)))));
+    const prevTop = Math.max(0, ...db.sessions.filter(s => s.id !== a.editId).flatMap(s => (s.exercises || []).filter(x => x.exId === e.exId).flatMap(x => x.sets.map(y => num(y.w)))));
     return top > prevTop && prevTop > 0 ? `${exName(e.exId)}: ${top} ${unit()} (was ${prevTop})` : null;
   }).filter(Boolean);
   // a leg day counts as "home" when most of its swappable exercises were the home versions
   const altIds = new Set(p.exercises.filter(x => x.alt).map(x => x.alt.id));
   const home = !!p.modes && a.exercises.filter(e => altIds.has(e.exId)).length * 2 > altIds.size;
-  const s = { id: uid(), planId: a.planId, date: a.date, start: a.start, duration: Math.round((Date.now() - a.start) / 1000), exercises, ...(home ? { home } : {}) };
-  db.sessions.push(s);
+  // live workouts are timed; ones typed in afterwards keep their old time (or none)
+  const duration = isLive(a) ? Math.round((Date.now() - a.start) / 1000) : (old?.duration || 0);
+  const s = { id: old?.id || uid(), planId: a.planId, date: a.date, start: a.start, duration, exercises, ...(home ? { home } : {}) };
+  if (old) db.sessions = db.sessions.map(x => (x.id === old.id ? s : x)); // replaces it, and drops "marked as done"
+  else db.sessions.push(s);
+  const live = isLive(a);
   db.active = null;
   stopRest();
   save();
-  location.hash = '#/';
-  sheet(`<div style="text-align:center;font-size:48px">🎉</div>
-    <h1 style="text-align:center;font-size:26px">${esc(look(s).name)} done!</h1>
-    <div class="stats" style="margin-top:14px"><div class="stat"><div class="v">${fmtDur(s.duration)}</div><div class="l">Time</div></div>
+  location.hash = live ? '#/' : '#/calendar/' + s.date;
+  sheet(`<div style="text-align:center;font-size:48px">${old ? '✅' : '🎉'}</div>
+    <h1 style="text-align:center;font-size:26px">${esc(look(s).name)} ${old ? 'saved' : live ? 'done!' : `saved · ${fmtDay(s.date)}`}</h1>
+    <div class="stats" style="margin-top:14px"><div class="stat"><div class="v">${s.duration ? fmtDur(s.duration) : '–'}</div><div class="l">Time</div></div>
       ${cardioSets.length === count
         ? `<div class="stat"><div class="v">${mins(cardioSets)}</div><div class="l">Minutes</div></div>
            <div class="stat"><div class="v">${round1(km(cardioSets))}</div><div class="l">Distance (km)</div></div>`
         : `<div class="stat"><div class="v">${count}</div><div class="l">Sets</div></div>
            <div class="stat"><div class="v">${Math.round(volume(s))}</div><div class="l">Volume (${unit()})</div></div>`}</div>
+    ${old ? '' : `<div class="card quote" style="margin-top:12px"><div class="qtext" style="font-size:16px">${esc(finishMessage(s, prs))}</div></div>`}
     ${prs.length ? `<h2>New records 🏆</h2><div class="card stack small">${prs.map(x => `<div>${esc(x)}</div>`).join('')}</div>` : ''}
     <button class="btn primary block" style="margin-top:16px" data-close>Nice</button>`);
 }
@@ -1279,16 +1366,12 @@ document.addEventListener('click', e => {
     case 'start': startWorkout(b.dataset.plan); break;
     case 'toggle-edit': editing = !editing; render(); break;
     case 'mode': setMode(planById(b.dataset.plan), b.dataset.mode); save(); render(); break;
-    case 'quick': {
-      const p = planById(b.dataset.plan), home = !!p.modes && planMode(p) === 'alt';
-      if (confirm(`Mark ${home ? p.homeName : p.name} as done today?`)) {
-        db.sessions.push({ id: uid(), planId: p.id, date: dayKey(), start: Date.now(), duration: 0, exercises: [], quick: true, ...(home ? { home } : {}) });
-        save(); location.hash = '#/';
-      }
+    case 'finish': finishWorkout(); break;
+    case 'cancel': {
+      const back = isLive(a) ? '#/' : '#/calendar/' + a.date;
+      if (confirm(a.editId ? 'Discard your changes? The saved workout stays as it was.' : 'Cancel this workout? Logged sets will be lost.')) { db.active = null; stopRest(); save(); location.hash = back; }
       break;
     }
-    case 'finish': finishWorkout(); break;
-    case 'cancel': if (confirm('Cancel this workout? Logged sets will be lost.')) { db.active = null; stopRest(); save(); location.hash = '#/'; } break;
     case 'check': {
       const sets = a.exercises[row.dataset.i].sets, s = sets[row.dataset.j];
       if (isCardio(findEx(a.exercises[row.dataset.i].exId))) {
@@ -1310,7 +1393,7 @@ document.addEventListener('click', e => {
         if (!num(s.r)) { ri.focus(); return; }
       }
       s.done = !s.done; row.classList.toggle('done', s.done); save();
-      s.done ? startRest() : stopRest();
+      s.done && isLive(a) ? startRest() : stopRest();
       break;
     }
     case 'copy-prev': {
@@ -1346,11 +1429,30 @@ document.addEventListener('click', e => {
     case 'add-day': {
       const k = b.dataset.day, future = k > dayKey();
       pickClass(future ? `Plan a class · ${fmtDay(k)}` : `Add a class · ${fmtDay(k)}`, (planId, home) => {
-        const extra = home ? { home } : {};
-        if (future) db.planned.push({ id: uid(), planId, date: k, ...extra });
-        else db.sessions.push({ id: uid(), planId, date: k, start: fromKey(k).getTime(), duration: 0, exercises: [], quick: true, ...extra });
-        save(); render();
+        if (future) { db.planned.push({ id: uid(), planId, date: k, ...(home ? { home } : {}) }); save(); render(); return; }
+        // today or a past day: always log the sets (no "mark as done" without details)
+        startWorkout(planId, { date: k, home });
       });
+      break;
+    }
+    case 'open-session': {
+      const s = db.sessions.find(x => x.id === b.dataset.id), l = look(s);
+      sheet(`<h2 style="margin-top:0;display:flex;align-items:center;gap:10px"><span class="dot" style="background:${l.color}"></span>${esc(l.name)}</h2>
+        <div class="muted small">${fmtDay(s.date, { weekday: 'long', day: 'numeric', month: 'long' })}${s.quick ? '' : ` · ${sessionSummary(s)}`}</div>
+        <div class="sess-detail" style="margin-top:12px">${s.quick
+          ? '<div class="muted">No sets logged yet. Add your sets and weights so this workout counts in your progress.</div>'
+          : s.exercises.filter(e => e.sets.length).map(e => `<div><b>${esc(exName(e.exId))}</b> <span class="muted">${e.sets.map(setText).join(', ')}</span></div>`).join('')}</div>
+        <div class="stack" style="margin-top:16px">
+          <button class="btn primary block" data-act="edit-session" data-id="${s.id}">${s.quick ? '+ Add details' : '✏️ Edit'}</button>
+          <button class="btn block ghost danger" data-act="del-session" data-id="${s.id}">Delete</button>
+          <button class="btn block ghost" data-close>Close</button>
+        </div>`);
+      break;
+    }
+    case 'edit-session': {
+      const s = db.sessions.find(x => x.id === b.dataset.id);
+      document.querySelectorAll('.overlay').forEach(o => o.remove());
+      if (s) startWorkout(s.planId, { edit: s });
       break;
     }
     case 'open-plan': {
@@ -1360,7 +1462,7 @@ document.addEventListener('click', e => {
       location.hash = '#/class/' + p.id;
       break;
     }
-    case 'del-session': if (confirm('Delete this workout from your history?')) { db.sessions = db.sessions.filter(s => s.id !== b.dataset.id); save(); render(); } break;
+    case 'del-session': if (confirm('Delete this workout from your history?')) { db.sessions = db.sessions.filter(s => s.id !== b.dataset.id); document.querySelectorAll('.overlay').forEach(o => o.remove()); save(); render(); } break;
     case 'del-plan': db.planned = db.planned.filter(p => p.id !== b.dataset.id); save(); render(); break;
     case 'metric': progMetric = b.dataset.m; render(); break;
     case 'log-weight': logWeightSheet(); break;
@@ -1417,6 +1519,26 @@ document.addEventListener('change', e => {
 
 save(); // stores any migration of older data
 render();
+
+// Once a day, the first time you open the app: a greeting and today's quote. Tap to skip.
+(function splash() {
+  let seen = '';
+  try { seen = localStorage.getItem('gymtracker.splash'); localStorage.setItem('gymtracker.splash', dayKey()); } catch (e) {}
+  if (seen === dayKey() || db.active) return;
+  const name = (db.settings.name || '').trim();
+  const el = document.createElement('div');
+  el.className = 'splash';
+  el.innerHTML = `<div class="splash-in">
+      <div class="ring-av">${avatar(db.settings.avatar, 96)}</div>
+      <div class="hi" style="margin-top:18px">${greeting()}${name ? ', ' + esc(name) : ''} 👋</div>
+      <div class="qtext">“${esc(dailyQuote())}”</div>
+      <div class="muted small" style="margin-top:22px">Tap to start</div>
+    </div>`;
+  const close = () => { el.classList.add('out'); setTimeout(() => el.remove(), 350); };
+  el.addEventListener('click', close);
+  document.body.appendChild(el);
+  setTimeout(close, 2600);
+})();
 
 // ---------- Updates ----------
 function toast(text, onTap, ms = 0) {

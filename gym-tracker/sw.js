@@ -1,7 +1,7 @@
 // Offline support: keeps the app and your guide pictures on the phone.
 // Bump VERSION when you change any file so phones pick up the new version.
 // Keep the number the same as APP_VERSION.n in index.html.
-const VERSION = 'gym-v9';
+const VERSION = 'gym-v10';
 const FILES = [
   './', 'index.html', 'manifest.webmanifest',
   'icons/icon-192.png', 'icons/icon-512.png', 'icons/icon-maskable-512.png', 'icons/apple-touch-icon.png',
