@@ -333,6 +333,19 @@ nav.tabs a.on svg { filter: drop-shadow(0 0 8px rgba(47, 230, 181, .6)); }
 .wn-older summary { cursor: pointer; font-weight: 700; color: var(--accent); }
 /* Motivation: quote card and the once-a-day splash */
 .quote .qtext { font-size: 17px; font-weight: 700; line-height: 1.35; margin-top: 6px; letter-spacing: -.01em; }
+/* inputs inside a grey label still show their value in white */
+label .field, label input { color: var(--text); }
+/* Warm-up / cool-down */
+.warm-thumbs { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; margin-top: 10px; }
+.warm-thumbs .photo { height: 54px; border-radius: 10px; }
+.warm-thumbs .photo img { width: 100%; height: 100%; }
+.guide { position: fixed; inset: 0; z-index: 90; overflow: auto; background: radial-gradient(60% 40% at 15% 0%, rgba(47, 230, 181, .18), transparent 70%), var(--bg); }
+.guide-in { max-width: 520px; margin: 0 auto; padding: calc(16px + env(safe-area-inset-top, 0px)) 16px 28px; }
+.guide-bar { height: 6px; border-radius: 99px; background: rgba(255, 255, 255, .1); margin: 12px 0 14px; overflow: hidden; }
+.guide-bar i { display: block; height: 100%; background: var(--accent); border-radius: 99px; }
+.guide-pic { height: 250px; border-radius: 22px; }
+.guide-pic img { width: 100%; height: 100%; padding: 8px; }
+.guide-count { font-size: 64px; font-weight: 800; text-align: center; letter-spacing: -.03em; font-variant-numeric: tabular-nums; margin: 14px 0 6px; }
 .splash {
   position: fixed; inset: 0; z-index: 100; display: grid; place-items: center; padding: 24px; text-align: center; cursor: pointer;
   background: radial-gradient(60% 45% at 20% 10%, rgba(47, 230, 181, .22), transparent 70%), radial-gradient(55% 40% at 90% 90%, rgba(255, 122, 89, .2), transparent 70%), var(--bg);
@@ -358,9 +371,16 @@ nav.tabs a.on svg { filter: drop-shadow(0 0 8px rgba(47, 230, 181, .6)); }
 
 <script>
 // App version: shown in More. Bump `n` together with VERSION in sw.js on every update.
-const APP_VERSION = { n: 12, date: '2026-10-30' };
+const APP_VERSION = { n: 13, date: '2026-10-30' };
 // What's new, shown in Profile under the version. Add the new version at the top.
 const CHANGELOG = [
+  { n: 13, date: '2026-10-30', groups: [
+    ['🔥 Warm-up', ['Every class has its own warm-up (about 4–5 minutes), shown when you start a workout', 'Guided with a timer and a picture for each move. Skip it if you already warmed up']],
+    ['🧘 Cool-down', ['Optional stretching after you finish, matched to the muscles you trained', 'Warm-up and cool-down are marked on the workout in your calendar']],
+    ['📋 Class page', ['See each class’s warm-up and cool-down moves, and do them any time with “Do it now”']],
+    ['🏠 Home dumbbells', ['Every home workout now starts by asking which dumbbell weight you use today (filled in with last time’s weight), so the rep targets always fit']],
+    ['📳 Rest alarm', ['Your phone vibrates when the rest is over (with a short buzz at 3-2-1), plus a “next set” message', 'The screen stays on during a workout so the alarm works. Both can be turned off in Profile']],
+  ]},
   { n: 12, date: '2026-10-30', groups: [
     ['🏠 Home versions', ['Shoulder, Chest and Back Day now have a Gym / Home switch, like Leg Day', 'Every machine exercise has a home version that only needs dumbbells, a chair or sofa, and the floor', 'Pictures for all 9 new home exercises']],
     ['🏋️ Smart reps for light dumbbells', ['Tell the app your home dumbbell weight once (saved in Profile)', 'Lighter than at the gym? The target reps go up automatically, with a tip', 'Rest timer is 60 seconds at home']],
@@ -567,25 +587,33 @@ function recFor(a, e, we) {
   const adv = a.home && repAdvice(e, workingWeight(we));
   return { target: adv ? `${esc(e.sets)} × ${esc(adv.reps)}` : targetText(e), note: adv ? `💡 ${adv.note}` : '', reps: adv ? adv.reps : e.reps };
 }
-function dumbbellSheet(onDone) {
-  const o = sheet(`<h2 style="margin-top:0">🏠 Your home dumbbells</h2>
-    <div class="muted small" style="margin-bottom:12px">So the app can tell you how many reps to do when your home weights are lighter than at the gym.</div>
+// opts.start: asked right before a home workout ("which dumbbells today?"); the weight is required then
+function dumbbellSheet(onDone, opts = {}) {
+  const start = !!opts.start, step = d => `<button class="btn" data-step="${d}" style="width:56px;font-size:20px">${d > 0 ? '+' : '−'}</button>`;
+  const o = sheet(`<h2 style="margin-top:0">${start ? '🏠 Which dumbbells today?' : '🏠 Your home dumbbells'}</h2>
+    <div class="muted small" style="margin-bottom:12px">${start ? `For ${esc(opts.name)}. The app adjusts the reps to the weight you use.` : 'So the app can tell you how many reps to do when your home weights are lighter than at the gym.'}</div>
     <div class="stack">
-      <label class="small muted">Weight of your dumbbells at home (kg, each)<input class="field" id="dbHome" inputmode="decimal" value="${homeDb() || ''}" placeholder="e.g. 5" style="font-size:22px;font-weight:800"></label>
-      <label class="small muted">What you usually lift at the gym with dumbbells (kg, each)<input class="field" id="dbGym" inputmode="decimal" value="${gymDb() || ''}" placeholder="e.g. 10" style="font-size:22px;font-weight:800"></label>
-      <button class="btn primary block" id="dbSave">Save</button>
-      <button class="btn block ghost" id="dbSkip">Skip for now</button>
+      <label class="small muted">Dumbbell weight${start ? ' today' : ' at home'} (kg, each)
+        <div class="row" style="margin-top:6px">${step(-0.5)}<input class="field" id="dbHome" inputmode="decimal" value="${homeDb() || ''}" placeholder="e.g. 5" style="font-size:26px;font-weight:800;text-align:center">${step(0.5)}</div></label>
+      ${start && gymDb() ? `<div class="muted small">Usual gym weight: <b style="color:var(--text)">${gymDb()} kg</b> · change it in Profile</div>`
+        : `<label class="small muted">What you usually lift at the gym with dumbbells (kg, each)<input class="field" id="dbGym" inputmode="decimal" value="${gymDb() || ''}" placeholder="e.g. 10" style="font-size:22px;font-weight:800"></label>`}
+      <div class="small" id="dbErr" style="color:var(--amber)"></div>
+      <button class="btn primary block" id="dbSave">${start ? '▶ Start workout' : 'Save'}</button>
+      <button class="btn block ghost" ${start ? 'data-close' : 'id="dbSkip"'}>${start ? 'Cancel' : 'Skip for now'}</button>
     </div>`);
-  setTimeout(() => o.querySelector('#dbHome').focus(), 50);
+  const input = o.querySelector('#dbHome');
+  setTimeout(() => { input.focus(); input.select(); }, 50);
+  o.querySelectorAll('[data-step]').forEach(b => b.addEventListener('click', () => { input.value = Math.max(0, round1(num(input.value) + Number(b.dataset.step))) || ''; }));
   const done = () => { db.settings.dbAsked = true; save(); o.remove(); render(); onDone?.(); };
   o.querySelector('#dbSave').addEventListener('click', () => {
-    db.settings.homeDb = round1(num(o.querySelector('#dbHome').value)) || null;
-    db.settings.gymDb = round1(num(o.querySelector('#dbGym').value)) || null;
+    const w = round1(num(input.value));
+    if (start && !(w > 0)) { o.querySelector('#dbErr').textContent = 'Enter the weight of your dumbbells to start.'; input.focus(); return; }
+    db.settings.homeDb = w || null;
+    const gym = o.querySelector('#dbGym'); if (gym) db.settings.gymDb = round1(num(gym.value)) || null;
     done();
   });
-  o.querySelector('#dbSkip').addEventListener('click', done);
+  o.querySelector('#dbSkip')?.addEventListener('click', done);
 }
-const needsDumbbells = () => !homeDb() && !db.settings.dbAsked;
 // cardio rows: m = minutes, v = speed (km/h), i = incline (%)
 const km = sets => sets.reduce((a, x) => a + (x.d !== undefined ? num(x.d) : num(x.m) / 60 * num(x.v)), 0);
 const mins = sets => sets.reduce((a, x) => a + num(x.m), 0);
@@ -600,6 +628,111 @@ function sessionSummary(s) {
   return parts.join(' · ');
 }
 const coverImg = p => chosen(p.exercises[0]).img;
+
+// ---------- Warm-up & cool-down ----------
+// Each move is timed (secs) or counted (reps); `sides` means it's done once per side.
+const MOVES = {
+  'arm-circles': { name: 'Arm Circles', secs: 30, tip: 'Arms out to the sides. Small circles forward, then backward, slowly getting bigger.' },
+  'cross-body-stretch': { name: 'Cross-body Shoulder Stretch', secs: 30, sides: true, tip: 'Pull one arm across your chest with the other hand. Keep the shoulder down.' },
+  'wall-slides': { name: 'Wall Slides', reps: 10, tip: 'Back and arms against a wall. Slide your arms up and down slowly, keeping them on the wall.' },
+  'arm-swings': { name: 'Arm Swings', secs: 30, tip: 'Swing your arms open wide, then give yourself a hug. Easy and relaxed.' },
+  'doorway-stretch': { name: 'Doorway Chest Stretch', secs: 30, sides: true, tip: 'Forearm on a door frame, step forward until you feel a gentle stretch in your chest.' },
+  'incline-push-up': { name: 'Incline Push-ups', reps: 10, tip: 'Hands on a bench, chair or wall. Easy, controlled reps to wake up your chest.' },
+  'cat-cow': { name: 'Cat-Cow', reps: 10, tip: 'On hands and knees. Round your back up, then let it sink down. Move with your breath.' },
+  'thoracic-rotation': { name: 'Thoracic Rotation', reps: 8, sides: true, tip: 'On hands and knees. Reach one arm up to the ceiling and follow it with your eyes.' },
+  'hip-hinge': { name: 'Hip Hinge (no weight)', reps: 10, tip: 'Soft knees, push your hips back with a flat back, then stand up tall.' },
+  'leg-swings': { name: 'Leg Swings', reps: 10, sides: true, tip: 'Hold a wall. Swing one leg forward and back, relaxed. Then switch legs.' },
+  'hip-circles': { name: 'Hip Circles', secs: 30, tip: 'Hands on your hips, draw big slow circles. Switch direction halfway.' },
+  'bodyweight-squat': { name: 'Bodyweight Squat', reps: 15, img: 'bodyweight-squat', tip: 'Easy squats to warm up your knees and hips.' },
+  'glute-bridge': { name: 'Glute Bridge', reps: 10, img: 'glute-bridge', tip: 'Push through your heels and squeeze your glutes at the top.' },
+  'march-in-place': { name: 'March in Place', secs: 60, tip: 'Lift your knees and swing your arms. Start easy, get a bit faster.' },
+  'high-knees': { name: 'High Knees', secs: 30, tip: 'Jog on the spot, bringing your knees up to hip height.' },
+  'ankle-circles': { name: 'Ankle Circles', secs: 20, sides: true, tip: 'Lift one foot and draw circles with your toes, both directions.' },
+  'overhead-triceps-stretch': { name: 'Overhead Triceps Stretch', secs: 30, sides: true, tip: 'Hand behind your head, gently push the elbow down with your other hand.' },
+  'childs-pose': { name: 'Child’s Pose', secs: 40, tip: 'Sit back on your heels, arms stretched forward, forehead down. Breathe slowly.' },
+  'lying-twist': { name: 'Lying Twist', secs: 30, sides: true, tip: 'On your back, drop one bent knee across your body. Keep both shoulders on the floor.' },
+  'quad-stretch': { name: 'Standing Quad Stretch', secs: 30, sides: true, tip: 'Hold a wall and pull your heel to your glute. Keep your knees together.' },
+  'hamstring-stretch': { name: 'Seated Hamstring Stretch', secs: 40, tip: 'Legs straight, reach for your toes with a long back. No bouncing.' },
+  'calf-stretch': { name: 'Wall Calf Stretch', secs: 30, sides: true, tip: 'Hands on a wall, back leg straight with the heel pressed down.' },
+  'figure-four': { name: 'Figure-four Glute Stretch', secs: 30, sides: true, tip: 'On your back, ankle on the other knee. Pull the legs gently towards you.' },
+  'hip-flexor-stretch': { name: 'Hip Flexor Stretch', secs: 30, sides: true, tip: 'Half-kneeling lunge. Squeeze the glute of the back leg and shift your hips forward.' },
+};
+// what each class needs (Cardio and Running share one routine)
+const ROUTINES = {
+  shoulder: { warm: ['arm-circles', 'cross-body-stretch', 'wall-slides', 'arm-swings'], cool: ['cross-body-stretch', 'overhead-triceps-stretch', 'doorway-stretch'] },
+  chest: { warm: ['arm-swings', 'doorway-stretch', 'incline-push-up', 'arm-circles'], cool: ['doorway-stretch', 'overhead-triceps-stretch', 'childs-pose'] },
+  back: { warm: ['cat-cow', 'thoracic-rotation', 'hip-hinge', 'arm-swings'], cool: ['childs-pose', 'cat-cow', 'lying-twist'] },
+  legs: { warm: ['leg-swings', 'hip-circles', 'bodyweight-squat', 'glute-bridge'], cool: ['quad-stretch', 'hamstring-stretch', 'calf-stretch', 'figure-four'] },
+  cardio: { warm: ['march-in-place', 'high-knees', 'leg-swings', 'ankle-circles'], cool: ['quad-stretch', 'calf-stretch', 'hamstring-stretch', 'hip-flexor-stretch'] },
+};
+const routine = (planId, kind) => (ROUTINES[planById(planId).group] || ROUTINES.cardio)[kind];
+const moveImg = id => MOVES[id].img || `moves/${id}.svg`;
+// rough length in minutes (counted moves take ~3 s per rep)
+const routineMins = ids => Math.max(1, Math.round(ids.reduce((t, id) => { const m = MOVES[id]; return t + (m.secs || m.reps * 3) * (m.sides ? 2 : 1); }, 0) / 60));
+
+// The guided player: one move at a time, a countdown for timed moves, "Done" for counted ones.
+let guide = null;
+function startGuide(kind, planId, onDone) {
+  const steps = routine(planId, kind).flatMap(id => (MOVES[id].sides ? [{ id, side: 'Left side' }, { id, side: 'Right side' }] : [{ id }]));
+  guide = { kind, steps, i: 0, left: 0, paused: false, onDone, el: document.createElement('div') };
+  guide.el.className = 'guide';
+  document.body.appendChild(guide.el);
+  try { navigator.wakeLock?.request('screen').then(l => { if (guide) guide.lock = l; else l.release(); }).catch(() => {}); } catch (e) {}
+  guideStep(0);
+}
+function guideStep(i) {
+  const g = guide; g.i = i; g.paused = false;
+  if (i >= g.steps.length) return guideEnd();
+  const st = g.steps[i], m = MOVES[st.id];
+  g.left = m.secs || 0; g.until = m.secs ? Date.now() + m.secs * 1000 : 0;
+  const title = g.kind === 'warm' ? '🔥 Warm-up' : '🧘 Cool-down';
+  g.el.innerHTML = `<div class="guide-in">
+    <div class="row between"><span class="eyebrow" style="color:var(--text)">${title} · ${i + 1} / ${g.steps.length}</span><button class="round" data-g="close" aria-label="Close">✕</button></div>
+    <div class="guide-bar"><i style="width:${Math.round(i / g.steps.length * 100)}%"></i></div>
+    <div class="photo guide-pic"><img src="${src(moveImg(st.id))}" alt=""></div>
+    <div class="display" style="font-size:24px;margin-top:14px">${esc(m.name)}</div>
+    ${st.side ? `<div class="badge" style="margin-top:6px;display:inline-block">${st.side}</div>` : ''}
+    <div class="muted small" style="margin-top:8px;min-height:38px">${esc(m.tip)}</div>
+    <div class="guide-count" data-gcount>${m.secs ? fmtDur(m.secs) : `${m.reps} reps`}</div>
+    <div class="row" style="margin-top:6px">
+      ${m.secs ? `<button class="btn" style="flex:1" data-g="pause">⏸ Pause</button>` : ''}
+      <button class="btn primary" style="flex:1" data-g="next">${m.secs ? 'Next ›' : '✓ Done'}</button>
+    </div>
+    <button class="btn block ghost" style="margin-top:8px" data-g="skip">Skip ${g.kind === 'warm' ? 'warm-up' : 'cool-down'}</button>
+  </div>`;
+}
+function guideEnd() {
+  const g = guide;
+  g.el.innerHTML = `<div class="guide-in" style="text-align:center;padding-top:60px">
+    <div style="font-size:64px">${g.kind === 'warm' ? '🔥' : '🧘'}</div>
+    <div class="display" style="font-size:28px;margin-top:8px">${g.kind === 'warm' ? 'Warmed up!' : 'Nice stretch!'}</div>
+    <div class="muted" style="margin-top:6px">${g.kind === 'warm' ? 'Your muscles are ready. Let’s go 💪' : 'Your body will thank you tomorrow.'}</div>
+    <button class="btn primary block" style="margin-top:24px" data-g="finish">${g.kind === 'warm' ? '▶ Start workout' : 'Done'}</button></div>`;
+  buzz([120, 80, 120]);
+}
+function closeGuide(completed) {
+  const g = guide; if (!g) return;
+  guide = null; g.el.remove(); try { g.lock?.release(); } catch (e) {}
+  if (completed) g.onDone?.();
+}
+function guideTick() {
+  const g = guide; if (!g || g.paused || !g.until) return;
+  const left = Math.max(0, Math.ceil((g.until - Date.now()) / 1000));
+  const el = g.el.querySelector('[data-gcount]'); if (el) el.textContent = fmtDur(left);
+  if (left <= 0) { g.until = 0; buzz(150); setTimeout(() => guide === g && guideStep(g.i + 1), 600); }
+}
+setInterval(guideTick, 250);
+document.addEventListener('click', e => {
+  const b = e.target.closest('[data-g]'); if (!b || !guide) return;
+  const g = guide, act = b.dataset.g;
+  if (act === 'next') guideStep(g.i + 1);
+  else if (act === 'pause') {
+    if (g.paused) { g.paused = false; g.until = Date.now() + g.left * 1000; b.textContent = '⏸ Pause'; }
+    else { g.paused = true; g.left = Math.max(0, Math.ceil((g.until - Date.now()) / 1000)); b.textContent = '▶ Resume'; }
+  }
+  else if (act === 'skip' || act === 'close') closeGuide(false);
+  else if (act === 'finish') closeGuide(true);
+});
 
 // ---------- Motivation ----------
 const QUOTES = [
@@ -940,6 +1073,16 @@ function viewClass(id) {
         </div></div>`;
     }).join('')}
     </div>
+    ${['warm', 'cool'].map(kind => {
+      // the class's warm-up and cool-down, so you can see or do them any time
+      const ids = routine(p.id, kind);
+      return `<div class="card" style="margin-top:12px">
+        <div class="row between"><b>${kind === 'warm' ? '🔥 Warm-up' : '🧘 Cool-down'}</b><span class="muted small">~${routineMins(ids)} min · optional</span></div>
+        <div class="warm-thumbs">${ids.map(id => photo(moveImg(id))).join('')}</div>
+        <div class="muted small" style="margin-top:6px">${ids.map(id => esc(MOVES[id].name)).join(' · ')}</div>
+        <button class="btn sm" style="margin-top:10px" data-act="guide-preview" data-kind="${kind}" data-plan="${p.id}">▶ Do it now</button>
+      </div>`;
+    }).join('')}
     <div style="height:84px"></div>
     <div class="sticky"><div>${(() => {
       const startBtn = `<button class="btn primary block" data-act="start" data-plan="${p.id}">▶ Start ${esc(p.modes && mode === 'alt' ? p.homeName : p.name)}</button>`;
@@ -965,6 +1108,17 @@ function viewWorkout() {
         : `<div><div class="eyebrow">${a.editId ? '✏️ Editing' : '📝 Logging for'}</div><div class="display" style="font-size:20px">${esc(p.name)} · ${fmtDay(a.date)}</div></div>`}
       <div class="row"><button class="btn sm ghost danger" data-act="cancel">Cancel</button><button class="btn sm primary" data-act="finish">${isLive(a) ? 'Finish' : 'Save'}</button></div>
     </div></div>
+    ${isLive(a) ? (() => {
+      // optional warm-up at the start; skip it if you already warmed up
+      if (a.warm === 'done') return `<div class="muted small" style="margin:0 0 10px">🔥 Warm-up done ✓</div>`;
+      if (a.warm === 'skipped') return '';
+      const ids = routine(a.planId, 'warm');
+      return `<div class="card warm-card" style="margin-bottom:12px">
+        <div class="row between"><b>🔥 Warm-up first?</b><span class="muted small">~${routineMins(ids)} min · ${ids.length} moves</span></div>
+        <div class="warm-thumbs">${ids.map(id => photo(moveImg(id))).join('')}</div>
+        <div class="row" style="margin-top:10px"><button class="btn primary" style="flex:1" data-act="warm-start">▶ Start warm-up</button><button class="btn" data-act="warm-skip">Skip</button></div>
+      </div>`;
+    })() : ''}
     <div class="stack">
     ${a.exercises.map((we, i) => {
       const slot = slotOf(p, we.exId), e = ex(slot.alt?.id === we.exId ? slot.alt : slot), prev = lastSetsFor(e.id) || [];
@@ -1362,6 +1516,9 @@ function viewMore() {
         <div class="seg" style="width:140px">${['kg', 'lb'].map(u => `<button class="${unit() === u ? 'on' : ''}" data-act="unit" data-u="${u}">${u}</button>`).join('')}</div></div>
       <div class="row between"><span>Rest timer after each set</span>
         <select class="field" style="width:120px" data-act="rest-set">${[0, 60, 90, 120, 180].map(s => `<option value="${s}" ${db.settings.rest === s ? 'selected' : ''}>${s ? fmtDur(s) : 'Off'}</option>`).join('')}</select></div>
+      ${[['vibrate', 'Vibrate when rest is over'], ['keepAwake', 'Keep screen on during workouts']].map(([k, label]) => `<div class="row between"><span>${label}</span>
+        <div class="seg" style="width:140px">${[[true, 'On'], [false, 'Off']].map(([v, l]) => `<button class="${(db.settings[k] !== false) === v ? 'on' : ''}" data-act="toggle-setting" data-k="${k}" data-v="${v}">${l}</button>`).join('')}</div></div>`).join('')}
+      <div class="muted small">Phones only vibrate while the screen is on and the app is open, so keep “screen on” turned on for the rest alarm.</div>
     </div>
     <h2>Backup</h2>
     <div class="card stack">
@@ -1410,18 +1567,19 @@ window.addEventListener('hashchange', () => { editing = false; render(); window.
 // opts.date: log for another day (from the calendar); opts.home: Leg Day at home;
 // opts.edit: an existing session to change (its sets are filled in)
 function startWorkout(planId, opts = {}) {
+  // the same class is already open: just go back to it
+  if (db.active && db.active.planId === planId && !opts.edit && !opts.date) { location.hash = '#/workout'; return; }
+  const p = planById(planId), date = opts.edit?.date || opts.date || dayKey();
+  if (p.modes && (opts.home !== undefined || opts.edit)) setMode(p, (opts.edit ? opts.edit.home : opts.home) ? 'alt' : 'main');
+  const home = !!p.modes && planMode(p) === 'alt';
+  // home workouts always use dumbbells: ask which weight you use today, every time, before starting
+  // (asked before anything else, so Cancel leaves an unfinished workout untouched)
+  if (home && !opts.edit && !opts.dbOk) { dumbbellSheet(() => startWorkout(planId, { ...opts, dbOk: true }), { start: true, name: p.homeName }); return; }
   if (db.active) {
-    // the same class is already open: just go back to it
-    if (db.active.planId === planId && !opts.edit && !opts.date) { location.hash = '#/workout'; return; }
     const other = planById(db.active.planId).name;
     if (!confirm(`Your ${other} workout isn’t finished.\n\nDiscard it and start ${planById(planId).name}?`)) { location.hash = '#/workout'; return; }
     db.active = null; stopRest();
   }
-  const p = planById(planId), date = opts.edit?.date || opts.date || dayKey();
-  if (p.modes && (opts.home !== undefined || opts.edit)) setMode(p, (opts.edit ? opts.edit.home : opts.home) ? 'alt' : 'main');
-  const home = !!p.modes && planMode(p) === 'alt';
-  // first home workout: ask which dumbbells you have, then start
-  if (home && !opts.edit && needsDumbbells()) { dumbbellSheet(() => startWorkout(planId, opts)); return; }
   const emptyRow = e => (isRun(e) ? { d: '', m: '', done: false } : isCardio(e) ? { m: '', v: '', i: '', done: false } : { w: '', r: '', done: false });
   const exercises = p.exercises.map(slot => {
     const saved = opts.edit?.exercises.find(x => slotOf(p, x.exId) === slot);
@@ -1461,7 +1619,8 @@ function finishWorkout() {
   const home = !!p.modes && a.exercises.filter(e => altIds.has(e.exId)).length * 2 > altIds.size;
   // live workouts are timed; ones typed in afterwards keep their old time (or none)
   const duration = isLive(a) ? Math.round((Date.now() - a.start) / 1000) : (old?.duration || 0);
-  const s = { id: old?.id || uid(), planId: a.planId, date: a.date, start: a.start, duration, exercises, ...(home ? { home } : {}) };
+  const s = { id: old?.id || uid(), planId: a.planId, date: a.date, start: a.start, duration, exercises, ...(home ? { home } : {}),
+    ...(a.warm === 'done' || old?.warmup ? { warmup: true } : {}), ...(old?.cooldown ? { cooldown: true } : {}) };
   if (old) db.sessions = db.sessions.map(x => (x.id === old.id ? s : x)); // replaces it, and drops "marked as done"
   else db.sessions.push(s);
   const live = isLive(a);
@@ -1479,23 +1638,46 @@ function finishWorkout() {
            <div class="stat"><div class="v">${Math.round(volume(s))}</div><div class="l">Volume (${unit()})</div></div>`}</div>
     ${old ? '' : `<div class="card quote" style="margin-top:12px"><div class="qtext" style="font-size:16px">${esc(finishMessage(s, prs))}</div></div>`}
     ${prs.length ? `<h2>New records 🏆</h2><div class="card stack small">${prs.map(x => `<div>${esc(x)}</div>`).join('')}</div>` : ''}
-    <button class="btn primary block" style="margin-top:16px" data-close>Nice</button>`);
+    ${live ? `<button class="btn block" style="margin-top:16px" data-act="cool-start" data-id="${s.id}">🧘 Cool-down stretch · ~${routineMins(routine(s.planId, 'cool'))} min</button>` : ''}
+    <button class="btn primary block" style="margin-top:${live ? 10 : 16}px" data-close>Nice</button>`);
 }
 
 let restEnd = 0;
 // at home, rest is 60 seconds (lighter weights, keep the muscles working)
 function startRest() { const secs = db.active?.home ? Math.min(60, db.settings.rest) : db.settings.rest; if (secs) { restEnd = Date.now() + secs * 1000; tick(); } }
-function stopRest() { restEnd = 0; $('#rest').classList.remove('on'); }
+function stopRest() { restEnd = 0; lastBuzz = 0; $('#rest').classList.remove('on'); }
+// phone vibration (can be turned off in Profile)
+const buzz = pattern => { if (db.settings.vibrate === false) return; try { navigator.vibrate?.(pattern); } catch (e) {} };
+let lastBuzz = 0;
 function tick() {
   const el = $('[data-elapsed]');
   if (el && db.active) el.textContent = fmtDur((Date.now() - db.active.start) / 1000);
   if (restEnd) {
-    const left = (restEnd - Date.now()) / 1000;
-    if (left <= 0) { stopRest(); try { navigator.vibrate?.([200, 100, 200]); } catch (e) {} }
-    else { $('#rest').classList.add('on'); $('#restLeft').textContent = fmtDur(Math.ceil(left)); }
+    const left = Math.ceil((restEnd - Date.now()) / 1000);
+    if (left <= 0) {
+      // rest is over: 3 strong buzzes and a message
+      stopRest(); buzz([500, 150, 500, 150, 500]);
+      toast('⏰ Rest is over · next set!', null, 4000);
+    } else {
+      $('#rest').classList.add('on'); $('#restLeft').textContent = fmtDur(left);
+      if (left <= 3 && left !== lastBuzz) { lastBuzz = left; buzz(90); } // short buzz at 3, 2, 1
+    }
   }
 }
-setInterval(tick, 1000);
+setInterval(tick, 250);
+
+// Keep the screen on during a workout: phones only vibrate (and keep the timer going) while the screen is on.
+let wakeLock = null;
+async function syncWakeLock() {
+  const want = db.settings.keepAwake !== false && !!db.active && isLive(db.active) && location.hash.startsWith('#/workout') && document.visibilityState === 'visible';
+  try {
+    if (want && !wakeLock) { wakeLock = await navigator.wakeLock?.request('screen') || null; wakeLock?.addEventListener('release', () => { wakeLock = null; }); }
+    else if (!want && wakeLock) { const l = wakeLock; wakeLock = null; await l.release(); }
+  } catch (e) { wakeLock = null; }
+}
+window.addEventListener('hashchange', syncWakeLock);
+document.addEventListener('visibilitychange', syncWakeLock); // the phone drops the lock when you leave the app: take it again when you come back
+document.addEventListener('click', () => { if (!wakeLock) syncWakeLock(); }); // if the phone refused once, try again on the next tap
 
 document.addEventListener('click', e => {
   const vid = e.target.closest('[data-video]');
@@ -1524,9 +1706,12 @@ document.addEventListener('click', e => {
     case 'toggle-edit': editing = !editing; render(); break;
     case 'mode':
       setMode(planById(b.dataset.plan), b.dataset.mode); save(); render();
-      if (b.dataset.mode === 'alt' && needsDumbbells()) dumbbellSheet(); // first time at home: ask about your dumbbells
       break;
     case 'set-dumbbells': dumbbellSheet(); break;
+    case 'toggle-setting':
+      db.settings[b.dataset.k] = b.dataset.v === 'true'; save(); render(); syncWakeLock();
+      if (b.dataset.k === 'vibrate' && b.dataset.v === 'true') buzz([200, 100, 200]); // a test buzz so you know it works
+      break;
     case 'finish': finishWorkout(); break;
     case 'cancel': {
       const back = isLive(a) ? '#/' : '#/calendar/' + a.date;
@@ -1597,10 +1782,20 @@ document.addEventListener('click', e => {
       });
       break;
     }
+    case 'warm-start': startGuide('warm', a.planId, () => { if (db.active) { db.active.warm = 'done'; save(); render(); } }); break;
+    case 'warm-skip': a.warm = 'skipped'; save(); render(); break;
+    case 'cool-start': {
+      const id = b.dataset.id, s = db.sessions.find(x => x.id === id);
+      document.querySelectorAll('.overlay').forEach(o => o.remove());
+      if (s) startGuide('cool', s.planId, () => { const x = db.sessions.find(y => y.id === id); if (x) { x.cooldown = true; save(); render(); toast('🧘 Cool-down saved. Great job!', null, 3000); } });
+      break;
+    }
+    case 'guide-preview': startGuide(b.dataset.kind, b.dataset.plan); break;
     case 'open-session': {
       const s = db.sessions.find(x => x.id === b.dataset.id), l = look(s);
       sheet(`<h2 style="margin-top:0;display:flex;align-items:center;gap:10px"><span class="dot" style="background:${l.color}"></span>${esc(l.name)}</h2>
         <div class="muted small">${fmtDay(s.date, { weekday: 'long', day: 'numeric', month: 'long' })}${s.quick ? '' : ` · ${sessionSummary(s)}`}</div>
+        ${s.warmup || s.cooldown ? `<div class="small" style="margin-top:4px">${[s.warmup && '🔥 Warm-up ✓', s.cooldown && '🧘 Cool-down ✓'].filter(Boolean).join(' · ')}</div>` : ''}
         <div class="sess-detail" style="margin-top:12px">${s.quick
           ? '<div class="muted">No sets logged yet. Add your sets and weights so this workout counts in your progress.</div>'
           : s.exercises.filter(e => e.sets.length).map(e => `<div><b>${esc(exName(e.exId))}</b> <span class="muted">${e.sets.map(setText).join(', ')}</span></div>`).join('')}</div>
@@ -1693,6 +1888,7 @@ document.addEventListener('change', e => {
 
 save(); // stores any migration of older data
 render();
+syncWakeLock(); // opened straight into a running workout: keep the screen on
 
 // Once a day, the first time you open the app: a greeting and today's quote. Tap to skip.
 (function splash() {

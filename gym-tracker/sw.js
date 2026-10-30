@@ -1,19 +1,19 @@
 // Offline support: keeps the app and your guide pictures on the phone.
 // Bump VERSION when you change any file so phones pick up the new version (bug fixes: 11.1, 11.2…).
 // Keep the number the same as APP_VERSION.n in index.html.
-const VERSION = 'gym-v12';
+const VERSION = 'gym-v13';
 const FILES = [
   './', 'index.html', 'manifest.webmanifest',
   'icons/icon-192.png', 'icons/icon-512.png', 'icons/icon-maskable-512.png', 'icons/apple-touch-icon.png',
+  // guide pictures still in use (the others were replaced by the -3d.webp versions below)
   ...[
-    'shoulder-press-machine', 'lateral-raise-machine', 'dumbbell-lateral-raise', 'seated-front-raise', 'face-pull', 'hammer-curl',
-    'chest-press-machine', 'pec-deck-fly', 'hammer-curl-2', 'ab-crunch-machine',
-    'lat-pulldown', 'seated-cable-row', 'deadlift', 'triceps-pushdown',
+    'lateral-raise-machine', 'dumbbell-lateral-raise', 'seated-front-raise', 'ab-crunch-machine',
+    'deadlift', 'triceps-pushdown',
     'barbell-squat', 'leg-extension', 'lying-leg-curl', 'leg-press',
     'bodyweight-squat', 'bulgarian-split-squat', 'single-leg-rdl', 'glute-bridge', 'calf-raise',
   ].map(n => `images/${n}.jpg`),
-  'images/treadmill-photo.jpg',
   'images/outdoor-run.svg',
+  ...['arm-circles', 'cross-body-stretch', 'wall-slides', 'arm-swings', 'doorway-stretch', 'incline-push-up', 'cat-cow', 'thoracic-rotation', 'hip-hinge', 'leg-swings', 'hip-circles', 'march-in-place', 'high-knees', 'ankle-circles', 'overhead-triceps-stretch', 'childs-pose', 'lying-twist', 'quad-stretch', 'hamstring-stretch', 'calf-stretch', 'figure-four', 'hip-flexor-stretch'].map(n => `images/moves/${n}.svg`),
   ...['pec-deck-fly', 'chest-press-machine', 'hammer-curl', 'face-pull', 'seated-cable-row', 'lat-pulldown', 'treadmill'].map(n => `images/${n}-3d.webp`),
   'images/lat-pulldown/lat-pulldown.mp4', 'images/treadmill/treadmill.mp4',
   ...['seated-dumbbell-press', 'dumbbell-reverse-fly', 'push-up', 'dumbbell-floor-fly', 'floor-crunch', 'dumbbell-pullover', 'one-arm-dumbbell-row', 'dumbbell-rdl', 'chair-dips'].map(n => `images/home/${n}.svg`),
