@@ -333,6 +333,23 @@ nav.tabs a.on svg { filter: drop-shadow(0 0 8px rgba(47, 230, 181, .6)); }
 .wn-older summary { cursor: pointer; font-weight: 700; color: var(--accent); }
 /* Motivation: quote card and the once-a-day splash */
 .quote .qtext { font-size: 17px; font-weight: 700; line-height: 1.35; margin-top: 6px; letter-spacing: -.01em; }
+/* Badges */
+.badges { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.badge-c { border-radius: 18px; padding: 12px 8px; text-align: center; background: rgba(255, 255, 255, .04); border: 1px solid var(--glass-line); }
+.badge-c .be { font-size: 34px; line-height: 1.1; filter: grayscale(1); opacity: .35; }
+.badge-c b { display: block; font-size: 13px; margin-top: 6px; }
+.badge-c .small { font-size: 11px; line-height: 1.3; }
+.badge-c.on { background: linear-gradient(160deg, rgba(47, 230, 181, .16), rgba(255, 255, 255, .05)); border-color: rgba(47, 230, 181, .35); }
+.badge-c.on .be { filter: none; opacity: 1; }
+.bprog { height: 5px; border-radius: 99px; background: rgba(255, 255, 255, .1); margin: 6px 4px 3px; overflow: hidden; }
+.bprog i { display: block; height: 100%; background: var(--accent); }
+/* Body scans */
+.scan-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.scan-grid .field { margin-top: 4px; }
+.scan-grid .field.warn { border-color: var(--amber); background: rgba(255, 181, 71, .08); }
+.scan-vals { display: grid; grid-template-columns: 1fr 1fr; gap: 8px 14px; }
+.scan-vals div { display: flex; flex-direction: column; }
+.parts { display: grid; grid-template-columns: 1.3fr 1fr 1fr; gap: 6px 10px; align-items: center; font-size: 14px; }
 /* Stats: class balance bars and the exercise list */
 .bal-row { display: grid; grid-template-columns: 96px 1fr 26px; align-items: center; gap: 10px; width: 100%; background: none; border: 0; padding: 2px 0; color: inherit; font: inherit; text-align: left; cursor: pointer; }
 .bal-name { display: inline-flex; align-items: center; gap: 7px; font-weight: 700; font-size: 14px; white-space: nowrap; overflow: hidden; }
@@ -385,9 +402,14 @@ label .field, label input { color: var(--text); }
 
 <script>
 // App version: shown in More. Bump `n` together with VERSION in sw.js on every update.
-const APP_VERSION = { n: 14, date: '2026-10-30' };
+const APP_VERSION = { n: 15, date: '2026-10-31' };
 // What's new, shown in Profile under the version. Add the new version at the top.
 const CHANGELOG = [
+  { n: 15, date: '2026-10-31', groups: [
+    ['🏅 Badges', ['24 badges to unlock: streaks, workout milestones, records, total weight lifted, home workouts, running distances and more', 'See them all in Profile, with your progress on the ones still locked', 'Your past workouts count, and new badges are celebrated when you finish a workout']],
+    ['🧍 Body scans', ['Upload your FitScan result screenshot: the app reads the numbers and the date, you check them and save', 'Stats → Body shows body fat, muscle, BMR, body age and more, with arrows vs your last scan and charts over time', 'Muscle and fat per body part, and the scan’s weight goes into your weight log', 'A picture that isn’t a FitScan result is caught with a clear message, and numbers that look misread are marked in orange to check']],
+    ['⌚ Clearer time for runs and treadmill', ['“Min” is now “Time”, typed and shown like a watch: 27:30 (or 1:05:20 for long runs)', 'You can type 27:30, 27.30 or 2730, and the app tidies it to 27:30', 'All your old runs show their time as mm:ss too']],
+  ]},
   { n: 14, date: '2026-10-30', groups: [
     ['📊 New Stats overview', ['Workouts per week for the last 12 weeks, with your week goal', 'Class balance for the last 30 days, with a ⚠️ on classes you’re skipping', 'Your recent records 🏆 across all exercises', 'Time and sets this month, and your week streak']],
     ['💪 Exercises list', ['Every exercise you trained in one list, most trained first, with a mini chart and how much you improved', 'Tap one for its full chart and history']],
@@ -505,7 +527,7 @@ const COLOR = id => `var(--c-${id})`;
 // ---------- Storage ----------
 const KEY = 'gymtracker.v1';
 // weights: your body weight log, one entry per day [{ date, w }]
-const blank = () => ({ sessions: [], planned: [], weights: [], overrides: {}, settings: { unit: 'kg', rest: 90, useAlt: {}, goalWeight: null, heightCm: null }, active: null });
+const blank = () => ({ sessions: [], planned: [], weights: [], scans: [], badges: {}, overrides: {}, settings: { unit: 'kg', rest: 90, useAlt: {}, goalWeight: null, heightCm: null }, active: null });
 let db = load();
 function load() {
   try {
@@ -520,6 +542,8 @@ function migrate(d) {
   d.sessions.forEach(fix); d.planned.forEach(fix); fix(d.active);
   d.settings.useAlt = d.settings.useAlt || {};
   d.weights = d.weights || [];
+  d.scans = d.scans || [];
+  d.badges = d.badges || {}; // badge id → day you earned it
   return d;
 }
 function save() {
@@ -572,7 +596,7 @@ function lastSetsFor(exId) {
     .sort((a, b) => b.date.localeCompare(a.date) || b.start - a.start)[0];
   return s ? s.exercises.find(e => e.exId === exId).sets : null;
 }
-const setText = s => (s.d !== undefined ? `${s.d} km · ${s.m} min${paceOf(s) ? ` · ${fmtPace(paceOf(s))}/km` : ''}` : s.m !== undefined ? `${s.m} min${num(s.v) ? ` @ ${s.v} km/h` : ''}${num(s.i) ? ` · ${s.i}%` : ''}` : num(s.w) ? `${s.w}×${s.r}` : `${s.r} reps`);
+const setText = s => (s.d !== undefined ? `${s.d} km · ${fmtTime(s.m) || '–'}${paceOf(s) ? ` · ${fmtPace(paceOf(s))}/km` : ''}` : s.m !== undefined ? `${fmtTime(s.m) || '–'}${num(s.v) ? ` @ ${s.v} km/h` : ''}${num(s.i) ? ` · ${s.i}%` : ''}` : num(s.w) ? `${s.w}×${s.r}` : `${s.r} reps`);
 // guide pictures are .jpg; drawn ones (like the treadmill) give their own extension
 const src = img => `images/${img.includes('.') ? img : img + '.jpg'}`;
 // tapping a picture shows it bigger, or plays its tutorial video when the exercise has one
@@ -582,7 +606,27 @@ const photo = (img, cls = '', zoom = false, video = '') => `<div class="photo ${
 const isCardio = e => e.type === 'cardio' || e.type === 'run';
 const isRun = e => e.type === 'run';
 // run rows: d = distance (km), m = minutes. Pace = minutes per km, shown as 5:30
-const paceOf = x => (num(x.d) > 0 && num(x.m) > 0 ? num(x.m) / num(x.d) : 0);
+// Time (runs, treadmill) is stored in minutes but typed and shown like a watch: 27:30 or 1:05:20.
+// Also accepted: 27 (minutes), 27.30 / 27,30 (two digits after the dot = seconds), 27.5 (decimal minutes).
+function parseTime(v) {
+  if (typeof v === 'number') return v;
+  const t = String(v ?? '').trim(); if (!t) return 0;
+  if (t.includes(':')) { const p = t.split(':').map(Number); if (p.some(n => !isFinite(n))) return 0; return p.length === 3 ? p[0] * 60 + p[1] + p[2] / 60 : p[0] + p[1] / 60; }
+  const m = t.match(/^(\d+)[.,](\d{2})$/);
+  if (m && Number(m[2]) < 60) return Number(m[1]) + Number(m[2]) / 60;
+  // only digits, 3+ long: 2730 → 27:30, 10520 → 1:05:20 (handy on a number keypad)
+  const d = t.match(/^(\d{1,2}?)(\d{1,2})(\d{2})$/) && t.length >= 5 ? t.match(/^(\d+)(\d{2})(\d{2})$/) : null;
+  if (d && Number(d[2]) < 60 && Number(d[3]) < 60) return Number(d[1]) * 60 + Number(d[2]) + Number(d[3]) / 60;
+  const ms = t.match(/^(\d{1,2})(\d{2})$/);
+  if (ms && Number(ms[2]) < 60) return Number(ms[1]) + Number(ms[2]) / 60;
+  return num(t);
+}
+function fmtTime(min) {
+  const total = Math.round(parseTime(min) * 60); if (!total) return '';
+  const h = Math.floor(total / 3600), m = Math.floor(total / 60) % 60, s = total % 60;
+  return h ? `${h}:${pad(m)}:${pad(s)}` : `${m}:${pad(s)}`;
+}
+const paceOf = x => (num(x.d) > 0 && parseTime(x.m) > 0 ? parseTime(x.m) / num(x.d) : 0);
 const fmtPace = p => { if (!p) return '–'; let mm = Math.floor(p), ss = Math.round((p - mm) * 60); if (ss === 60) { mm++; ss = 0; } return `${mm}:${pad(ss)}`; };
 const exCount = p => `${p.exercises.length} exercise${p.exercises.length === 1 ? '' : 's'}`;
 const findEx = id => { for (const p of PLANS) for (const e of withAlts(p.exercises)) if (e.id === id) return e; };
@@ -634,14 +678,14 @@ function dumbbellSheet(onDone, opts = {}) {
   o.querySelector('#dbSkip')?.addEventListener('click', done);
 }
 // cardio rows: m = minutes, v = speed (km/h), i = incline (%)
-const km = sets => sets.reduce((a, x) => a + (x.d !== undefined ? num(x.d) : num(x.m) / 60 * num(x.v)), 0);
-const mins = sets => sets.reduce((a, x) => a + num(x.m), 0);
+const km = sets => sets.reduce((a, x) => a + (x.d !== undefined ? num(x.d) : parseTime(x.m) / 60 * num(x.v)), 0);
+const mins = sets => sets.reduce((a, x) => a + parseTime(x.m), 0);
 const round1 = n => Math.round(n * 10) / 10;
 function sessionSummary(s) {
   if (s.quick) return 'Marked as done (no sets logged)';
   const cardio = s.exercises.filter(e => isCardio(findEx(e.exId) || {})).flatMap(e => e.sets);
   const parts = s.duration ? [fmtDur(s.duration)] : [];
-  if (cardio.length) parts.push(`${mins(cardio)} min`, `${round1(km(cardio))} km`);
+  if (cardio.length) parts.push(fmtTime(mins(cardio)), `${round1(km(cardio))} km`);
   const strength = s.exercises.reduce((n, e) => n + e.sets.length, 0) - cardio.length;
   if (strength) parts.push(`${strength} set${strength === 1 ? '' : 's'}`, `${Math.round(volume(s))} ${unit()} volume`);
   return parts.join(' · ');
@@ -1147,33 +1191,33 @@ function viewWorkout() {
           <div style="flex:1"><div class="name">${esc(e.name)}</div><div class="small muted">Target <span class="target" data-rec="${i}">${recFor(a, e, we).target}</span></div>
             <div class="small" data-recnote="${i}" style="color:var(--amber)">${recFor(a, e, we).note}</div></div></div>
         ${isRun(e) ? `<div class="sets cardio">
-          <div class="hdr"><span style="text-align:center">#</span><span>Previous</span><span style="text-align:center">km</span><span style="text-align:center">Min</span><span style="text-align:center">Pace</span><span></span></div>
+          <div class="hdr"><span style="text-align:center">#</span><span>Previous</span><span style="text-align:center">km</span><span style="text-align:center">Time</span><span style="text-align:center">Pace</span><span></span></div>
           ${we.sets.map((s, j) => {
             const pv = prev[j];
             return `<div class="setrow ${s.done ? 'done' : ''}" data-i="${i}" data-j="${j}">
               <span class="sn">${j + 1}</span>
-              <button class="prev" data-act="copy-prev" ${pv ? '' : 'disabled'}>${pv ? `${esc(pv.d)} km · ${esc(pv.m)}′` : '—'}</button>
+              <button class="prev" data-act="copy-prev" ${pv ? '' : 'disabled'}>${pv ? `${esc(pv.d)} km · ${fmtTime(pv.m)}` : '—'}</button>
               <input inputmode="decimal" data-f="d" value="${esc(s.d)}" placeholder="${pv ? esc(pv.d) : esc(String(e.reps).match(/\d+/)?.[0] || '')}">
-              <input inputmode="decimal" data-f="m" value="${esc(s.m)}" placeholder="${pv ? esc(pv.m) : ''}">
+              <input inputmode="decimal" data-f="m" data-time value="${esc(fmtTime(s.m))}" placeholder="${pv ? fmtTime(pv.m) : '25:00'}">
               <span class="pace" style="text-align:center;font-weight:800;font-variant-numeric:tabular-nums">${fmtPace(paceOf(s))}</span>
               <button class="chk" data-act="check">✓</button>
             </div>`;
           }).join('')}
-          ${km(we.sets) ? `<div class="small muted" style="margin-top:6px">Total: <b style="color:var(--text)">${round1(km(we.sets))} km · ${mins(we.sets)} min${mins(we.sets) ? ` · ${fmtPace(mins(we.sets) / km(we.sets))}/km` : ''}</b></div>` : ''}
+          <div class="small muted" style="margin-top:6px">${km(we.sets) ? `Total: <b style="color:var(--text)">${round1(km(we.sets))} km · ${fmtTime(mins(we.sets)) || '–'}${mins(we.sets) ? ` · ${fmtPace(mins(we.sets) / km(we.sets))}/km` : ''}</b>` : '⌚ Type distance and time from your watch, like <b style="color:var(--text)">5</b> km and <b style="color:var(--text)">27:30</b>'}</div>
         </div>` : isCardio(e) ? `<div class="sets cardio">
-          <div class="hdr"><span style="text-align:center">#</span><span>Previous</span><span style="text-align:center">Min</span><span style="text-align:center">km/h</span><span style="text-align:center">Incl %</span><span></span></div>
+          <div class="hdr"><span style="text-align:center">#</span><span>Previous</span><span style="text-align:center">Time</span><span style="text-align:center">km/h</span><span style="text-align:center">Incl %</span><span></span></div>
           ${we.sets.map((s, j) => {
             const pv = prev[j];
             return `<div class="setrow ${s.done ? 'done' : ''}" data-i="${i}" data-j="${j}">
               <span class="sn">${j + 1}</span>
-              <button class="prev" data-act="copy-prev" ${pv ? '' : 'disabled'}>${pv ? `${esc(pv.m)}′${num(pv.v) ? ` @${esc(pv.v)}` : ''}` : '—'}</button>
-              <input inputmode="decimal" data-f="m" value="${esc(s.m)}" placeholder="${pv ? esc(pv.m) : esc(String(e.reps).match(/\d+/)?.[0] || '')}">
+              <button class="prev" data-act="copy-prev" ${pv ? '' : 'disabled'}>${pv ? `${fmtTime(pv.m)}${num(pv.v) ? ` @${esc(pv.v)}` : ''}` : '—'}</button>
+              <input inputmode="decimal" data-f="m" data-time value="${esc(fmtTime(s.m))}" placeholder="${pv ? fmtTime(pv.m) : fmtTime(Number(String(e.reps).match(/\d+/)?.[0] || 20))}">
               <input inputmode="decimal" data-f="v" value="${esc(s.v)}" placeholder="${pv ? esc(pv.v || '') : ''}">
               <input inputmode="decimal" data-f="i" value="${esc(s.i)}" placeholder="${pv ? esc(pv.i || '') : '0'}">
               <button class="chk" data-act="check">✓</button>
             </div>`;
           }).join('')}
-          ${mins(we.sets) ? `<div class="small muted" style="margin-top:6px">Total: <b style="color:var(--text)">${mins(we.sets)} min · ${round1(km(we.sets))} km</b></div>` : ''}
+          <div class="small muted" style="margin-top:6px">${mins(we.sets) ? `Total: <b style="color:var(--text)">${fmtTime(mins(we.sets))} · ${round1(km(we.sets))} km</b>` : '⌚ Time as minutes:seconds, like <b style="color:var(--text)">20:00</b>'}</div>
         </div>` : `<div class="sets">
           <div class="hdr"><span style="text-align:center">Set</span><span>Previous</span><span style="text-align:center">${unit()}</span><span style="text-align:center">Reps</span><span></span></div>
           ${we.sets.map((s, j) => {
@@ -1271,7 +1315,7 @@ let progEx = null, progMetric = 'top';
 const statsTabs = on => `<div class="seg glass" style="margin-top:14px">
     <button class="${on === 'overview' ? 'on' : ''}" data-go="#/progress">📊 Overview</button>
     <button class="${on === 'ex' ? 'on' : ''}" data-go="#/progress/ex">💪 Exercises</button>
-    <button class="${on === 'weight' ? 'on' : ''}" data-go="#/progress/weight">⚖️ Weight</button></div>`;
+    <button class="${on === 'weight' ? 'on' : ''}" data-go="#/progress/weight">🧍 Body</button></div>`;
 const loggedExIds = () => [...new Set(db.sessions.flatMap(s => (s.exercises || []).filter(e => e.sets.length).map(e => e.exId)))];
 
 // one point per session for an exercise, with every number we can chart
@@ -1302,13 +1346,14 @@ function exPoints(exId) {
 // which numbers make sense for an exercise (the first one is what the list shows)
 function exMetrics(exId, pts) {
   const e = findEx(exId) || {};
-  if (isRun(e)) return [['km', 'Distance'], ['min', 'Minutes'], ['pace', 'Pace']];
-  if (isCardio(e)) return [['min', 'Minutes'], ['km', 'Distance'], ['speed', 'Top speed']];
+  if (isRun(e)) return [['km', 'Distance'], ['min', 'Time'], ['pace', 'Pace']];
+  if (isCardio(e)) return [['min', 'Time'], ['km', 'Distance'], ['speed', 'Top speed']];
   if (pts.length && pts.every(p => p.top === 0)) return [['maxReps', 'Best set'], ['reps', 'Total reps']];
   return [['top', 'Top weight'], ['e1rm', 'Est. 1RM'], ['vol', 'Volume'], ['reps', 'Total reps']];
 }
-const metricUnit = k => ({ reps: 'reps', maxReps: 'reps', min: 'min', km: 'km', speed: 'km/h', pace: '/km' }[k] || unit());
-const metricText = (k, v) => (k === 'pace' ? fmtPace(v) : `${round1(v)}`);
+const UNITS = { reps: 'reps', maxReps: 'reps', min: '', km: 'km', speed: 'km/h', pace: '/km' };
+const metricUnit = k => (k in UNITS ? UNITS[k] : unit()); // time (min) has no unit: it shows as 27:30
+const metricText = (k, v) => (k === 'pace' ? fmtPace(v) : k === 'min' ? fmtTime(v) || '0:00' : `${round1(v)}`);
 
 // personal records over time: a new heaviest weight, more reps (bodyweight), a longer or faster run
 function findRecords() {
@@ -1334,7 +1379,7 @@ function findRecords() {
   return out.reverse();
 }
 function recordText(r) {
-  const u = metricUnit(r.kind), diff = r.kind === 'pace' ? `−${fmtPace(r.prev - r.val)}` : `+${round1(r.val - r.prev)}`;
+  const u = metricUnit(r.kind), diff = r.kind === 'pace' ? `−${fmtPace(r.prev - r.val)}` : r.kind === 'min' ? `+${fmtTime(r.val - r.prev)}` : `+${round1(r.val - r.prev)}`;
   return `${metricText(r.kind, r.val)} ${u} <span class="muted">(${diff})</span>`;
 }
 
@@ -1397,6 +1442,8 @@ function viewOverview() {
         <div class="muted small" style="margin-top:2px">${esc(look(r.s).name)} · ${agoText(r.s.date)}</div>
       </button>`).join('')}</div>`
       : `<div class="card empty">Beat a previous weight, reps or run and your records show up here. 💪</div>`}
+    ${(() => { const st = badgeStates(), got = st.filter(b => b.done), last = got.filter(b => b.when).sort((a, b) => b.when.localeCompare(a.when))[0] || got[0];
+      return `<h2>Badges 🏅 <span class="muted">· ${got.length} / ${st.length}</span></h2><button class="card hist-row" data-act="go-badges"><div class="row between"><span class="row" style="gap:10px"><span style="font-size:30px">${last ? last.emoji : '🔒'}</span><span><b>${last ? esc(last.name) : 'No badges yet'}</b><br><span class="muted small">${last ? 'Latest badge · see all' : 'Finish a workout to earn your first one'}</span></span></span><span class="chev">›</span></div></button>`; })()}
   `;
 }
 
@@ -1452,9 +1499,9 @@ function viewExercise(id) {
       ${paced.length >= 1 ? chart(paced.map(p => ({ x: p.date, y: Math.round(p[progMetric] * 100) / 100 })), u) : `<div class="empty">No sets logged for this exercise yet.<br>Start a workout and your progress will show here.</div>`}
     </div>
     ${pts.length ? `<div class="stats" style="margin-top:10px">
-      <div class="stat"><div class="v">${metricText(progMetric, best)}</div><div class="l">Best (${u})</div></div>
+      <div class="stat"><div class="v">${metricText(progMetric, best)}</div><div class="l">Best${u ? ` (${u})` : ""}</div></div>
       <div class="stat"><div class="v">${pts.length}</div><div class="l">Sessions</div></div>
-      <div class="stat"><div class="v">${paced.length > 1 ? (progMetric === 'pace' ? (d => `${d > 0 ? '+' : '−'}${fmtPace(Math.abs(d))}`)(paced.at(-1).pace - paced[0].pace) : signed(paced.at(-1)[progMetric] - paced[0][progMetric])) : '–'}</div><div class="l">Since first</div></div>
+      <div class="stat"><div class="v">${paced.length > 1 ? (progMetric === 'pace' ? (d => `${d > 0 ? '+' : '−'}${fmtPace(Math.abs(d))}`)(paced.at(-1).pace - paced[0].pace) : progMetric === 'min' ? (d => `${d < 0 ? '−' : '+'}${fmtTime(Math.abs(d)) || '0:00'}`)(paced.at(-1).min - paced[0].min) : signed(paced.at(-1)[progMetric] - paced[0][progMetric])) : '–'}</div><div class="l">Since first</div></div>
     </div>
     <h2>History</h2>
     <div class="stack">${pts.slice().reverse().slice(0, 20).map(p => {
@@ -1542,6 +1589,332 @@ function heightSheet() {
   });
   o.querySelector('#hClear')?.addEventListener('click', () => { db.settings.heightCm = null; save(); o.remove(); render(); });
 }
+// ---------- Badges ----------
+// Worked out from your history (old workouts count too). db.badges remembers when each was earned.
+function badgeStats() {
+  const S = { workouts: db.sessions.length, warm: 0, cool: 0, home: 0, early: 0, night: 0, maxVol: 0, totalVol: 0, maxRun: 0, totalRun: 0, bestPace: 0 };
+  const weeks = {}, months = {};
+  for (const s of db.sessions) {
+    if (s.warmup) S.warm++; if (s.cooldown) S.cool++; if (s.home) S.home++;
+    const g = planById(s.planId)?.group, wk = dayKey(monday(fromKey(s.date))), mo = s.date.slice(0, 7);
+    (weeks[wk] = weeks[wk] || new Set()).add(g); (months[mo] = months[mo] || new Set()).add(g);
+    // early / late only for workouts done live (logged afterwards has no real start time)
+    if (s.duration > 0 && dayKey(new Date(s.start)) === s.date) { const h = new Date(s.start).getHours(); if (h < 7) S.early++; if (h >= 21) S.night++; }
+    const v = volume(s); S.totalVol += v; S.maxVol = Math.max(S.maxVol, v);
+    for (const e of s.exercises || []) if (isRun(findEx(e.exId) || {})) {
+      const d = km(e.sets); S.totalRun += d; S.maxRun = Math.max(S.maxRun, d);
+      for (const x of e.sets) { const p = paceOf(x); if (p && (!S.bestPace || p < S.bestPace)) S.bestPace = p; }
+    }
+  }
+  const main = Object.keys(GROUPS);
+  S.fullWeek = Object.values(weeks).some(set => main.every(g => set.has(g)));
+  S.fullMonth = Object.values(months).some(set => main.every(g => set.has(g)));
+  // longest run of weeks in a row with at least one workout
+  const wkKeys = Object.keys(weeks).sort(); let run = 0, best = 0, prev = null;
+  for (const k of wkKeys) { run = prev && dayKey(addDays(fromKey(prev), 7)) === k ? run + 1 : 1; best = Math.max(best, run); prev = k; }
+  S.streak = best;
+  S.records = findRecords().length;
+  const g = db.settings.goalWeight, ws = weightsSorted();
+  S.goal = !!(g && ws.length && ws.some(x => (ws[0].w > g ? x.w <= g : x.w >= g)));
+  return S;
+}
+// [id, emoji, name, how to get it, (stats) => [have, need]]
+const BADGES = [
+  ['first-step', '👟', 'First Step', 'Finish your first workout', S => [S.workouts, 1]],
+  ['warmed-up', '🔥', 'Warmed Up', 'Do 10 warm-ups', S => [S.warm, 10]],
+  ['zen', '🧘', 'Zen Mode', 'Do 10 cool-downs', S => [S.cool, 10]],
+  ['week-warrior', '🗓️', 'Week Warrior', 'All 4 classes in one week', S => [+S.fullWeek, 1]],
+  ['on-fire', '🔥', 'On Fire', 'Train 3 weeks in a row', S => [S.streak, 3]],
+  ['unstoppable', '⚡', 'Unstoppable', 'Train 8 weeks in a row', S => [S.streak, 8]],
+  ['w10', '🥉', '10 Workouts', 'Finish 10 workouts', S => [S.workouts, 10]],
+  ['w25', '🥈', '25 Workouts', 'Finish 25 workouts', S => [S.workouts, 25]],
+  ['w50', '🥇', '50 Workouts', 'Finish 50 workouts', S => [S.workouts, 50]],
+  ['w100', '💎', '100 Workouts', 'Finish 100 workouts', S => [S.workouts, 100]],
+  ['new-record', '🏆', 'New Record', 'Beat one of your personal bests', S => [S.records, 1]],
+  ['record-breaker', '🎖️', 'Record Breaker', 'Set 10 personal records', S => [S.records, 10]],
+  ['ton-day', '🏋️', 'Ton Day', 'Lift 1,000 kg in one workout', S => [Math.round(S.maxVol), 1000]],
+  ['heavy', '🦍', 'Heavy Lifter', 'Lift 10,000 kg in total', S => [Math.round(S.totalVol), 10000]],
+  ['titan', '🐘', 'Titan', 'Lift 100,000 kg in total', S => [Math.round(S.totalVol), 100000]],
+  ['all-rounder', '🎯', 'All-Rounder', 'Every class in one month', S => [+S.fullMonth, 1]],
+  ['home-hero', '🏠', 'Home Hero', 'Finish 10 home workouts', S => [S.home, 10]],
+  ['early-bird', '🌅', 'Early Bird', 'Start a workout before 7 am', S => [Math.min(S.early, 1), 1]],
+  ['night-owl', '🦉', 'Night Owl', 'Start a workout after 9 pm', S => [Math.min(S.night, 1), 1]],
+  ['first-5k', '🏃', 'First 5K', 'Run 5 km in one go', S => [round1(S.maxRun), 5]],
+  ['10k-club', '🏃‍♂️', '10K Club', 'Run 10 km in one go', S => [round1(S.maxRun), 10]],
+  ['speedy', '💨', 'Speedy', 'Run faster than 6:00 per km', S => [S.bestPace && S.bestPace < 6 ? 1 : 0, 1]],
+  ['50k-total', '🌍', '50K Total', 'Run 50 km in total', S => [round1(S.totalRun), 50]],
+  ['goal-reached', '⚖️', 'Goal Reached', 'Reach your goal weight', S => [+S.goal, 1]],
+];
+function badgeStates() {
+  const S = badgeStats();
+  return BADGES.map(([id, emoji, name, how, test]) => { const [have, need] = test(S); return { id, emoji, name, how, have, need, done: have >= need, when: db.badges?.[id] }; });
+}
+// newly earned badges (and remember them); used after a workout, a weight or a scan
+function checkBadges() {
+  db.badges = db.badges || {};
+  const fresh = badgeStates().filter(b => b.done && !db.badges[b.id]);
+  fresh.forEach(b => { db.badges[b.id] = dayKey(); });
+  if (fresh.length) save();
+  return fresh;
+}
+function afterChange() {
+  const fresh = checkBadges();
+  if (fresh.length) setTimeout(() => toast(`🏅 New badge: ${fresh.map(b => `${b.emoji} ${b.name}`).join(', ')}`, () => { location.hash = '#/more'; setTimeout(() => $('#badges')?.scrollIntoView({ block: 'start' }), 150); }, 6000), 400);
+}
+function badgesSection() {
+  const all = badgeStates(), got = all.filter(b => b.done).length;
+  const fmtN = (b, n) => (b.need >= 1000 ? `${Math.round(n).toLocaleString('en-US')}` : round1(n));
+  return `<h2 id="badges">🏅 Badges <span class="muted">· ${got} / ${all.length}</span></h2>
+    <div class="badges">${all.sort((a, b) => b.done - a.done || (b.have / b.need) - (a.have / a.need)).map(b => `<div class="badge-c ${b.done ? 'on' : ''}">
+      <div class="be">${b.emoji}</div><b>${esc(b.name)}</b>
+      <div class="muted small">${esc(b.how)}</div>
+      ${b.done ? `<div class="small" style="color:var(--accent);margin-top:4px">✓ ${b.when ? fmtDay(b.when, { day: 'numeric', month: 'short' }) : 'Earned'}</div>`
+        : b.need > 1 ? `<div class="bprog"><i style="width:${Math.min(100, b.have / b.need * 100)}%"></i></div><div class="muted small">${fmtN(b, Math.min(b.have, b.need))} / ${fmtN(b, b.need)}</div>` : '<div class="muted small" style="margin-top:4px">🔒 Not yet</div>'}
+    </div>`).join('')}</div>`;
+}
+
+// ---------- Body scans (FitScan screenshots) ----------
+// Where each number sits on a FitScan result image, as [x, y, width, height] fractions of the image,
+// so it works for any screenshot size. Measured on a real FitScan result.
+const FITSCAN = {"profile":[0.67,0.1122,0.3102,0.0196],"score":[0.0347,0.2104,0.1861,0.0435],"date":[0.7444,0.2342,0.2295,0.0266],"rArmM":[0.0844,0.338,0.1241,0.0224],"rArmF":[0.0844,0.3745,0.1241,0.0224],"lArmM":[0.7593,0.338,0.1241,0.0224],"lArmF":[0.7593,0.3745,0.1241,0.0224],"torsoM":[0.0844,0.4719,0.1241,0.0224],"torsoF":[0.7469,0.4719,0.129,0.0224],"rLegM":[0.0844,0.5498,0.1241,0.0224],"rLegF":[0.0844,0.5863,0.1241,0.0224],"lLegM":[0.7593,0.5498,0.1241,0.0224],"lLegF":[0.7593,0.5863,0.1241,0.0224],"bmi":[0.1464,0.6711,0.1179,0.0224],"fatMass":[0.1464,0.7447,0.1489,0.0224],"visceral":[0.1464,0.8184,0.0931,0.0224],"whr":[0.1464,0.8913,0.1179,0.0224],"weight":[0.7134,0.6648,0.1365,0.0224],"bmr":[0.7134,0.6964,0.1365,0.0224],"bodyAge":[0.7134,0.7265,0.1489,0.0224],"musclePct":[0.536,0.8184,0.1427,0.021],"fatPct":[0.536,0.864,0.1427,0.021],"otherPct":[0.536,0.9095,0.1427,0.021]};
+// the "FITSCAN RESULT" text at the top, used to tell a FitScan page from any other picture
+const FITSCAN_TITLE = [0.0347, 0.1164, 0.2208, 0.0126];
+const scanHeader = raw => /FIT|SCAN|RESULT/i.test(raw.title.replace(/[^A-Za-z]/g, '')) || /Male|Female|Years/i.test(raw.profile) || /\d{4}/.test(raw.date);
+// [key, label, unit, lower is better?]
+const SCAN_MAIN = [['weight', 'Body weight', 'kg'], ['fatPct', 'Body fat', '%', true], ['musclePct', 'Muscle', '%', false], ['fatMass', 'Fat mass', 'kg', true],
+  ['bmi', 'BMI', '', true], ['visceral', 'Visceral fat', '', true], ['whr', 'Waist-hip ratio', '', true], ['bmr', 'BMR', 'kcal', false],
+  ['bodyAge', 'Body age', 'yrs', true], ['otherPct', 'Other', '%'], ['score', 'Score', 'BCM', false]];
+const SCAN_PARTS = [['rArm', 'Right arm'], ['lArm', 'Left arm'], ['torso', 'Torso'], ['rLeg', 'Right leg'], ['lLeg', 'Left leg']];
+const SCAN_TRENDS = ['fatPct', 'musclePct', 'fatMass', 'visceral', 'bmr', 'bodyAge', 'weight'];
+const scanLabel = k => SCAN_MAIN.find(x => x[0] === k);
+const scansSorted = () => db.scans.slice().sort((a, b) => a.date.localeCompare(b.date));
+
+// screenshots are kept privately on the phone (IndexedDB), not in the backup file
+let idbP = null;
+const idb = () => idbP || (idbP = new Promise((res, rej) => { const r = indexedDB.open('gymtracker', 1); r.onupgradeneeded = () => r.result.createObjectStore('images'); r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error); }));
+const idbDo = (mode, fn) => idb().then(d => new Promise((res, rej) => { const t = d.transaction('images', mode), q = fn(t.objectStore('images')); t.oncomplete = () => res(q?.result); t.onerror = () => rej(t.error); }));
+const putImage = (k, blob) => idbDo('readwrite', s => s.put(blob, k)).catch(() => {});
+const getImage = k => idbDo('readonly', s => s.get(k)).catch(() => null);
+const delImage = k => idbDo('readwrite', s => s.delete(k)).catch(() => {});
+async function shrinkImage(file) {
+  const bmp = await createImageBitmap(file), s = Math.min(1, 1400 / bmp.height);
+  const c = Object.assign(document.createElement('canvas'), { width: Math.round(bmp.width * s), height: Math.round(bmp.height * s) });
+  c.getContext('2d').drawImage(bmp, 0, 0, c.width, c.height);
+  return new Promise(res => c.toBlob(res, 'image/jpeg', 0.85));
+}
+
+// Reading the numbers: text recognition (Tesseract) runs on the phone. Downloaded once (~5 MB) the first time.
+let ocrWorker = null;
+async function loadOcr(onStatus) {
+  if (!window.Tesseract) await new Promise((res, rej) => { const s = document.createElement('script'); s.src = 'https://cdn.jsdelivr.net/npm/tesseract.js@5.1.1/dist/tesseract.min.js'; s.onload = res; s.onerror = () => rej(new Error('Could not load the reader (no internet?)')); document.head.appendChild(s); });
+  if (!ocrWorker) {
+    ocrWorker = await Tesseract.createWorker('eng', 1, { logger: m => onStatus?.(m) });
+    await ocrWorker.setParameters({ tessedit_pageseg_mode: '7' }); // each box is one line of text
+  }
+  return ocrWorker;
+}
+const MONTHS = { jan: 1, feb: 2, mar: 3, apr: 4, may: 5, jun: 6, jul: 7, aug: 8, sep: 9, oct: 10, nov: 11, dec: 12 };
+// what each number can sensibly be: [min, max]. Outside it, the reader probably misread it.
+const SCAN_RANGE = { weight: [25, 250], fatPct: [3, 65], musclePct: [20, 95], fatMass: [1, 150], bmi: [10, 70], visceral: [1, 30], whr: [0.5, 1.5],
+  bmr: [600, 4500], bodyAge: [10, 100], otherPct: [0, 30], score: [1, 99999],
+  rArmM: [0.5, 15], lArmM: [0.5, 15], torsoM: [5, 70], rLegM: [2, 30], lLegM: [2, 30],
+  rArmF: [0.1, 10], lArmF: [0.1, 10], torsoF: [0.5, 50], rLegF: [0.2, 20], lLegF: [0.2, 20] };
+const scanErr = (code, msg) => Object.assign(new Error(msg), { code });
+// a FitScan result is a tall picture that is mostly blue; checked before downloading the reader
+function looksLikeFitScan(bmp) {
+  const ratio = bmp.height / bmp.width;
+  const c = Object.assign(document.createElement('canvas'), { width: 40, height: 70 }), ctx = c.getContext('2d');
+  ctx.drawImage(bmp, 0, 0, 40, 70);
+  const d = ctx.getImageData(0, 0, 40, 70).data; let blue = 0;
+  for (let i = 0; i < d.length; i += 4) if (d[i + 2] > d[i] + 25 && d[i + 2] >= d[i + 1]) blue++;
+  blue /= d.length / 4;
+  return { ratio, blue, ok: ratio > 1.4 && ratio < 2.4 && blue > 0.55 };
+}
+async function readFitScan(file, onStatus) {
+  let bmp; try { bmp = await createImageBitmap(file); } catch (e) { throw scanErr('open', 'Could not open the picture'); }
+  if (!looksLikeFitScan(bmp).ok) throw scanErr('template', 'Not a FitScan result');
+  const S = 2;
+  // white text on a blue background → dark text on white, which the reader handles best
+  const c = Object.assign(document.createElement('canvas'), { width: bmp.width * S, height: bmp.height * S }), ctx = c.getContext('2d');
+  ctx.drawImage(bmp, 0, 0, c.width, c.height);
+  const im = ctx.getImageData(0, 0, c.width, c.height), d = im.data;
+  for (let i = 0; i < d.length; i += 4) { const v = 0.299 * d[i] + 0.587 * d[i + 1] + 0.114 * d[i + 2] > 165 ? 0 : 255; d[i] = d[i + 1] = d[i + 2] = v; }
+  ctx.putImageData(im, 0, 0);
+  let w; try { w = await loadOcr(onStatus); } catch (e) { throw scanErr('offline', e.message); }
+  const raw = {}, keys = ['title', ...Object.keys(FITSCAN)];
+  for (const [n, k] of keys.entries()) {
+    onStatus?.({ status: 'reading', progress: n / keys.length });
+    const [fx, fy, fw, fh] = k === 'title' ? FITSCAN_TITLE : FITSCAN[k], pad = 4;
+    const rect = { left: Math.max(0, Math.round(fx * c.width) - pad), top: Math.max(0, Math.round(fy * c.height) - pad), width: Math.round(fw * c.width) + pad * 2, height: Math.round(fh * c.height) + pad * 2 };
+    raw[k] = (await w.recognize(c, { rectangle: rect })).data.text.trim();
+    // after the title, profile and date: none of them found means it isn't a FitScan page, so stop early
+    if (k === 'date' && !scanHeader(raw)) throw scanErr('template', 'FitScan text not found');
+  }
+  const out = { values: {} };
+  const number = t => { const m = String(t).replace(/,/g, '.').replace(/[oO]/g, '0').match(/\d+(?:\.\d+)?/); return m ? Number(m[0]) : null; };
+  // a missed decimal point (167 instead of 16.7, 091 instead of 0.91) is fixed when it clearly fits; still marked to check
+  out.check = [];
+  for (const k of Object.keys(SCAN_RANGE)) {
+    let v = number(raw[k]); const [lo, hi] = SCAN_RANGE[k];
+    if (v === null) { out.check.push(k); continue; }
+    if (v < lo || v > hi) {
+      const fix = [v / 10, v / 100].find(x => x >= lo && x <= hi);
+      out.check.push(k); if (fix === undefined) continue;
+      v = Math.round(fix * 100) / 100;
+    }
+    out.values[k] = v;
+  }
+  // numbers that must agree with each other; if not, one of them is misread
+  const V = out.values, off = (ks, bad) => { if (ks.every(k => V[k] !== undefined) && bad()) out.check.push(...ks); };
+  off(['musclePct', 'fatPct', 'otherPct'], () => Math.abs(V.musclePct + V.fatPct + V.otherPct - 100) > 2);
+  off(['fatMass', 'weight', 'fatPct'], () => Math.abs(V.weight * V.fatPct / 100 - V.fatMass) > 1.5);
+  // the reader sometimes sees the O of "Oct" as a zero ("310ct 2026"), so allow 0 in the month
+  const dm = raw.date.match(/(\d{1,2})\s*([A-Za-z0]{3})[A-Za-z]*\s*(\d{4})/), mon = dm && dm[2].toLowerCase().replace(/0/g, 'o');
+  if (dm && MONTHS[mon] && Number(dm[1]) <= 31) out.date = `${dm[3]}-${pad(MONTHS[mon])}-${pad(Number(dm[1]))}`;
+  const pm = raw.profile.match(/(\d{1,3})\s*Y.*?(Male|Female).*?(\d{2,4})\s*C/i);
+  if (pm) {
+    let h = Number(pm[3]); while (h > 250) h = Math.floor(h / 10); // "1656Cm" (stray digit) → 165
+    Object.assign(out, { age: Number(pm[1]), sex: pm[2].toLowerCase(), height: h });
+  }
+  if (out.height >= 100 && out.height <= 230) off(['bmi', 'weight'], () => Math.abs(V.weight / (out.height / 100) ** 2 - V.bmi) > 1);
+  out.check = [...new Set(out.check)];
+  out.raw = raw;
+  return out;
+}
+
+// "+ Add scan": pick the screenshot, the app reads it, you check the numbers and save
+function addScan() {
+  const input = Object.assign(document.createElement('input'), { type: 'file', accept: 'image/*' });
+  input.addEventListener('change', () => { const file = input.files[0]; if (file) readScan(file, URL.createObjectURL(file)); });
+  input.click();
+}
+async function readScan(file, url) {
+  const o = sheet(`<h2 style="margin-top:0">🧍 Reading your scan…</h2>
+    <div class="photo" style="height:200px;border-radius:16px;background:#0b1640"><img src="${url}" style="height:100%;mix-blend-mode:normal"></div>
+    <div class="goal" style="margin-top:14px"><div class="bar"><i data-ocrbar style="width:3%"></i></div></div>
+    <div class="muted small" data-ocrmsg style="margin-top:8px">Getting the reader ready… (the first time it downloads about 5 MB)</div>`);
+  let read = null;
+  try {
+    read = await readFitScan(file, m => {
+      const bar = o.querySelector('[data-ocrbar]'), msg = o.querySelector('[data-ocrmsg]'); if (!bar) return;
+      if (m.status === 'reading') { bar.style.width = `${Math.round(20 + m.progress * 80)}%`; msg.textContent = 'Reading the numbers…'; }
+      else if (typeof m.progress === 'number') bar.style.width = `${Math.round(m.progress * 20)}%`;
+    });
+  } catch (e) {
+    console.warn(e); o.remove();
+    return scanError(e.code, file, url);
+  }
+  o.remove();
+  scanForm({ file, url, read });
+}
+// when the picture can't be read: say why, and offer another picture or typing the numbers
+function scanError(code, file, url) {
+  const [icon, title, text] = {
+    template: ['🤔', 'This isn’t a FitScan result', 'Upload the result picture from FitScan: the whole blue page, not cropped and not a photo of the screen.'],
+    open: ['🖼️', 'Couldn’t open this picture', 'Try saving it again as a PNG or JPG screenshot.'],
+    offline: ['📶', 'No internet', 'Reading the numbers needs internet the first time (about 5 MB). Connect and try again, or type the numbers.'],
+  }[code] || ['⚠️', 'Something went wrong', 'The picture couldn’t be read. Try again, or type the numbers.'];
+  const o = sheet(`<div style="text-align:center;font-size:44px">${icon}</div>
+    <h2 style="margin-top:6px;text-align:center">${title}</h2>
+    <p class="muted small" style="text-align:center">${text}</p>
+    ${url && code !== 'open' ? `<div class="photo" style="height:150px;border-radius:16px;background:#0b1640;margin:12px 0"><img src="${url}" style="height:100%;mix-blend-mode:normal"></div>` : ''}
+    <div class="stack" style="margin-top:12px">
+      <button class="btn primary block" data-again>${code === 'offline' ? '↻ Try again' : '🖼️ Choose another picture'}</button>
+      <button class="btn block" data-type>✏️ Type the numbers instead</button>
+      <button class="btn block ghost" data-close>Cancel</button>
+    </div>`);
+  // no internet: read the same picture again; otherwise pick a different one
+  o.querySelector('[data-again]').addEventListener('click', () => { o.remove(); code === 'offline' ? readScan(file, url) : addScan(); });
+  // keep the picture with typed numbers, unless it's clearly not a scan
+  o.querySelector('[data-type]').addEventListener('click', () => { o.remove(); scanForm(code === 'offline' ? { file, url } : {}); });
+}
+function scanForm({ file = null, url = null, read = null, edit = null } = {}) {
+  const v = edit || read?.values || {}, date = edit?.date || read?.date || dayKey();
+  const got = read ? Object.keys(read.values).length : 0, check = new Set(read?.check || []), all = Object.keys(SCAN_RANGE).length;
+  const box = (k, label, u) => `<label class="small muted">${label}${u ? ` (${u})` : ''}<input class="field ${check.has(k) ? 'warn' : ''}" data-sk="${k}" inputmode="decimal" value="${v[k] ?? ''}"></label>`;
+  const o = sheet(`<h2 style="margin-top:0">🧍 ${edit ? 'Edit scan' : 'Check your scan'}</h2>
+    ${read ? `<div class="small" style="color:${check.size ? 'var(--amber)' : 'var(--accent)'};margin-bottom:10px">${!check.size ? `✓ Read all ${all} numbers. Please check them against your picture.`
+        : `Read ${got} of ${all} numbers. ${check.size} ${check.size > 1 ? 'boxes are' : 'box is'} marked in orange: please check or fill ${check.size > 1 ? 'them' : 'it'}.`}${read.date ? '' : ' The date wasn’t found, please set it.'}</div>`
+      : file ? '<div class="small" style="color:var(--amber);margin-bottom:10px">Type the numbers from your picture.</div>' : ''}
+    ${url ? `<button class="photo" style="height:150px;width:100%;border:0;border-radius:16px;background:#0b1640;margin-bottom:12px" data-zoom="${url}"><img src="${url}" style="height:100%;mix-blend-mode:normal"></button>` : ''}
+    <div class="stack">
+      <label class="small muted">Scan date<input class="field" type="date" id="scDate" value="${date}" max="${dayKey()}"></label>
+      <div class="eyebrow" style="margin-top:6px">Body</div>
+      <div class="scan-grid">${SCAN_MAIN.map(([k, l, u]) => box(k, l, u)).join('')}</div>
+      <div class="eyebrow" style="margin-top:6px">Per body part (kg)</div>
+      <div class="scan-grid">${SCAN_PARTS.map(([k, l]) => box(k + 'M', `${l} muscle`) + box(k + 'F', `${l} fat`)).join('')}</div>
+      <div class="small" id="scErr" style="color:var(--amber)"></div>
+      <button class="btn primary block" id="scSave">Save scan</button>
+      <button class="btn block ghost" data-close>Cancel</button>
+    </div>`);
+  o.querySelectorAll('.field.warn').forEach(i => i.addEventListener('input', () => i.classList.remove('warn'), { once: true }));
+  o.querySelector('#scSave').addEventListener('click', async () => {
+    const vals = {}; o.querySelectorAll('[data-sk]').forEach(i => { const n = num(i.value); if (i.value.trim() !== '' && n >= 0) vals[i.dataset.sk] = n; });
+    const d = o.querySelector('#scDate').value;
+    if (!d) { o.querySelector('#scErr').textContent = 'Pick the scan date.'; return; }
+    if (!vals.weight && !vals.fatPct) { o.querySelector('#scErr').textContent = 'Enter at least your body weight or body fat %.'; return; }
+    const same = db.scans.find(s => s.date === d && s.id !== edit?.id);
+    if (same && !confirm(`You already have a scan on ${fmtDay(d)}. Replace it?`)) return;
+    if (same) { db.scans = db.scans.filter(s => s !== same); if (same.img) delImage(same.img); }
+    const scan = { ...(edit || {}), id: edit?.id || uid(), date: d, ...SCAN_MAIN.concat(SCAN_PARTS.flatMap(([k]) => [[k + 'M'], [k + 'F']])).reduce((a, [k]) => (a[k] = vals[k] ?? null, a), {}) };
+    if (file) { scan.img = scan.id; await putImage(scan.id, await shrinkImage(file)); }
+    db.scans = db.scans.filter(s => s.id !== scan.id).concat(scan);
+    // the scan's weight also goes into your weight log (same day replaces it)
+    if (vals.weight) { const w = round1(fromKg(vals.weight)); db.weights = db.weights.filter(x => x.date !== d).concat({ date: d, w }); }
+    if (read?.height && Math.abs(read.height - heightCm()) >= 1 && confirm(`Your scan says your height is ${read.height} cm. Use it in your Profile?`)) db.settings.heightCm = read.height;
+    save(); o.remove(); render(); toast('🧍 Scan saved', null, 2500); afterChange();
+  });
+}
+function scanDetail(id) {
+  const s = db.scans.find(x => x.id === id); if (!s) return;
+  const o = sheet(`<h2 style="margin-top:0">🧍 Scan · ${fmtDay(s.date, { weekday: 'short', day: 'numeric', month: 'long', year: 'numeric' })}</h2>
+    ${s.img ? '<button class="photo" data-scanimg style="height:180px;width:100%;border:0;border-radius:16px;background:#0b1640;margin-bottom:12px"></button>' : ''}
+    <div class="scan-vals">${SCAN_MAIN.filter(([k]) => s[k] != null).map(([k, l, u]) => `<div><span class="muted small">${l}</span><b>${s[k]}${u ? ` ${u}` : ''}</b></div>`).join('')}</div>
+    ${partsTable(s)}
+    <div class="stack" style="margin-top:14px">
+      <button class="btn block" data-sedit>✏️ Edit numbers</button>
+      <button class="btn block ghost danger" data-sdel>Delete scan</button>
+      <button class="btn block ghost" data-close>Close</button>
+    </div>`);
+  if (s.img) getImage(s.img).then(b => { const el = o.querySelector('[data-scanimg]'); if (b && el) { const u = URL.createObjectURL(b); el.dataset.zoom = u; el.innerHTML = `<img src="${u}" style="height:100%;mix-blend-mode:normal">`; } });
+  o.querySelector('[data-sedit]').addEventListener('click', () => { o.remove(); scanForm({ edit: s }); });
+  o.querySelector('[data-sdel]').addEventListener('click', () => { if (!confirm('Delete this scan?')) return; db.scans = db.scans.filter(x => x.id !== id); if (s.img) delImage(s.img); save(); o.remove(); render(); });
+}
+const partsTable = s => SCAN_PARTS.some(([k]) => s[k + 'M'] != null) ? `<div class="parts" style="margin-top:12px">
+    <div class="muted small">Body part</div><div class="muted small">💪 Muscle</div><div class="muted small">💧 Fat</div>
+    ${SCAN_PARTS.map(([k, l]) => `<div>${l}</div><b>${s[k + 'M'] ?? '–'} kg</b><b>${s[k + 'F'] ?? '–'} kg</b>`).join('')}</div>` : '';
+let scanTrend = 'fatPct';
+function scanSection() {
+  const all = scansSorted(), last = all.at(-1), prev = all.at(-2);
+  if (!last) return `<div class="card" style="margin-top:14px">
+      <b>🧍 Body scans</b>
+      <div class="muted small" style="margin-top:6px">Upload your FitScan result screenshot. The app reads the numbers (body fat, muscle, BMR, body age and more), you check them, and your progress shows here.</div>
+      <div class="row" style="margin-top:12px"><button class="btn primary" data-act="add-scan">+ Upload scan</button><button class="btn ghost" data-act="type-scan">Type numbers</button></div>
+    </div>`;
+  const change = k => {
+    if (!prev || last[k] == null || prev[k] == null) return '';
+    const d = round1(last[k] - prev[k]), lower = scanLabel(k)[3]; if (!d) return '<span class="muted small"> · same</span>';
+    const good = lower === undefined ? null : (d < 0) === lower;
+    return ` <span class="small" style="color:${good === null ? 'var(--muted)' : good ? 'var(--accent)' : 'var(--coral)'}">${d > 0 ? '▲ +' : '▼ '}${d}</span>`;
+  };
+  const tile = k => last[k] == null ? '' : `<div class="stat"><div class="v" style="font-size:22px">${last[k]}<span class="muted" style="font-size:13px"> ${scanLabel(k)[2]}</span></div><div class="l">${scanLabel(k)[1]}${change(k)}</div></div>`;
+  const trendPts = all.filter(s => s[scanTrend] != null);
+  return `
+    <h2>🧍 Body scan <span class="muted">· ${fmtDay(last.date, { day: 'numeric', month: 'short' })} · ${agoText(last.date)}</span></h2>
+    <div class="stats">${['fatPct', 'musclePct', 'weight'].map(tile).join('')}</div>
+    <div class="stats" style="margin-top:8px">${['fatMass', 'visceral', 'bodyAge', 'bmi', 'bmr', 'whr'].map(tile).join('')}</div>
+    ${prev ? `<div class="muted small" style="margin-top:6px">Arrows compare with your previous scan (${fmtDay(prev.date, { day: 'numeric', month: 'short' })}). Green = better.</div>` : ''}
+    <div class="card" style="margin-top:10px">${partsTable(last) || '<div class="muted small">No body part numbers in this scan.</div>'}</div>
+    <div class="row" style="margin-top:10px"><button class="btn primary sm" data-act="add-scan">+ Upload scan</button><button class="btn sm" data-act="scan-detail" data-id="${last.id}">View details</button></div>
+    ${all.length > 1 ? `<div class="seg glass" style="margin-top:14px">${SCAN_TRENDS.map(k => `<button class="${k === scanTrend ? 'on' : ''}" data-act="scan-trend" data-k="${k}">${{ fatPct: 'Fat %', musclePct: 'Muscle %', fatMass: 'Fat kg', visceral: 'Visceral', bmr: 'BMR', bodyAge: 'Body age', weight: 'Weight' }[k]}</button>`).join('')}</div>
+      <div class="card" style="margin-top:10px">${trendPts.length ? chart(trendPts.map(s => ({ x: s.date, y: s[scanTrend] })), scanLabel(scanTrend)[2], { time: true }) : '<div class="empty">No values for this yet.</div>'}</div>` : ''}
+    <div class="stack" style="margin-top:10px">${all.slice().reverse().slice(0, 12).map(s => `<button class="card hist-row" data-act="scan-detail" data-id="${s.id}">
+        <div class="row between"><b>${fmtDay(s.date, { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' })}</b><span class="chev">›</span></div>
+        <div class="muted small" style="margin-top:2px">${[s.fatPct != null && `Fat ${s.fatPct}%`, s.musclePct != null && `Muscle ${s.musclePct}%`, s.weight != null && `${s.weight} kg`].filter(Boolean).join(' · ')}</div>
+      </button>`).join('')}</div>
+    <h2>⚖️ Body weight</h2>`;
+}
+
 let wRange = 90; // days shown in the chart; 0 = all
 function viewWeight() {
   const all = weightsSorted(), last = all.at(-1), goal = db.settings.goalWeight;
@@ -1553,8 +1926,9 @@ function viewWeight() {
   const weekAgo = all.filter(x => x.date <= dayKey(addDays(new Date(), -7))).at(-1);
   return `
     <div class="eyebrow">Your numbers</div>
-    <h1>Progress</h1>
+    <h1>Stats</h1>
     ${progressTabs('weight')}
+    ${scanSection()}
     <div class="card glass" style="margin-top:14px">
       <div class="row between" style="align-items:flex-start">
         <div><div class="eyebrow">Current weight</div>
@@ -1600,7 +1974,7 @@ function logWeightSheet() {
     if (!(w > 0)) { o.querySelector('#wVal').focus(); return; }
     // one entry per day: logging again the same day replaces it
     db.weights = db.weights.filter(x => x.date !== date).concat({ date, w: round1(w) });
-    save(); o.remove(); render();
+    save(); o.remove(); render(); afterChange();
   });
 }
 function goalSheet() {
@@ -1611,7 +1985,7 @@ function goalSheet() {
       ${db.settings.goalWeight ? '<button class="btn block ghost danger" id="gClear">Remove goal</button>' : ''}
       <button class="btn block ghost" data-close>Cancel</button>
     </div>`);
-  o.querySelector('#gSave').addEventListener('click', () => { const g = num(o.querySelector('#gVal').value); db.settings.goalWeight = g > 0 ? round1(g) : null; save(); o.remove(); render(); });
+  o.querySelector('#gSave').addEventListener('click', () => { const g = num(o.querySelector('#gVal').value); db.settings.goalWeight = g > 0 ? round1(g) : null; save(); o.remove(); render(); afterChange(); });
   o.querySelector('#gClear')?.addEventListener('click', () => { db.settings.goalWeight = null; save(); o.remove(); render(); });
 }
 function weekStreak() {
@@ -1671,6 +2045,7 @@ function viewMore() {
         <div class="muted small" style="margin:14px 0 8px">Fun avatars 😄</div>
         <div class="avatars">${PHOTO_AVATARS.map((p, n) => { const i = AVATARS.length + n; return `<button class="${db.settings.avatar === i ? 'on' : ''}" data-act="avatar" data-i="${i}" aria-label="${esc(p.name)}" title="${esc(p.name)}">${avatar(i, 58)}</button>`; }).join('')}</div></div>
     </div>
+    ${badgesSection()}
     <h2>Settings</h2>
     <div class="card stack">
       <div class="row between"><span>Weight unit</span>
@@ -1758,9 +2133,9 @@ const isLive = a => !a.editId && a.date === dayKey();
 function finishWorkout() {
   const a = db.active, p = planById(a.planId);
   const exercises = a.exercises.map(e => (isRun(findEx(e.exId))
-    ? { exId: e.exId, sets: e.sets.filter(s => num(s.d) > 0).map(s => ({ d: num(s.d), m: num(s.m) })) }
+    ? { exId: e.exId, sets: e.sets.filter(s => num(s.d) > 0).map(s => ({ d: num(s.d), m: parseTime(s.m) })) }
     : isCardio(findEx(e.exId))
-    ? { exId: e.exId, sets: e.sets.filter(s => num(s.m) > 0).map(s => ({ m: num(s.m), v: num(s.v), i: num(s.i) })) }
+    ? { exId: e.exId, sets: e.sets.filter(s => parseTime(s.m) > 0).map(s => ({ m: parseTime(s.m), v: num(s.v), i: num(s.i) })) }
     : { exId: e.exId, sets: e.sets.filter(s => num(s.r) > 0).map(s => ({ w: num(s.w), r: num(s.r) })) }));
   const count = exercises.reduce((n, e) => n + e.sets.length, 0);
   if (!count) {
@@ -1788,16 +2163,18 @@ function finishWorkout() {
   db.active = null;
   stopRest();
   save();
+  const freshBadges = checkBadges(); // shown on the finish screen
   location.hash = live ? '#/' : '#/calendar/' + s.date;
   sheet(`<div style="text-align:center;font-size:48px">${old ? '✅' : '🎉'}</div>
     <h1 style="text-align:center;font-size:26px">${esc(look(s).name)} ${old ? 'saved' : live ? 'done!' : `saved · ${fmtDay(s.date)}`}</h1>
-    <div class="stats" style="margin-top:14px"><div class="stat"><div class="v">${s.duration ? fmtDur(s.duration) : '–'}</div><div class="l">Time</div></div>
+    <div class="stats" style="margin-top:14px"><div class="stat"><div class="v">${s.duration ? fmtDur(s.duration) : '–'}</div><div class="l">Duration</div></div>
       ${cardioSets.length === count
-        ? `<div class="stat"><div class="v">${mins(cardioSets)}</div><div class="l">Minutes</div></div>
+        ? `<div class="stat"><div class="v">${fmtTime(mins(cardioSets))}</div><div class="l">Time</div></div>
            <div class="stat"><div class="v">${round1(km(cardioSets))}</div><div class="l">Distance (km)</div></div>`
         : `<div class="stat"><div class="v">${count}</div><div class="l">Sets</div></div>
            <div class="stat"><div class="v">${Math.round(volume(s))}</div><div class="l">Volume (${unit()})</div></div>`}</div>
     ${old ? '' : `<div class="card quote" style="margin-top:12px"><div class="qtext" style="font-size:16px">${esc(finishMessage(s, prs))}</div></div>`}
+    ${freshBadges.length ? `<div class="card new-badges" style="margin-top:12px"><div class="eyebrow" style="color:var(--accent)">🏅 New badge${freshBadges.length > 1 ? 's' : ''} unlocked!</div>${freshBadges.map(b => `<div class="row" style="margin-top:8px"><span style="font-size:30px">${b.emoji}</span><span><b>${esc(b.name)}</b><br><span class="muted small">${esc(b.how)}</span></span></div>`).join('')}</div>` : ''}
     ${prs.length ? `<h2>New records 🏆</h2><div class="card stack small">${prs.map(x => `<div>${esc(x)}</div>`).join('')}</div>` : ''}
     ${live ? `<button class="btn block" style="margin-top:16px" data-act="cool-start" data-id="${s.id}">🧘 Cool-down stretch · ~${routineMins(routine(s.planId, 'cool'))} min</button>` : ''}
     <button class="btn primary block" style="margin-top:${live ? 10 : 16}px" data-close>Nice</button>`);
@@ -1984,6 +2361,11 @@ document.addEventListener('click', e => {
     case 'del-plan': db.planned = db.planned.filter(p => p.id !== b.dataset.id); save(); render(); break;
     case 'metric': progMetric = b.dataset.m; render(); break;
     case 'log-weight': logWeightSheet(); break;
+    case 'add-scan': addScan(); break;
+    case 'type-scan': scanForm(); break;
+    case 'scan-detail': scanDetail(b.dataset.id); break;
+    case 'scan-trend': scanTrend = b.dataset.k; render(); break;
+    case 'go-badges': location.hash = '#/more'; setTimeout(() => $('#badges')?.scrollIntoView({ block: 'start' }), 150); break;
     case 'set-height': heightSheet(); break;
     case 'weight-goal': goalSheet(); break;
     case 'wrange': wRange = Number(b.dataset.d); render(); break;
@@ -2027,6 +2409,11 @@ document.addEventListener('input', e => {
 
 document.addEventListener('change', e => {
   const t = e.target;
+  // time boxes: when you leave the box, store minutes and show it like a watch (27.30 → 27:30)
+  if (t.dataset.time !== undefined && db.active) {
+    const row = t.closest('.setrow'), s = db.active.exercises[row.dataset.i].sets[row.dataset.j];
+    s.m = parseTime(t.value) || ''; t.value = fmtTime(s.m); save();
+  }
   if (t.dataset.act === 'rest-set') { db.settings.rest = Number(t.value); save(); }
   if (t.dataset.act === 'name') { db.settings.name = t.value.trim().slice(0, 24); save(); render(); }
   if (t.id === 'importFile' && t.files[0]) {
@@ -2049,6 +2436,8 @@ document.addEventListener('change', e => {
 save(); // stores any migration of older data
 render();
 syncWakeLock(); // opened straight into a running workout: keep the screen on
+// badges your history already earned (first time after updating) get one message
+(() => { const fresh = checkBadges(); if (fresh.length) setTimeout(() => toast(`🏅 You earned ${fresh.length} badge${fresh.length > 1 ? 's' : ''}! Tap to see`, () => { location.hash = '#/more'; setTimeout(() => $('#badges')?.scrollIntoView({ block: 'start' }), 150); }, 7000), 3000); })();
 
 // Once a day, the first time you open the app: a greeting and today's quote. Tap to skip.
 (function splash() {
