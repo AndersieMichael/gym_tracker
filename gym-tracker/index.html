@@ -404,9 +404,12 @@ label .field, label input { color: var(--text); }
 
 <script>
 // App version: shown in More. Bump `n` together with VERSION in sw.js on every update.
-const APP_VERSION = { n: 15.1, date: '2026-10-31' };
+const APP_VERSION = { n: 15.2, date: '2026-10-31' };
 // What's new, shown in Profile under the version. Add the new version at the top.
 const CHANGELOG = [
+  { n: 15.2, date: '2026-10-31', groups: [
+    ['🎬 2 new tutorial videos', ['Machine Chest Press and Seated Cable Row now have a video: tap the ▶ on the picture', 'Silent, and saved on your phone so they play with no signal']],
+  ]},
   { n: 15.1, date: '2026-10-31', groups: [
     ['🏅 6 new set badges', ['✅ Full Class: do every set your class plans', '💪 Extra Mile (15 sets) and 🔩 Set Machine (20 sets) in one class', '📦 100, 🏗️ 500 and 🏛️ 1,000 sets over all your workouts', 'Gym and home sets count; runs and treadmill don’t']],
     ['🧍 Body scan fixes', ['Trend buttons sit in a neat grid, so the selected one no longer stretches across', 'New BMI trend', 'Chart numbers on the side no longer repeat (72.9, 72.9…) when the change is small', 'Torso fat is read correctly (the 💧 icon was sometimes read as a 1: 6.3 → 16.3), and part fats are checked against your total fat mass']],
@@ -478,7 +481,7 @@ const PLANS = [
     { id: 'hammer-curl', name: 'Dumbbell Hammer Curl', img: 'hammer-curl-3d.webp', db: true, muscles: ['Biceps', 'Forearms'], sets: 3, reps: '10-12', tip: 'Palms face each other, elbows stay by your sides. Works at the gym and at home.' },
   ]},
   { id: 'chest', name: 'Chest Day', short: 'CHE', group: 'chest', modes: ['🏋️ Gym', '🏠 Home'], homeName: 'Chest Day · Home', exercises: [
-    { id: 'chest-press-machine', name: 'Machine Chest Press', img: 'chest-press-machine-3d.webp', muscles: ['Chest', 'Triceps', 'Front delts'], sets: 3, reps: '8-12', tip: 'Handles at mid-chest height. Push out, control the way back.',
+    { id: 'chest-press-machine', name: 'Machine Chest Press', img: 'chest-press-machine-3d.webp', video: 'chest-press-machine/chest-press-machine.mp4', muscles: ['Chest', 'Triceps', 'Front delts'], sets: 3, reps: '8-12', tip: 'Handles at mid-chest height. Push out, control the way back.',
       altLabels: HOME_LABELS,
       alt: { id: 'push-up', name: 'Push-ups', img: 'home/push-up.svg', bw: true, muscles: ['Chest', 'Triceps', 'Front delts'], sets: 3, reps: 'max', tip: 'Body in one straight line. Lower your chest close to the floor. Too hard? Do them with your knees on the floor.' } },
     { id: 'pec-deck-fly', name: 'Pec Deck Fly', img: 'pec-deck-fly-3d.webp', muscles: ['Chest'], sets: 3, reps: '12-15', tip: 'Soft elbows. Squeeze the chest in the middle for 1 second.',
@@ -493,7 +496,7 @@ const PLANS = [
     { id: 'lat-pulldown', name: 'Lat Pulldown', img: 'lat-pulldown-3d.webp', video: 'lat-pulldown/lat-pulldown.mp4', muscles: ['Lats', 'Biceps'], sets: 3, reps: '10-12', tip: 'Pull the bar to your upper chest. Chest up, don\'t lean far back.',
       altLabels: HOME_LABELS,
       alt: { id: 'dumbbell-pullover', name: 'Dumbbell Pullover', img: 'home/dumbbell-pullover.svg', db: true, muscles: ['Lats', 'Chest'], sets: 3, reps: '10-12', tip: 'Lie on the floor holding one dumbbell with both hands. Lower it behind your head, then pull it back over your chest.' } },
-    { id: 'seated-cable-row', name: 'Seated Cable Row', img: 'seated-cable-row-3d.webp', muscles: ['Mid back', 'Lats'], sets: 3, reps: '10-12', tip: 'Straight back, pull to your belly, squeeze the shoulder blades.',
+    { id: 'seated-cable-row', name: 'Seated Cable Row', img: 'seated-cable-row-3d.webp', video: 'seated-cable-row/seated-cable-row.mp4', muscles: ['Mid back', 'Lats'], sets: 3, reps: '10-12', tip: 'Straight back, pull to your belly, squeeze the shoulder blades.',
       altLabels: HOME_LABELS,
       alt: { id: 'one-arm-dumbbell-row', name: 'One-arm Dumbbell Row', img: 'home/one-arm-dumbbell-row.svg', db: true, muscles: ['Mid back', 'Lats'], sets: 3, reps: '10-12 / arm', tip: 'One hand and knee on the sofa, flat back. Pull the dumbbell to your hip and squeeze.' } },
     { id: 'deadlift', name: 'Barbell Deadlift', img: 'deadlift', muscles: ['Lower back', 'Glutes', 'Hamstrings'], sets: 4, reps: '5-8', tip: 'Flat back, bar close to the legs, push the floor away.',

@@ -1,7 +1,7 @@
 // Offline support: keeps the app and your guide pictures on the phone.
 // Bump VERSION when you change any file so phones pick up the new version (bug fixes: 11.1, 11.2…).
 // Keep the number the same as APP_VERSION.n in index.html.
-const VERSION = 'gym-v15.1';
+const VERSION = 'gym-v15.2';
 const FILES = [
   './', 'index.html', 'manifest.webmanifest',
   'icons/icon-192.png', 'icons/icon-512.png', 'icons/icon-maskable-512.png', 'icons/apple-touch-icon.png',
@@ -16,6 +16,7 @@ const FILES = [
   ...['arm-circles', 'cross-body-stretch', 'wall-slides', 'arm-swings', 'doorway-stretch', 'incline-push-up', 'cat-cow', 'thoracic-rotation', 'hip-hinge', 'leg-swings', 'hip-circles', 'march-in-place', 'high-knees', 'ankle-circles', 'overhead-triceps-stretch', 'childs-pose', 'lying-twist', 'quad-stretch', 'hamstring-stretch', 'calf-stretch', 'figure-four', 'hip-flexor-stretch'].map(n => `images/moves/${n}.svg`),
   ...['pec-deck-fly', 'chest-press-machine', 'hammer-curl', 'face-pull', 'seated-cable-row', 'lat-pulldown', 'treadmill'].map(n => `images/${n}-3d.webp`),
   'images/lat-pulldown/lat-pulldown.mp4', 'images/treadmill/treadmill.mp4',
+  'images/chest-press-machine/chest-press-machine.mp4', 'images/seated-cable-row/seated-cable-row.mp4',
   ...['seated-dumbbell-press', 'dumbbell-reverse-fly', 'push-up', 'dumbbell-floor-fly', 'floor-crunch', 'dumbbell-pullover', 'one-arm-dumbbell-row', 'dumbbell-rdl', 'chair-dips'].map(n => `images/home/${n}.svg`),
   'images/shoulder-press-machine-3d.webp',
   'images/shoulder-press-machine/shoulder-press-machine.mp4',
