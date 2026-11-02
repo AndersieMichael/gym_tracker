@@ -120,7 +120,7 @@ h2 .muted { font-weight: 600; }
 .hello .avatar-btn { border: 0; padding: 2px; border-radius: 50%; background: linear-gradient(135deg, var(--accent), var(--coral)); }
 .hello .hi { font-size: 21px; font-weight: 800; letter-spacing: -.02em; line-height: 1.15; }
 .hello .round { margin-left: auto; font-size: 18px; }
-.hello .round svg { width: 21px; height: 21px; fill: none; stroke: currentColor; stroke-width: 1.9; stroke-linecap: round; stroke-linejoin: round; }
+.hello .round svg, .round.icon svg { width: 21px; height: 21px; fill: none; stroke: currentColor; stroke-width: 1.9; stroke-linecap: round; stroke-linejoin: round; }
 
 .ring-card { display: grid; grid-template-columns: 112px 1fr; gap: 16px; align-items: center; }
 .ring { position: relative; width: 112px; height: 112px; }
@@ -413,9 +413,13 @@ label .field, label input { color: var(--text); }
 
 <script>
 // App version: shown in More. Bump `n` together with VERSION in sw.js on every update.
-const APP_VERSION = { n: 16, date: '2026-11-02' };
-// What's new, shown in Profile under the version. Add the new version at the top.
+const APP_VERSION = { n: 17, date: '2026-11-02' };
+// What's new, shown in Settings under the version. Add the new version at the top.
 const CHANGELOG = [
+  { n: 17, date: '2026-11-02', groups: [
+    ['⚙️ Settings page', ['Tap the ⚙️ at the top of Profile for all settings in one place: Workout, Alerts, Backup and App', 'What’s new and Check for update are in Settings now, next to the version', 'Profile is just about you: your name, body, dumbbells, avatar and badges']],
+    ['🐛 Fix', ['The phone’s Back button now closes an open picture, video or popup, instead of going back on the page behind it', 'Also works for the warm-up, cool-down and hold timer screens']],
+  ]},
   { n: 16, date: '2026-11-02', groups: [
     ['⏱️ Run & treadmill stopwatch', ['Tap ▶ Start: a 3-2-1 countdown, then the time counts by itself', 'Pause for a traffic light, Stop when you finish', 'When you stop, check the time (change it if your watch says something else) and type the km on the same screen', 'Treadmill: “Next part” saves the part and starts the next one', 'Keeps counting when the screen locks or the app is closed']],
     ['💪 Grip finisher on Back Day', ['Farmer’s Hold and Dead Hang at the end of Back Day (Wrist Curl at home)', 'Hold timer: Ready, 3-2-1 beeps, GO, beeps in the last 3 seconds and a long beep when time is up, so you don’t need to look at your phone', 'Let go early? Tap Stop: the seconds you held are saved', 'Your longest hold shows in Stats and counts for records. Full Class on Back Day now includes the grip moves']],
@@ -889,6 +893,27 @@ function sheet(html, cls = '') {
   document.body.appendChild(o);
   return o;
 }
+// The phone's Back button closes the open popup (picture, video, sheet, warm-up, hold timer) instead of
+// the page behind it: while any popup is open there is one extra step in the history for Back to use.
+const popups = () => [...document.querySelectorAll('.overlay, .guide')];
+let popupStep = false, skipPop = false;
+new MutationObserver(() => {
+  const open = popups().length > 0;
+  if (open && !popupStep) { history.pushState({ popup: 1 }, ''); popupStep = true; }
+  // closed by a tap: take the extra step away again
+  else if (!open && popupStep) { popupStep = false; if (history.state?.popup) { skipPop = true; history.back(); } }
+}).observe(document.body, { childList: true });
+window.addEventListener('popstate', e => {
+  if (skipPop) { skipPop = false; return; }
+  const top = popups().at(-1);
+  if (popupStep && top) {
+    popupStep = false; // one is pushed again if another popup is still open
+    if (hold && top === hold.el) holdClose(); else if (guide && top === guide.el) closeGuide(false); else top.remove();
+    return;
+  }
+  // a step left behind by a popup that was closed by going to another page: skip it
+  if (e.state?.popup) history.back();
+});
 function pickClass(title, onPick) {
   const options = PLANS.flatMap(p => p.modes ? [{ p, home: false }, { p, home: true }] : [{ p, home: false }]);
   const o = sheet(`<h2 style="margin-top:0">${esc(title)}</h2><div class="todo">${options.map(({ p, home }) => {
@@ -976,6 +1001,7 @@ function classRow(p, right = '', done = false) {
 const ICON = {
   play: '<svg viewBox="0 0 24 24"><path d="M8 5.5v13l10.5-6.5z"/></svg>',
   cal: '<svg viewBox="0 0 24 24"><rect x="3.5" y="5" width="17" height="15.5" rx="3"/><path d="M3.5 10h17M8 3v4M16 3v4"/></svg>',
+  gear: '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>',
   stats: '<svg viewBox="0 0 24 24"><path d="M6 20V13M12 20V5M18 20v-9"/></svg>',
   save: '<svg viewBox="0 0 24 24"><path d="M12 4v11m0 0-4-4m4 4 4-4M5 19h14"/></svg>',
 };
@@ -2102,7 +2128,7 @@ function chart(data, u, opts = {}) {
 
 function viewMore() {
   return `
-    <h1>Profile</h1>
+    <div class="row between"><h1>Profile</h1><button class="round icon" data-go="#/settings" aria-label="Settings">${ICON.gear}</button></div>
     <div class="card profile" style="margin-top:12px">
       <div class="ring-av">${avatar(db.settings.avatar, 104)}</div>
       <div class="display" style="font-size:22px">${esc((db.settings.name || '').trim() || 'Your name')}</div>
@@ -2122,25 +2148,35 @@ function viewMore() {
         <div class="avatars">${PHOTO_AVATARS.map((p, n) => { const i = AVATARS.length + n; return `<button class="${db.settings.avatar === i ? 'on' : ''}" data-act="avatar" data-i="${i}" aria-label="${esc(p.name)}" title="${esc(p.name)}">${avatar(i, 58)}</button>`; }).join('')}</div></div>
     </div>
     ${badgesSection()}
-    <h2>Settings</h2>
+  `;
+}
+
+// Settings: its own page, opened with the ⚙️ on Profile
+function viewSettings() {
+  return `
+    <button class="back" data-back>‹ Back</button>
+    <h1>Settings</h1>
+    <h2>🏋️ Workout</h2>
     <div class="card stack">
       <div class="row between"><span>Weight unit</span>
         <div class="seg" style="width:140px">${['kg', 'lb'].map(u => `<button class="${unit() === u ? 'on' : ''}" data-act="unit" data-u="${u}">${u}</button>`).join('')}</div></div>
       <div class="row between"><span>Rest timer after each set</span>
         <select class="field" style="width:120px" data-act="rest-set">${[0, 60, 90, 120, 180].map(s => `<option value="${s}" ${db.settings.rest === s ? 'selected' : ''}>${s ? fmtDur(s) : 'Off'}</option>`).join('')}</select></div>
+    </div>
+    <h2>🔔 Alerts</h2>
+    <div class="card stack">
       ${[['sound', 'Beep sounds (rest, holds, run start)'], ['vibrate', 'Vibrate when rest is over'], ['keepAwake', 'Keep screen on during workouts']].map(([k, label]) => `<div class="row between"><span>${label}</span>
         <div class="seg" style="width:140px">${[[true, 'On'], [false, 'Off']].map(([v, l]) => `<button class="${(db.settings[k] !== false) === v ? 'on' : ''}" data-act="toggle-setting" data-k="${k}" data-v="${v}">${l}</button>`).join('')}</div></div>`).join('')}
       <div class="muted small">Beeps play at your media volume, through your earphones if they’re in. Phones only beep and vibrate while the screen is on and the app is open, so keep “screen on” turned on for the alarms.</div>
     </div>
-    <h2>Backup</h2>
+    <h2>💾 Backup</h2>
     <div class="card stack">
       <div class="muted small">Your data is saved only in this browser on this device. Export a backup now and then, and use Import to move it to another phone or computer.</div>
       <div class="row"><button class="btn" data-act="export">⬇ Export backup</button><button class="btn" data-act="import">⬆ Import backup</button></div>
       <input type="file" id="importFile" accept="application/json,.json" hidden>
     </div>
-    <h2>Danger zone</h2>
-    <div class="card"><button class="btn danger" data-act="reset">Delete all my data</button></div>
-    <div class="card" style="margin-top:28px;text-align:center">
+    <h2>ℹ️ App</h2>
+    <div class="card" style="text-align:center">
       <div class="display" style="font-size:18px">Gym Tracker <span style="color:var(--accent)">v${APP_VERSION.n}</span></div>
       <div class="muted small">Version ${APP_VERSION.n} · ${fmtDay(APP_VERSION.date, { day: 'numeric', month: 'long', year: 'numeric' })} · ${db.sessions.length} workouts saved</div>
       <button class="btn sm" style="margin-top:10px" data-act="check-update">Check for update</button>
@@ -2157,19 +2193,22 @@ function viewMore() {
         </details>
       </div>`;
     })()}
+    <h2>⚠️ Danger zone</h2>
+    <div class="card"><button class="btn danger" data-act="reset">Delete all my data</button></div>
   `;
 }
 
 // ---------- Router ----------
 function render() {
   const [, route, arg, arg2] = (location.hash || '#/').split('/');
-  const tab = route === 'calendar' ? 'calendar' : route === 'progress' ? 'progress' : route === 'more' ? 'more' : 'today';
+  const tab = route === 'calendar' ? 'calendar' : route === 'progress' ? 'progress' : route === 'more' || route === 'settings' ? 'more' : 'today';
   document.querySelectorAll('#tabs a').forEach(a => a.classList.toggle('on', a.dataset.tab === tab));
   const html = route === 'class' ? viewClass(arg)
     : route === 'workout' ? viewWorkout()
     : route === 'calendar' ? viewCalendar(arg)
     : route === 'progress' ? (arg === 'weight' ? viewWeight() : arg === 'ex' ? (arg2 ? viewExercise(decodeURIComponent(arg2)) : viewExercises()) : viewOverview())
     : route === 'more' ? viewMore()
+    : route === 'settings' ? viewSettings()
     : viewToday();
   $('#app').innerHTML = html;
 }
@@ -2267,7 +2306,7 @@ let restEnd = 0;
 // at home, rest is 60 seconds (lighter weights, keep the muscles working)
 function startRest() { const secs = db.active?.home ? Math.min(60, db.settings.rest) : db.settings.rest; if (secs) { restEnd = Date.now() + secs * 1000; tick(); } }
 function stopRest() { restEnd = 0; lastBuzz = 0; $('#rest').classList.remove('on'); }
-// phone vibration (can be turned off in Profile)
+// phone vibration (can be turned off in Settings)
 const buzz = pattern => { if (db.settings.vibrate === false) return; try { navigator.vibrate?.(pattern); } catch (e) {} };
 let lastBuzz = 0;
 function tick() {
@@ -2289,7 +2328,7 @@ function tick() {
 }
 
 // ---------- Beeps ----------
-// made by the app itself (no sound files, works offline), at media volume; can be turned off in Profile
+// made by the app itself (no sound files, works offline), at media volume; can be turned off in Settings
 let audio = null, audioIdle = 0;
 const soundOn = () => db.settings.sound !== false;
 const audioCtx = () => (audio = audio || new (window.AudioContext || window.webkitAudioContext)());
@@ -2793,9 +2832,9 @@ try {
   const seen = Number(localStorage.getItem('gymtracker.version'));
   // versions before 4 didn't store a number: an app already running offline counts as an update
   const returning = seen || navigator.serviceWorker?.controller;
-  // tap it to jump to the "What's new" list in Profile
+  // tap it to jump to the "What's new" list in Settings
   if (returning && seen < APP_VERSION.n) toast(`✓ Updated to version ${APP_VERSION.n} · tap to see what’s new`, () => {
-    location.hash = '#/more';
+    location.hash = '#/settings';
     setTimeout(() => document.getElementById('whatsnew')?.scrollIntoView({ block: 'start' }), 150);
   }, 8000);
   localStorage.setItem('gymtracker.version', APP_VERSION.n);
