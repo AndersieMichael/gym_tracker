@@ -27,7 +27,7 @@
   --danger: #FF5C6C;
   --photo-a: #E4F1EE; --photo-b: #F3E3DC;
   --radius: 24px;
-  --c-shoulder: #FFB547; --c-chest: #FF6B81; --c-back: #5AB8FF; --c-legs: #3EE59B; --c-cardio: #B197FC; --c-running: #F7A6FF;
+  --c-shoulder: #FFB547; --c-chest: #FF6B81; --c-back: #5AB8FF; --c-legs: #3EE59B; --c-cardio: #B197FC; --c-running: #F7A6FF; --c-core: #5EE7F0;
   --font: "Plus Jakarta Sans", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
   --tabs-h: 66px;
   color-scheme: dark;
@@ -219,6 +219,18 @@ select.field option, select.field optgroup { background: #15191d; color: var(--t
 .setrow .prev { background: none; border: 0; color: var(--muted); font-size: 13px; text-align: left; padding: 0; }
 .setrow input { width: 100%; text-align: center; background: rgba(255, 255, 255, .06); border: 1px solid var(--glass-line); border-radius: 13px; padding: 10px 4px; font-weight: 700; font-variant-numeric: tabular-nums; }
 .setrow input:focus { outline: none; border-color: var(--accent); }
+.setrow .tbtn { width: 100%; text-align: center; background: rgba(255, 255, 255, .06); border: 1px solid var(--glass-line); border-radius: 13px; padding: 10px 2px; font-weight: 700; font-variant-numeric: tabular-nums; color: var(--text); font-size: 14px; white-space: nowrap; overflow: hidden; }
+.setrow .tbtn.empty { color: var(--muted); font-weight: 600; }
+/* hours : minutes : seconds boxes */
+.tb-row { display: flex; justify-content: center; align-items: flex-start; gap: 6px; margin-top: 16px; }
+.tb-row label { display: flex; flex-direction: column; align-items: center; gap: 6px; font-size: 12px; color: var(--muted); }
+.tb-row input { width: 78px; font-size: 34px; font-weight: 800; text-align: center; padding: 12px 2px; border-radius: 16px; background: rgba(255, 255, 255, .06); border: 1px solid var(--glass-line); color: var(--text); font-variant-numeric: tabular-nums; }
+.tb-row input[data-tb="h"] { width: 62px; }
+.tb-row input:focus { outline: none; border-color: var(--accent); }
+.tb-row input::placeholder { color: rgba(255, 255, 255, .25); }
+.tb-row .colon { font-size: 30px; font-weight: 800; padding-top: 14px; color: var(--muted); }
+.tb-line { text-align: center; margin-top: 10px; font-weight: 700; min-height: 20px; }
+.tb-line.bad { color: var(--amber); }
 .chk { height: 40px; border-radius: 13px; border: 1px solid var(--glass-line); background: rgba(255, 255, 255, .06); font-weight: 800; color: var(--muted); }
 .setrow.done .chk { background: linear-gradient(135deg, #46F4C6, var(--accent-2)); color: var(--accent-ink); border-color: transparent; animation: pop .22s ease-out; }
 @keyframes pop { 50% { transform: scale(1.12); } }
@@ -413,9 +425,15 @@ label .field, label input { color: var(--text); }
 
 <script>
 // App version: shown in More. Bump `n` together with VERSION in sw.js on every update.
-const APP_VERSION = { n: 17, date: '2026-11-02' };
+const APP_VERSION = { n: 18, date: '2026-11-03' };
 // What's new, shown in Settings under the version. Add the new version at the top.
 const CHANGELOG = [
+  { n: 18, date: '2026-11-03', groups: [
+    ['🧘 New Core class', ['Plank, Side Plank, Glute Bridge and Dead Bug, about 10–12 minutes', 'No equipment, so it works at the gym and at home', 'Optional, like Cardio and Running: add it after any class or on a rest day (2–3 times a week is great)', 'Its own warm-up and cool-down']],
+    ['📈 Hold goals that go up', ['Planks, Farmer’s Hold and Dead Hang now have a goal: hold it on every set and next time it’s 5 seconds longer', 'Missed it by a lot twice in a row? The goal gets a bit easier, then builds back up', 'The goal shows on the class and in the workout, and the finish screen tells you your next goal', 'Up to a top goal: 2:00 for the plank, 1:00 for the others']],
+    ['⏱️ Easier time boxes', ['Tap Time on a run or treadmill row: separate boxes for hours, minutes and seconds, so 1 h 30 min is easy to type', 'A line under the boxes says the time in words (and your pace for runs), so you can check it', 'Same boxes on the stopwatch check screen']],
+    ['🔄 Side plank timer', ['The hold timer does your left side, gives you 5 seconds to switch (with 3-2-1 beeps), then your right side', 'Both sides are saved; the weaker side counts for your goal']],
+  ]},
   { n: 17, date: '2026-11-02', groups: [
     ['⚙️ Settings page', ['Tap the ⚙️ at the top of Profile for all settings in one place: Workout, Alerts, Backup and App', 'What’s new and Check for update are in Settings now, next to the version', 'Profile is just about you: your name, body, dumbbells, avatar and badges']],
     ['🐛 Fix', ['The phone’s Back button now closes an open picture, video or popup, instead of going back on the page behind it', 'Also works for the warm-up, cool-down and hold timer screens']],
@@ -525,8 +543,8 @@ const PLANS = [
       alt: { id: 'chair-dips', name: 'Chair Dips', img: 'home/chair-dips.svg', bw: true, muscles: ['Triceps'], sets: 3, reps: 'max', tip: 'Hands on the front edge of a sturdy chair. Lower until your elbows bend about 90°, then push back up.' } },
     // grip finisher: last, so tired hands don't hold back the pulldowns, rows and deadlift.
     // type 'hold': timed in seconds (t) with the hold timer, plus the weight (w) unless it's bodyweight
-    { id: 'farmers-hold', type: 'hold', name: 'Dumbbell Farmer’s Hold', img: 'grip/farmers-hold.svg', db: true, muscles: ['Grip', 'Forearms', 'Traps'], sets: 3, reps: '30-45 s', tip: 'Stand tall with a heavy dumbbell in each hand, arms straight by your sides, shoulders down. Squeeze the handles hard. Works at the gym and at home.' },
-    { id: 'dead-hang', type: 'hold', bw: true, name: 'Dead Hang', img: 'grip/dead-hang.svg', muscles: ['Grip', 'Forearms', 'Shoulders'], sets: 3, reps: '20-40 s', tip: 'Hang from a pull-up bar with straight arms, hands shoulder-width apart. Keep still, no swinging. Feet can touch a box to make it easier.',
+    { id: 'farmers-hold', type: 'hold', holdMax: 60, maxTip: '60 s, the top goal! Next time try heavier dumbbells.', name: 'Dumbbell Farmer’s Hold', img: 'grip/farmers-hold.svg', db: true, muscles: ['Grip', 'Forearms', 'Traps'], sets: 3, reps: '30-45 s', tip: 'Stand tall with a heavy dumbbell in each hand, arms straight by your sides, shoulders down. Squeeze the handles hard. Works at the gym and at home.' },
+    { id: 'dead-hang', type: 'hold', bw: true, holdMax: 60, maxTip: '60 s, the top goal! Keep it there, your grip is strong.', name: 'Dead Hang', img: 'grip/dead-hang.svg', muscles: ['Grip', 'Forearms', 'Shoulders'], sets: 3, reps: '20-40 s', tip: 'Hang from a pull-up bar with straight arms, hands shoulder-width apart. Keep still, no swinging. Feet can touch a box to make it easier.',
       altLabels: HOME_LABELS,
       alt: { id: 'wrist-curl', name: 'Dumbbell Wrist Curl', img: 'grip/wrist-curl.svg', db: true, light: true, muscles: ['Forearms', 'Grip'], sets: 3, reps: '15', tip: 'Sit with your forearms on your thighs, palms up. Let the dumbbells roll down to your fingers, then curl your wrists up.' } },
   ]},
@@ -549,6 +567,14 @@ const PLANS = [
   // Optional: extra classes you can add any day. Not suggested and not counted in the week goal.
   { id: 'cardio', name: 'Cardio', short: 'CAR', group: 'cardio', optional: true, exercises: [
     { id: 'treadmill', type: 'cardio', name: 'Treadmill', img: 'treadmill-3d.webp', video: 'treadmill/treadmill.mp4', muscles: ['Heart', 'Legs', 'Fat burn'], sets: 1, reps: '20-30 min', tip: 'Start with 5 min walking to warm up, then walk fast or run. Add incline for extra burn. Log each part (warm-up, run, cool-down) as its own row.' },
+  ]},
+  // Core: no equipment, so it works at the gym and at home. Add it after any class or on a rest day.
+  // holdMax: the hold goal goes up 5 s at a time until here (see holdGoal); sides: timed left, then right
+  { id: 'core', name: 'Core', short: 'COR', group: 'core', optional: true, exercises: [
+    { id: 'plank', type: 'hold', bw: true, holdMax: 120, maxTip: '2:00 plank, the top goal! Keep it, or lift one foot to make it harder.', name: 'Plank', img: 'core/plank.svg', muscles: ['Abs', 'Core', 'Shoulders'], sets: 3, reps: '45-60 s', tip: 'Forearms under your shoulders, body in one straight line from head to heels. Squeeze your glutes and don’t let your hips sag.' },
+    { id: 'side-plank', type: 'hold', bw: true, sides: true, holdMax: 60, maxTip: '1:00 per side, the top goal! Keep it, or lift your top leg to make it harder.', name: 'Side Plank', img: 'core/side-plank.svg', muscles: ['Obliques', 'Core', 'Hips'], sets: 3, reps: '30-45 s / side', tip: 'Elbow under your shoulder, hips up so your body is one straight line. Too hard? Put your bottom knee down.' },
+    { id: 'glute-bridge', name: 'Glute Bridge', img: 'glute-bridge', bw: true, muscles: ['Glutes', 'Hamstrings'], sets: 3, reps: '15', tip: 'Push through the heels, squeeze glutes at the top for 1 second.' },
+    { id: 'dead-bug', name: 'Dead Bug', img: 'core/dead-bug.svg', bw: true, muscles: ['Deep abs', 'Core'], sets: 3, reps: '10 / side', tip: 'On your back, arms up and knees over your hips. Slowly lower the opposite arm and leg while you press your lower back into the floor.' },
   ]},
   // Outdoor running: you log distance and time (from your watch or running app), the app works out your pace
   { id: 'running', name: 'Running', short: 'RUN', group: 'running', optional: true, exercises: [
@@ -630,7 +656,7 @@ function lastSetsFor(exId) {
     .sort((a, b) => b.date.localeCompare(a.date) || b.start - a.start)[0];
   return s ? s.exercises.find(e => e.exId === exId).sets : null;
 }
-const setText = s => (s.t !== undefined ? `${num(s.w) ? `${s.w} ${unit()} · ` : ''}${s.t} s` : s.d !== undefined ? `${s.d} km · ${fmtTime(s.m) || '–'}${paceOf(s) ? ` · ${fmtPace(paceOf(s))}/km` : ''}` : s.m !== undefined ? `${fmtTime(s.m) || '–'}${num(s.v) ? ` @ ${s.v} km/h` : ''}${num(s.i) ? ` · ${s.i}%` : ''}` : num(s.w) ? `${s.w}×${s.r}` : `${s.r} reps`);
+const setText = s => (s.t !== undefined ? `${num(s.w) ? `${s.w} ${unit()} · ` : ''}${num(s.tl) ? `L ${s.tl} s · R ${s.tr} s` : `${s.t} s`}` : s.d !== undefined ? `${s.d} km · ${fmtTime(s.m) || '–'}${paceOf(s) ? ` · ${fmtPace(paceOf(s))}/km` : ''}` : s.m !== undefined ? `${fmtTime(s.m) || '–'}${num(s.v) ? ` @ ${s.v} km/h` : ''}${num(s.i) ? ` · ${s.i}%` : ''}` : num(s.w) ? `${s.w}×${s.r}` : `${s.r} reps`);
 // guide pictures are .jpg; drawn ones (like the treadmill) give their own extension
 const src = img => `images/${img.includes('.') ? img : img + '.jpg'}`;
 // tapping a picture shows it bigger, or plays its tutorial video when the exercise has one
@@ -642,6 +668,23 @@ const isRun = e => e.type === 'run';
 // holds (Farmer's Hold, Dead Hang): rows are w = weight, t = seconds held
 const isHold = e => e.type === 'hold';
 const holdTarget = e => parseInt(e.reps) || 30;
+// The hold goal goes up by itself, one workout at a time:
+// held the goal on every set → +5 s next time (up to holdMax); missed it by more than 10 s on 2 workouts in a row → 5 s easier.
+// Each workout saves the goal it had (x.goal); older ones without it count with the goal worked out so far.
+// why: 'start' (first time), 'up', 'same', 'down' or 'max' (held the top goal)
+function holdGoal(exId, skipId) {
+  const e = ex(findEx(exId)), max = e.holdMax || 120, need = parseInt(e.sets) || 3;
+  const past = db.sessions.filter(s => s.id !== skipId && s.exercises?.some(x => x.exId === exId && x.sets.length))
+    .sort((a, b) => a.date.localeCompare(b.date) || a.start - b.start).map(s => s.exercises.find(x => x.exId === exId));
+  let goal = Math.min(max, holdTarget(e)), why = 'start', miss = 0;
+  for (const x of past) {
+    const g = x.goal || goal, low = Math.min(...x.sets.map(y => num(y.t)));
+    if (low >= g && x.sets.length >= need) { goal = Math.min(max, g + 5); why = goal === g ? 'max' : 'up'; miss = 0; }
+    else if (low < g - 10 && ++miss >= 2) { goal = Math.max(5, g - 5); why = 'down'; miss = 0; }
+    else { goal = g; why = 'same'; }
+  }
+  return { goal, why, max, tip: e.maxTip };
+}
 // run rows: d = distance (km), m = minutes. Pace = minutes per km, shown as 5:30
 // Time (runs, treadmill) is stored in minutes but typed and shown like a watch: 27:30 or 1:05:20.
 // Also accepted: 27 (minutes), 27.30 / 27,30 (two digits after the dot = seconds), 27.5 (decimal minutes).
@@ -664,6 +707,53 @@ function fmtTime(min) {
   return h ? `${h}:${pad(m)}:${pad(s)}` : `${m}:${pad(s)}`;
 }
 const paceOf = x => (num(x.d) > 0 && parseTime(x.m) > 0 ? parseTime(x.m) / num(x.d) : 0);
+// ---------- Time boxes: hours : minutes : seconds ----------
+// In a run or treadmill row the Time is a button showing 27:30 (or 1:30:00); tapping it opens three number boxes,
+// so nobody has to guess whether "1.30" means minutes, hours or seconds. ph = last time / target (minutes), shown grey.
+const timeBtn = (s, ph) => `<button class="tbtn ${parseTime(s.m) ? '' : 'empty'}" data-act="time-edit" data-f="m" data-ph="${num(ph) || ''}">${fmtTime(s.m) || fmtTime(ph) || 'mm:ss'}</button>`;
+function timeBoxes(min) {
+  const t = Math.round(parseTime(min) * 60), h = Math.floor(t / 3600), m = Math.floor(t / 60) % 60, s = t % 60;
+  const box = (k, v, label, ph) => `<label><input data-tb="${k}" inputmode="numeric" maxlength="2" value="${v}" placeholder="${ph}">${label}</label>`;
+  return `<div class="tb-row">${box('h', t && h ? h : '', 'hours', '0')}<span class="colon">:</span>${box('m', t ? m : '', 'minutes', '00')}<span class="colon">:</span>${box('s', t ? pad(s) : '', 'seconds', '00')}</div>
+    <div class="tb-line" data-tbline></div>`;
+}
+// wires up the boxes in `root`: digits only, minutes jump to seconds after 2 digits, and a line that says the time in words.
+// km() gives the distance for the pace (runs). Returns read(): the time in minutes, 0 when empty, or null when the seconds are wrong.
+function wireTime(root, km = () => 0) {
+  const B = k => root.querySelector(`[data-tb="${k}"]`), val = k => parseInt(B(k).value) || 0;
+  // 90 minutes is fine too: it's saved as 1:30:00
+  const read = () => (val('s') > 59 ? null : val('h') * 60 + val('m') + val('s') / 60);
+  const words = t => { const x = Math.round(t * 60), h = Math.floor(x / 3600), m = Math.floor(x / 60) % 60, s = x % 60;
+    return [h && `${h} hour${h > 1 ? 's' : ''}`, m && `${m} min`, s && `${s} sec`].filter(Boolean).join(' '); };
+  const update = () => {
+    const t = read(), d = num(km()), line = root.querySelector('[data-tbline]');
+    line.textContent = t === null ? 'Seconds go up to 59' : t ? `= ${words(t)}${d > 0 ? ` · ${fmtPace(t / d)} /km` : ''}` : '';
+    line.classList.toggle('bad', t === null);
+  };
+  root.querySelectorAll('[data-tb]').forEach(b => b.addEventListener('input', () => {
+    b.value = b.value.replace(/\D/g, '').slice(0, 2);
+    if (b.dataset.tb === 'm' && b.value.length === 2) { B('s').focus(); B('s').select(); }
+    update();
+  }));
+  root.querySelectorAll('[data-tb]').forEach(b => b.addEventListener('focus', () => b.select()));
+  update();
+  return Object.assign(read, { update, focus: () => setTimeout(() => { B('m').focus(); B('m').select(); }, 60) });
+}
+// the small screen for one row's time; done: also tick the row when saved
+function timeSheet(i, j, done = false) {
+  const a = db.active, e = findEx(a.exercises[i].exId), s = a.exercises[i].sets[j];
+  const o = sheet(`<h2 style="margin-top:0;text-align:center">⏱️ ${isRun(e) ? 'Run' : 'Treadmill'} time · part ${j + 1}</h2>
+    <div class="muted small" style="text-align:center">From your watch${isRun(e) ? ' or running app' : ' or the treadmill screen'}</div>
+    ${timeBoxes(s.m)}
+    <div class="row" style="margin-top:16px"><button class="btn primary" style="flex:2" data-tbsave>✓ Save</button><button class="btn" style="flex:1" data-tbclear>Clear</button></div>`);
+  const read = wireTime(o, () => (isRun(e) ? s.d : 0)); read.focus();
+  o.querySelector('[data-tbsave]').addEventListener('click', () => {
+    const t = read(); if (t === null) return;
+    s.m = t || ''; if (done && t) s.done = true;
+    save(); o.remove(); render();
+  });
+  o.querySelector('[data-tbclear]').addEventListener('click', () => { s.m = ''; s.done = false; save(); o.remove(); render(); });
+}
 const fmtPace = p => { if (!p) return '–'; let mm = Math.floor(p), ss = Math.round((p - mm) * 60); if (ss === 60) { mm++; ss = 0; } return `${mm}:${pad(ss)}`; };
 const exCount = p => `${p.exercises.length} exercise${p.exercises.length === 1 ? '' : 's'}`;
 const findEx = id => { for (const p of PLANS) for (const e of withAlts(p.exercises)) if (e.id === id) return e; };
@@ -684,6 +774,13 @@ function repAdvice(e, w) {
 // the weight to judge a home exercise by: the heaviest one typed so far, else your home dumbbells
 const workingWeight = we => Math.max(0, ...we.sets.map(s => num(s.w))) || homeDb();
 function recFor(a, e, we) {
+  if (isHold(e)) {
+    // holds: today's goal, and why it is what it is
+    const G = holdGoal(e.id, a.editId), goal = we.goal || G.goal, per = e.sides ? ' / side' : '';
+    const note = { up: `📈 Goal up to ${goal} s${per}: you held every set last time`, same: `🎯 Hold ${goal} s${per} on every set and the goal goes up`,
+      down: `🎯 Goal ${goal} s${per} for now: build back up`, max: `🏆 ${G.tip || 'Top goal reached!'}`, start: `🎯 Hold ${goal} s${per} on every set and the goal goes up` }[G.why];
+    return { target: `${esc(e.sets)} × ${goal} s${per}`, note, reps: e.reps, goal };
+  }
   const adv = a.home && repAdvice(e, workingWeight(we));
   return { target: adv ? `${esc(e.sets)} × ${esc(adv.reps)}` : targetText(e), note: adv ? `💡 ${adv.note}` : '', reps: adv ? adv.reps : e.reps };
 }
@@ -764,6 +861,7 @@ const ROUTINES = {
   back: { warm: ['cat-cow', 'thoracic-rotation', 'hip-hinge', 'arm-swings'], cool: ['childs-pose', 'cat-cow', 'lying-twist'] },
   legs: { warm: ['leg-swings', 'hip-circles', 'bodyweight-squat', 'glute-bridge'], cool: ['quad-stretch', 'hamstring-stretch', 'calf-stretch', 'figure-four'] },
   cardio: { warm: ['march-in-place', 'high-knees', 'leg-swings', 'ankle-circles'], cool: ['quad-stretch', 'calf-stretch', 'hamstring-stretch', 'hip-flexor-stretch'] },
+  core: { warm: ['cat-cow', 'hip-circles', 'glute-bridge', 'arm-swings'], cool: ['childs-pose', 'lying-twist', 'hip-flexor-stretch'] },
 };
 const routine = (planId, kind) => (ROUTINES[planById(planId).group] || ROUTINES.cardio)[kind];
 const moveImg = id => MOVES[id].img || `moves/${id}.svg`;
@@ -1183,7 +1281,8 @@ function viewClass(id) {
               <div><label>Name</label><input class="field" data-ov="${e.id}" data-k="name" value="${esc(e.name)}"></div>
               <div><label>Sets</label><input class="field" data-ov="${e.id}" data-k="sets" inputmode="numeric" value="${esc(e.sets)}"></div>
               <div><label>Reps</label><input class="field" data-ov="${e.id}" data-k="reps" value="${esc(e.reps)}"></div>
-            </div>` : `<div class="row between" style="align-items:flex-start"><div class="title">${esc(e.name)}</div><div class="target">${targetText(e)}</div></div>`}
+            </div>` : `<div class="row between" style="align-items:flex-start"><div class="title">${esc(e.name)}</div><div class="target">${isHold(e) ? recFor({}, e, {}).target : targetText(e)}</div></div>`}
+          ${isHold(e) && !editing ? `<div class="small" style="margin-top:4px;color:var(--amber)">${recFor({}, e, {}).note}</div>` : ''}
           <div style="margin-top:6px">${e.muscles.map(m => `<span class="chip">${esc(m)}</span>`).join('')}</div>
           <div class="tip">💡 ${esc(e.tip)}</div>
           ${prev ? `<div class="small" style="margin-top:8px"><span class="muted">Last time:</span> <b>${prev.map(s => setText(s)).join(', ')}</b> ${isRun(e) ? '' : isCardio(e) ? `· ${round1(km(prev))} km` : !isHold(e) && num(prev[0].w) ? unit() : ''}</div>` : ''}
@@ -1250,19 +1349,19 @@ function viewWorkout() {
           <div style="flex:1"><div class="name">${esc(e.name)}</div><div class="small muted">Target <span class="target" data-rec="${i}">${recFor(a, e, we).target}</span></div>
             <div class="small" data-recnote="${i}" style="color:var(--amber)">${recFor(a, e, we).note}</div></div></div>
         ${isRun(e) ? `<div class="sets cardio">
-          <div class="hdr"><span style="text-align:center">#</span><span>Previous</span><span style="text-align:center">km</span><span style="text-align:center">Time</span><span style="text-align:center">Pace</span><span></span></div>
+          <div class="hdr"><span style="text-align:center">#</span><span>Previous</span><span style="text-align:center">km</span><span style="text-align:center">Time</span><span style="text-align:center">min/km</span><span></span></div>
           ${we.sets.map((s, j) => {
             const pv = prev[j];
             return `<div class="setrow ${s.done ? 'done' : ''}" data-i="${i}" data-j="${j}">
               <span class="sn">${j + 1}</span>
               <button class="prev" data-act="copy-prev" ${pv ? '' : 'disabled'}>${pv ? `${esc(pv.d)} km · ${fmtTime(pv.m)}` : '—'}</button>
               <input inputmode="decimal" data-f="d" value="${esc(s.d)}" placeholder="${pv ? esc(pv.d) : esc(String(e.reps).match(/\d+/)?.[0] || '')}">
-              <input inputmode="decimal" data-f="m" data-time value="${esc(fmtTime(s.m))}" placeholder="${pv ? fmtTime(pv.m) : '25:00'}">
+              ${timeBtn(s, pv ? pv.m : 0)}
               <span class="pace" style="text-align:center;font-weight:800;font-variant-numeric:tabular-nums">${fmtPace(paceOf(s))}</span>
               <button class="chk" data-act="check">✓</button>
             </div>`;
           }).join('')}
-          <div class="small muted" style="margin-top:6px">${km(we.sets) ? `Total: <b style="color:var(--text)">${round1(km(we.sets))} km · ${fmtTime(mins(we.sets)) || '–'}${mins(we.sets) ? ` · ${fmtPace(mins(we.sets) / km(we.sets))}/km` : ''}</b>` : '⌚ Type distance and time from your watch, like <b style="color:var(--text)">5</b> km and <b style="color:var(--text)">27:30</b>'}</div>
+          <div class="small muted" style="margin-top:6px">${km(we.sets) ? `Total: <b style="color:var(--text)">${round1(km(we.sets))} km · ${fmtTime(mins(we.sets)) || '–'}${mins(we.sets) ? ` · ${fmtPace(mins(we.sets) / km(we.sets))}/km` : ''}</b>` : '⌚ Type the km and tap Time to fill in hours, minutes and seconds from your watch'}</div>
           ${isLive(a) ? swBar(a, i, e) : ''}
         </div>` : isCardio(e) ? `<div class="sets cardio">
           <div class="hdr"><span style="text-align:center">#</span><span>Previous</span><span style="text-align:center">Time</span><span style="text-align:center">km/h</span><span style="text-align:center">Incl %</span><span></span></div>
@@ -1271,23 +1370,23 @@ function viewWorkout() {
             return `<div class="setrow ${s.done ? 'done' : ''}" data-i="${i}" data-j="${j}">
               <span class="sn">${j + 1}</span>
               <button class="prev" data-act="copy-prev" ${pv ? '' : 'disabled'}>${pv ? `${fmtTime(pv.m)}${num(pv.v) ? ` @${esc(pv.v)}` : ''}` : '—'}</button>
-              <input inputmode="decimal" data-f="m" data-time value="${esc(fmtTime(s.m))}" placeholder="${pv ? fmtTime(pv.m) : fmtTime(Number(String(e.reps).match(/\d+/)?.[0] || 20))}">
+              ${timeBtn(s, pv ? pv.m : Number(String(e.reps).match(/\d+/)?.[0] || 20))}
               <input inputmode="decimal" data-f="v" value="${esc(s.v)}" placeholder="${pv ? esc(pv.v || '') : ''}">
               <input inputmode="decimal" data-f="i" value="${esc(s.i)}" placeholder="${pv ? esc(pv.i || '') : '0'}">
               <button class="chk" data-act="check">✓</button>
             </div>`;
           }).join('')}
-          <div class="small muted" style="margin-top:6px">${mins(we.sets) ? `Total: <b style="color:var(--text)">${fmtTime(mins(we.sets))} · ${round1(km(we.sets))} km</b>` : '⌚ Time as minutes:seconds, like <b style="color:var(--text)">20:00</b>'}</div>
+          <div class="small muted" style="margin-top:6px">${mins(we.sets) ? `Total: <b style="color:var(--text)">${fmtTime(mins(we.sets))} · ${round1(km(we.sets))} km</b>` : '⌚ Tap Time to fill in hours, minutes and seconds'}</div>
           ${isLive(a) ? swBar(a, i, e) : ''}
         </div>` : isHold(e) ? `<div class="sets">
-          <div class="hdr"><span style="text-align:center">Set</span><span>Previous</span><span style="text-align:center">${e.bw ? '' : unit()}</span><span style="text-align:center">Sec</span><span></span></div>
+          <div class="hdr"><span style="text-align:center">Set</span><span>Previous</span><span style="text-align:center">${e.bw ? '' : unit()}</span><span style="text-align:center">${e.sides ? 'Sec/side' : 'Sec'}</span><span></span></div>
           ${we.sets.map((s, j) => {
             const pv = prev[j];
             return `<div class="setrow ${s.done ? 'done' : ''}" data-i="${i}" data-j="${j}">
               <span class="sn">${j + 1}</span>
               <button class="prev" data-act="copy-prev" ${pv ? '' : 'disabled'}>${pv ? esc(setText(pv)) : '—'}</button>
               ${e.bw ? '<span class="muted small" style="text-align:center">Body</span>' : `<input inputmode="decimal" data-f="w" value="${esc(s.w)}" placeholder="${pv ? esc(pv.w || '') : a.home && e.db && homeDb() ? homeDb() : ''}">`}
-              <input inputmode="numeric" data-f="t" value="${esc(s.t)}" placeholder="${pv ? esc(pv.t) : holdTarget(e)}">
+              <input inputmode="numeric" data-f="t" value="${esc(s.t)}" placeholder="${recFor(a, e, we).goal}">
               <button class="chk" data-act="check">✓</button>
             </div>`;
           }).join('')}
@@ -2236,7 +2335,9 @@ function startWorkout(planId, opts = {}) {
     const saved = opts.edit?.exercises.find(x => slotOf(p, x.exId) === slot);
     const e = saved ? findEx(saved.exId) : chosen(slot);
     const sets = saved?.sets.length ? saved.sets.map(s => ({ ...s, done: true })) : [...Array(Math.max(1, parseInt(ex(e).sets) || 3))].map(() => emptyRow(e));
-    return { exId: e.id, sets };
+    // holds keep the goal they started with, so finishing can tell if you beat it
+    const goal = isHold(e) ? saved?.goal || holdGoal(e.id, opts.edit?.id).goal : 0;
+    return { exId: e.id, sets, ...(goal ? { goal } : {}) };
   });
   db.active = { planId, date, start: opts.edit?.start || Date.now(), exercises, ...(home ? { home } : {}), ...(opts.edit ? { editId: opts.edit.id } : {}) };
   db.planned = db.planned.filter(x => !(x.date === date && x.planId === planId));
@@ -2252,7 +2353,7 @@ function finishWorkout() {
     : isCardio(findEx(e.exId))
     ? { exId: e.exId, sets: e.sets.filter(s => parseTime(s.m) > 0).map(s => ({ m: parseTime(s.m), v: num(s.v), i: num(s.i) })) }
     : isHold(findEx(e.exId))
-    ? { exId: e.exId, sets: e.sets.filter(s => num(s.t) > 0).map(s => ({ w: num(s.w), t: Math.round(num(s.t)) })) }
+    ? { exId: e.exId, goal: e.goal || holdGoal(e.exId, a.editId).goal, sets: e.sets.filter(s => num(s.t) > 0).map(s => ({ w: num(s.w), t: Math.round(num(s.t)), ...(num(s.tl) ? { tl: num(s.tl), tr: num(s.tr) } : {}) })) }
     : { exId: e.exId, sets: e.sets.filter(s => num(s.r) > 0).map(s => ({ w: num(s.w), r: num(s.r) })) }));
   const count = exercises.reduce((n, e) => n + e.sets.length, 0);
   if (!count) {
@@ -2286,6 +2387,9 @@ function finishWorkout() {
   stopRest();
   save();
   const freshBadges = checkBadges(); // shown on the finish screen
+  // hold goals for next time: up when you held every set
+  const goals = old ? [] : s.exercises.filter(x => isHold(findEx(x.exId)) && x.sets.length).map(x => ({ x, G: holdGoal(x.exId) }))
+    .map(({ x, G }) => G.goal > x.goal ? `📈 ${exName(x.exId)}: next goal ${G.goal} s (+${G.goal - x.goal})` : G.why === 'max' ? `🏆 ${exName(x.exId)}: ${G.tip || 'top goal reached!'}` : G.goal < x.goal ? `🎯 ${exName(x.exId)}: next goal ${G.goal} s, build back up` : `🎯 ${exName(x.exId)}: same goal ${G.goal} s, hold it on every set to go up`);
   location.hash = live ? '#/' : '#/calendar/' + s.date;
   sheet(`<div style="text-align:center;font-size:48px">${old ? '✅' : '🎉'}</div>
     <h1 style="text-align:center;font-size:26px">${esc(look(s).name)} ${old ? 'saved' : live ? 'done!' : `saved · ${fmtDay(s.date)}`}</h1>
@@ -2298,6 +2402,7 @@ function finishWorkout() {
     ${old ? '' : `<div class="card quote" style="margin-top:12px"><div class="qtext" style="font-size:16px">${esc(finishMessage(s, prs))}</div></div>`}
     ${freshBadges.length ? `<div class="card new-badges" style="margin-top:12px"><div class="eyebrow" style="color:var(--accent)">🏅 New badge${freshBadges.length > 1 ? 's' : ''} unlocked!</div>${freshBadges.map(b => `<div class="row" style="margin-top:8px"><span style="font-size:30px">${b.emoji}</span><span><b>${esc(b.name)}</b><br><span class="muted small">${esc(b.how)}</span></span></div>`).join('')}</div>` : ''}
     ${prs.length ? `<h2>New records 🏆</h2><div class="card stack small">${prs.map(x => `<div>${esc(x)}</div>`).join('')}</div>` : ''}
+    ${goals.length ? `<h2>Next time</h2><div class="card stack small">${goals.map(x => `<div>${esc(x)}</div>`).join('')}</div>` : ''}
     ${live ? `<button class="btn block" style="margin-top:16px" data-act="cool-start" data-id="${s.id}">🧘 Cool-down stretch · ~${routineMins(routine(s.planId, 'cool'))} min</button>` : ''}
     <button class="btn primary block" style="margin-top:${live ? 10 : 16}px" data-close>Nice</button>`);
 }
@@ -2383,9 +2488,9 @@ function swTick() {
   const a = db.active, sw = a?.sw; if (!sw) return;
   const e = findEx(a.exercises[sw.i].exId), el = $('[data-sw]');
   if (el) { el.textContent = swText(sw); $('[data-swl]').textContent = swLabel(sw, e); }
-  // the time box of that row follows along (unless you're typing in it)
+  // the time box of that row follows along
   const box = $(`.setrow[data-i="${sw.i}"][data-j="${sw.j}"] [data-f="m"]`);
-  if (box && document.activeElement !== box && !swCounting(sw)) box.value = fmtTime(swMs(sw) / 60000);
+  if (box && !swCounting(sw)) { box.textContent = fmtTime(swMs(sw) / 60000) || '0:00'; box.classList.remove('empty'); }
   // 3-2-1 beeps, then a long one for GO (not when you come back to the app much later)
   if (swCounting(sw)) { const n = Math.ceil((sw.start - Date.now()) / 1000); if (swCue !== n) { swCue = n; beep(); buzz(90); } }
   else if (swCue !== 'go' && swCue !== null && Date.now() - sw.start < 1500) { swCue = 'go'; beep(true); buzz(300); }
@@ -2400,26 +2505,25 @@ function swStopSheet() {
     <h2 style="margin-top:4px;text-align:center">${isRun(e) ? 'Run finished!' : `Part ${sw.j + 1} finished!`}</h2>
     <div class="muted small" style="text-align:center">Check the time, and change it if your watch or the treadmill says something else.</div>
     <div class="stack" style="margin-top:14px">
-      <label class="small muted">Time<input class="field big-in" id="swT" inputmode="decimal" value="${fmtTime(sw.acc / 60000) || '0:00'}"></label>
-      ${isRun(e) ? `<label class="small muted">Distance (km)<input class="field big-in" id="swD" inputmode="decimal" value="${esc(s.d)}" placeholder="${pv ? esc(pv.d) : 'e.g. 5'}"></label>
-        <div class="row between"><span class="muted">Pace</span><b id="swP">–</b></div>`
+      <div><div class="small muted">Time</div>${timeBoxes(sw.acc / 60000)}</div>
+      ${isRun(e) ? `<label class="small muted">Distance (km)<input class="field big-in" id="swD" inputmode="decimal" value="${esc(s.d)}" placeholder="${pv ? esc(pv.d) : 'e.g. 5'}"></label>`
       : `<div class="row" style="gap:10px"><label class="small muted" style="flex:1">Speed (km/h)<input class="field big-in" id="swV" inputmode="decimal" value="${esc(s.v)}" placeholder="${pv ? esc(pv.v || '') : ''}"></label>
         <label class="small muted" style="flex:1">Incline (%)<input class="field big-in" id="swI" inputmode="decimal" value="${esc(s.i)}" placeholder="${pv ? esc(pv.i || '') : '0'}"></label></div>`}
       <div class="small" id="swErr" style="color:var(--amber)"></div>
       <button class="btn primary block" id="swSave">✓ Save</button>
       <button class="btn block" id="swKeep">▶ Keep going</button>
     </div>`);
-  const T = o.querySelector('#swT'), D = o.querySelector('#swD');
-  const pace = () => { if (D) o.querySelector('#swP').textContent = (p => (p ? `${fmtPace(p)} /km` : '–'))(paceOf({ d: D.value, m: T.value })); };
-  T.addEventListener('input', pace); D?.addEventListener('input', pace); pace();
+  const D = o.querySelector('#swD'), readT = wireTime(o, () => D?.value);
+  D?.addEventListener('input', readT.update); // the pace in the time line follows the km
   if (D && !D.value) setTimeout(() => D.focus(), 50);
   o.querySelector('#swKeep').addEventListener('click', () => {
     if (db.active?.sw) { Object.assign(db.active.sw, { start: Date.now(), paused: false }); swCue = 'go'; save(); }
     o.remove(); render();
   });
   o.querySelector('#swSave').addEventListener('click', () => {
-    const t = parseTime(T.value), err = o.querySelector('#swErr');
-    if (!(t > 0)) { err.textContent = 'Type the time, like 27:30.'; T.focus(); return; }
+    const t = readT(), err = o.querySelector('#swErr');
+    if (t === null) { err.textContent = 'Seconds go up to 59.'; return; }
+    if (!(t > 0)) { err.textContent = 'Type the time from your watch: hours, minutes and seconds.'; readT.focus(); return; }
     if (D && !(num(D.value) > 0)) { err.textContent = 'Type the distance from your watch, like 5 or 5.2.'; D.focus(); return; }
     s.m = t;
     if (D) s.d = D.value; else { s.v = o.querySelector('#swV').value || o.querySelector('#swV').placeholder; s.i = o.querySelector('#swI').value || o.querySelector('#swI').placeholder; }
@@ -2427,23 +2531,25 @@ function swStopSheet() {
   });
 }
 
-// ---------- Hold timer (Farmer's Hold, Dead Hang) ----------
+// ---------- Hold timer (planks, Farmer's Hold, Dead Hang) ----------
 // Full screen with big numbers and beeps, so you don't have to look at the phone while holding:
 // Ready → 3, 2, 1 (beeps) → GO (long beep) → counts up → beeps in the last 3 s → long beep when time is up.
+// Exercises with `sides` (side plank) do the left side, then 5 s to switch (beeps at 3, 2, 1), then the right side.
 let hold = null;
 function holdOpen(i) {
   const a = db.active, we = a.exercises[i];
   let j = we.sets.findIndex(s => !s.done);
   if (j < 0) { we.sets.push({ w: we.sets.at(-1)?.w || '', t: '', done: false }); j = we.sets.length - 1; save(); render(); }
   const e = ex(findEx(we.exId)), pv = (lastSetsFor(we.exId) || [])[j];
-  // aim for last time's hold, so you can try to beat it
-  hold = { i, j, e, target: num(pv?.t) || holdTarget(e), phase: 'ready', el: document.createElement('div') };
+  // aim for today's goal (it goes up by itself when you hold every set)
+  hold = { i, j, e, target: recFor(a, e, we).goal, phase: 'ready', side: 0, times: [], el: document.createElement('div') };
   // the weight: what you typed in the row, else last time's, else the set above, else your home dumbbells
   const s = we.sets[j]; if (!e.bw && !num(s.w)) s.w = pv?.w || we.sets[j - 1]?.w || (a.home && homeDb()) || s.w;
   hold.el.className = 'guide';
   document.body.appendChild(hold.el);
   holdDraw();
 }
+const sideName = n => (n ? 'Right side' : 'Left side');
 function holdDraw() {
   const h = hold, s = db.active.exercises[h.i].sets[h.j], n = db.active.exercises[h.i].sets.length;
   const head = `<div class="row between"><span class="eyebrow" style="color:var(--text)">${esc(h.e.name)} · set ${h.j + 1} of ${n}</span><button class="round" data-h="close" aria-label="Close">✕</button></div>`;
@@ -2451,27 +2557,31 @@ function holdDraw() {
   if (h.phase === 'ready') h.el.innerHTML = `<div class="guide-in">${head}
     <div class="photo guide-pic" style="height:200px;margin-top:14px"><img src="${src(h.e.img)}" alt=""></div>
     <div class="muted small" style="margin-top:10px">${esc(h.e.tip)}</div>
-    <div class="muted small" style="text-align:center;margin-top:18px">Target</div>
+    <div class="muted small" style="text-align:center;margin-top:18px">Goal${h.e.sides ? ' per side' : ''}</div>
     <div class="row" style="justify-content:center;gap:16px">${step(-5)}<span class="guide-count" style="margin:0;min-width:120px">${h.target} s</span>${step(5)}</div>
     ${!h.e.bw && num(s.w) ? `<div class="muted small" style="text-align:center">with ${esc(s.w)} ${unit()} in each hand</div>` : ''}
+    ${h.e.sides ? '<div class="muted small" style="text-align:center">Left side first, then 5 seconds to switch to the right</div>' : ''}
     <div class="muted small" style="text-align:center;margin-top:14px">🔔 Beeps count you in and tell you when time is up, so you can put the phone down.</div>
     <button class="btn primary block" style="margin-top:14px" data-h="go">▶ Ready</button>
   </div>`;
-  else if (h.phase === 'count' || h.phase === 'hold') h.el.innerHTML = `<div class="guide-in">${head}
-    <div class="muted" style="text-align:center;margin-top:40px" data-hl>${h.phase === 'count' ? 'Get ready…' : 'Hold it!'}</div>
-    <div class="hold-big ${h.phase === 'hold' ? 'go' : ''}" data-hb>${h.phase === 'count' ? Math.max(1, Math.ceil((h.go - Date.now()) / 1000)) : '0:00'}</div>
-    <div class="muted" style="text-align:center">Target ${fmtDur(h.target)}</div>
+  else if (h.phase === 'count' || h.phase === 'switch' || h.phase === 'hold') {
+    const label = h.phase === 'count' ? `Get ready…${h.e.sides ? ' Left side' : ''}` : h.phase === 'switch' ? '🔄 Switch sides → Right side' : h.e.sides ? `${sideName(h.side)} · hold it!` : 'Hold it!';
+    h.el.innerHTML = `<div class="guide-in">${head}
+    <div class="muted" style="text-align:center;margin-top:40px" data-hl>${label}</div>
+    <div class="hold-big ${h.phase === 'hold' ? 'go' : ''}" data-hb>${h.phase === 'hold' ? '0:00' : Math.max(1, Math.ceil((h.go - Date.now()) / 1000))}</div>
+    <div class="muted" style="text-align:center">Goal ${fmtDur(h.target)}${h.e.sides ? ' per side' : ''}</div>
     <div class="guide-bar" style="margin:22px 0"><i data-hp style="width:0%"></i></div>
-    <button class="btn block" style="margin-top:10px;padding:22px;font-size:18px" data-h="stop">${h.phase === 'count' ? 'Cancel' : '⏹ Stop · I let go'}</button>
+    <button class="btn block" style="margin-top:10px;padding:22px;font-size:18px" data-h="stop">${h.phase === 'count' ? 'Cancel' : h.phase === 'switch' ? '▶ Start right side now' : '⏹ Stop · I let go'}</button>
   </div>`;
-  else {
-    const made = h.t >= h.target;
+  } else {
+    const made = h.times.every(t => t >= h.target);
+    const box = (id, label, v) => `<label class="small muted" style="flex:1">${label}<input class="field big-in" id="${id}" inputmode="numeric" value="${v}"></label>`;
     h.el.innerHTML = `<div class="guide-in" style="text-align:center">${head}
       <div style="font-size:60px;margin-top:30px">${made ? '🎉' : '💪'}</div>
       <div class="display" style="font-size:26px">${made ? 'Time’s up! Let go.' : 'Nice hold!'}</div>
       <div class="muted small" style="margin-top:6px">Check the seconds, then save.</div>
       <div class="row" style="gap:10px;margin-top:16px;text-align:left">
-        <label class="small muted" style="flex:1">Seconds held<input class="field big-in" id="hT" inputmode="numeric" value="${h.t}"></label>
+        ${h.e.sides ? box('hL', 'Left (s)', h.times[0]) + box('hR', 'Right (s)', h.times[1]) : box('hT', 'Seconds held', h.times[0])}
         ${h.e.bw ? '' : `<label class="small muted" style="flex:1">Weight (${unit()}, each)<input class="field big-in" id="hW" inputmode="decimal" value="${esc(s.w)}"></label>`}
       </div>
       <div class="small" id="hErr" style="color:var(--amber);margin-top:8px"></div>
@@ -2480,21 +2590,29 @@ function holdDraw() {
     </div>`;
   }
 }
+// one side (or the only hold) is over: switch to the right side, or finish
+function holdSideDone(t) {
+  const h = hold; h.times[h.side] = t;
+  if (h.e.sides && h.side === 0) { h.phase = 'switch'; h.go = Date.now() + 5000; h.cue = null; }
+  else h.phase = 'done';
+  holdDraw();
+}
 function holdTick() {
-  const h = hold; if (!h || (h.phase !== 'count' && h.phase !== 'hold')) return;
+  const h = hold; if (!h || !['count', 'switch', 'hold'].includes(h.phase)) return;
   const now = Date.now();
   if (now < h.go) {
-    const n = Math.ceil((h.go - now) / 1000);
-    if (n !== h.cue) { h.cue = n; beep(); buzz(90); const b = h.el.querySelector('[data-hb]'); if (b) b.textContent = n; }
+    const n = Math.ceil((h.go - now) / 1000), b = h.el.querySelector('[data-hb]');
+    if (b) b.textContent = n;
+    if (n <= 3 && n !== h.cue) { h.cue = n; beep(); buzz(90); }
     return;
   }
-  if (h.phase === 'count') { h.phase = 'hold'; h.cue = null; beep(true); buzz(300); holdDraw(); }
+  if (h.phase !== 'hold') { if (h.phase === 'switch') h.side = 1; h.phase = 'hold'; h.cue = null; beep(true); buzz(300); holdDraw(); }
   const secs = Math.floor((now - h.go) / 1000), left = h.target - secs;
   const b = h.el.querySelector('[data-hb]');
   b.textContent = fmtDur(secs); b.classList.toggle('end', left <= 3);
   h.el.querySelector('[data-hp]').style.width = `${Math.min(100, (now - h.go) / 10 / h.target)}%`;
   if (left <= 3 && left > 0 && left !== h.cue) { h.cue = left; beep(); buzz(90); }
-  if (secs >= h.target) { h.t = h.target; h.phase = 'done'; beep(true); buzz([500, 150, 500]); holdDraw(); }
+  if (secs >= h.target) { beep(true); buzz([500, 150, 500]); holdSideDone(h.target); }
 }
 function holdClose() { hold?.el.remove(); hold = null; }
 document.addEventListener('click', e => {
@@ -2502,18 +2620,22 @@ document.addEventListener('click', e => {
   const h = hold, act = b.dataset.h;
   if (act === 'close') holdClose();
   else if (act === 'step') { h.target = Math.max(5, h.target + Number(b.dataset.d)); holdDraw(); }
-  else if (act === 'go') { h.phase = 'count'; h.go = Date.now() + 3000; h.cue = null; holdDraw(); }
+  else if (act === 'go') { Object.assign(h, { phase: 'count', go: Date.now() + 3000, cue: null, side: 0, times: [] }); holdDraw(); }
   else if (act === 'again') { h.phase = 'ready'; holdDraw(); }
   else if (act === 'stop') {
-    // stopped during the countdown: back to Ready; while holding: save what you held
+    // countdown: back to Ready · switching sides: start the right side now · holding: save what you held
     if (h.phase === 'count') { h.phase = 'ready'; holdDraw(); return; }
-    h.t = Math.max(1, Math.floor((Date.now() - h.go) / 1000)); h.phase = 'done'; buzz(150); holdDraw();
+    if (h.phase === 'switch') { h.go = Date.now(); return; }
+    buzz(150); holdSideDone(Math.max(1, Math.floor((Date.now() - h.go) / 1000)));
   }
   else if (act === 'save') {
-    const t = Math.round(num(h.el.querySelector('#hT').value));
-    if (!(t > 0)) { h.el.querySelector('#hErr').textContent = 'Type how many seconds you held.'; return; }
+    const v = id => Math.round(num(h.el.querySelector(id)?.value));
+    const ts = h.e.sides ? [v('#hL'), v('#hR')] : [v('#hT')];
+    if (!ts.every(t => t > 0)) { h.el.querySelector('#hErr').textContent = 'Type how many seconds you held.'; return; }
     const s = db.active.exercises[h.i].sets[h.j], w = h.el.querySelector('#hW');
-    s.t = t; if (w) s.w = w.value; s.done = true;
+    // both sides: the weaker one counts for your goal
+    s.t = Math.min(...ts); if (h.e.sides) { s.tl = ts[0]; s.tr = ts[1]; }
+    if (w) s.w = w.value; s.done = true;
     save(); holdClose(); render(); startRest();
   }
 });
@@ -2595,6 +2717,9 @@ document.addEventListener('click', e => {
     }
     case 'sw-stop': if (a.sw) swStopSheet(); break;
     case 'hold-open': holdOpen(Number(b.dataset.i)); break;
+    case 'time-edit':
+      if (a.sw && a.sw.i === Number(row.dataset.i) && a.sw.j === Number(row.dataset.j)) break; // the stopwatch is timing it
+      timeSheet(Number(row.dataset.i), Number(row.dataset.j)); break;
     case 'cancel': {
       const back = isLive(a) ? '#/' : '#/calendar/' + a.date;
       if (confirm(a.editId ? 'Discard your changes? The saved workout stays as it was.' : 'Cancel this workout? Logged sets will be lost.')) { db.active = null; stopRest(); save(); location.hash = back; }
@@ -2603,11 +2728,13 @@ document.addEventListener('click', e => {
     case 'check': {
       const sets = a.exercises[row.dataset.i].sets, s = sets[row.dataset.j];
       if (isCardio(findEx(a.exercises[row.dataset.i].exId))) {
-        // cardio / run: fill empty boxes from last time / the target; the first box (minutes, or km for a run) is required; no rest timer
+        // cardio / run: fill empty boxes from last time / the target; km (run) or time (treadmill) is required; no rest timer
         if (!s.done) {
-          const ins = [...row.querySelectorAll('input')];
-          ins.forEach(inp => { s[inp.dataset.f] = s[inp.dataset.f] || inp.placeholder; inp.value = s[inp.dataset.f]; });
-          if (!num(s[ins[0].dataset.f])) { ins[0].focus(); return; }
+          const run = isRun(findEx(a.exercises[row.dataset.i].exId)), tb = row.querySelector('[data-act="time-edit"]');
+          row.querySelectorAll('input').forEach(inp => { s[inp.dataset.f] = s[inp.dataset.f] || inp.placeholder; inp.value = s[inp.dataset.f]; });
+          if (!parseTime(s.m) && num(tb.dataset.ph)) s.m = num(tb.dataset.ph);
+          if (run && !num(s.d)) { save(); row.querySelector('[data-f="d"]').focus(); return; }
+          if (!run && !parseTime(s.m)) { save(); timeSheet(Number(row.dataset.i), Number(row.dataset.j), true); return; }
         }
         s.done = !s.done; save(); render();
         break;
@@ -2749,7 +2876,9 @@ document.addEventListener('input', e => {
   const row = t.closest('.setrow');
   if (row && t.dataset.f) {
     const s = db.active.exercises[row.dataset.i].sets[row.dataset.j];
-    s[t.dataset.f] = t.value; save();
+    s[t.dataset.f] = t.value;
+    if (t.dataset.f === 't') { delete s.tl; delete s.tr; } // typed by hand: one time for both sides
+    save();
     const pace = row.querySelector('.pace'); if (pace) pace.textContent = fmtPace(paceOf(s)); // runs: pace updates as you type
     if (t.dataset.f === 'w' && db.active.home) {
       // home workout: the rep target follows the weight you type
@@ -2769,11 +2898,6 @@ document.addEventListener('input', e => {
 
 document.addEventListener('change', e => {
   const t = e.target;
-  // time boxes: when you leave the box, store minutes and show it like a watch (27.30 → 27:30)
-  if (t.dataset.time !== undefined && db.active) {
-    const row = t.closest('.setrow'), s = db.active.exercises[row.dataset.i].sets[row.dataset.j];
-    s.m = parseTime(t.value) || ''; t.value = fmtTime(s.m); save();
-  }
   if (t.dataset.act === 'rest-set') { db.settings.rest = Number(t.value); save(); }
   if (t.dataset.act === 'name') { db.settings.name = t.value.trim().slice(0, 24); save(); render(); }
   if (t.id === 'importFile' && t.files[0]) {
