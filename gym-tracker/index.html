@@ -425,9 +425,12 @@ label .field, label input { color: var(--text); }
 
 <script>
 // App version: shown in More. Bump `n` together with VERSION in sw.js on every update.
-const APP_VERSION = { n: 18.6, date: '2026-11-05' };
+const APP_VERSION = { n: 18.7, date: '2026-11-06' };
 // What's new, shown in Settings under the version. Add the new version at the top.
 const CHANGELOG = [
+  { n: 18.7, date: '2026-11-06', groups: [
+    ['🖼️ New pictures', ['New clean cut-out pictures for Plank, Side Plank and Dead Bug', 'Outdoor Run has a new picture with trees, road and sun, and a see-through sky']],
+  ]},
   { n: 18.6, date: '2026-11-05', groups: [
     ['🎬 New tutorial video', ['Cable Triceps Pushdown now has a video: tap the ▶ on the picture', 'Silent, and saved on your phone so it plays with no signal']],
   ]},
@@ -589,14 +592,14 @@ const PLANS = [
   // Core: no equipment, so it works at the gym and at home. Add it after any class or on a rest day.
   // holdMax: the hold goal goes up 5 s at a time until here (see holdGoal); sides: timed left, then right
   { id: 'core', name: 'Core', short: 'COR', group: 'core', optional: true, exercises: [
-    { id: 'plank', type: 'hold', bw: true, holdMax: 120, maxTip: '2:00 plank, the top goal! Keep it, or lift one foot to make it harder.', name: 'Plank', img: 'core/plank.svg', muscles: ['Abs', 'Core', 'Shoulders'], sets: 3, reps: '45-60 s', tip: 'Forearms under your shoulders, body in one straight line from head to heels. Squeeze your glutes and don’t let your hips sag.' },
-    { id: 'side-plank', type: 'hold', bw: true, sides: true, holdMax: 60, maxTip: '1:00 per side, the top goal! Keep it, or lift your top leg to make it harder.', name: 'Side Plank', img: 'core/side-plank.svg', muscles: ['Obliques', 'Core', 'Hips'], sets: 3, reps: '30-45 s / side', tip: 'Elbow under your shoulder, hips up so your body is one straight line. Too hard? Put your bottom knee down.' },
+    { id: 'plank', type: 'hold', bw: true, holdMax: 120, maxTip: '2:00 plank, the top goal! Keep it, or lift one foot to make it harder.', name: 'Plank', img: 'plank-3d.webp', muscles: ['Abs', 'Core', 'Shoulders'], sets: 3, reps: '45-60 s', tip: 'Forearms under your shoulders, body in one straight line from head to heels. Squeeze your glutes and don’t let your hips sag.' },
+    { id: 'side-plank', type: 'hold', bw: true, sides: true, holdMax: 60, maxTip: '1:00 per side, the top goal! Keep it, or lift your top leg to make it harder.', name: 'Side Plank', img: 'side-plank-3d.webp', muscles: ['Obliques', 'Core', 'Hips'], sets: 3, reps: '30-45 s / side', tip: 'Elbow under your shoulder, hips up so your body is one straight line. Too hard? Put your bottom knee down.' },
     { id: 'glute-bridge', name: 'Glute Bridge', img: 'glute-bridge', bw: true, muscles: ['Glutes', 'Hamstrings'], sets: 3, reps: '15', tip: 'Push through the heels, squeeze glutes at the top for 1 second.' },
-    { id: 'dead-bug', name: 'Dead Bug', img: 'core/dead-bug.svg', bw: true, muscles: ['Deep abs', 'Core'], sets: 3, reps: '10 / side', tip: 'On your back, arms up and knees over your hips. Slowly lower the opposite arm and leg while you press your lower back into the floor.' },
+    { id: 'dead-bug', name: 'Dead Bug', img: 'dead-bug-3d.webp', bw: true, muscles: ['Deep abs', 'Core'], sets: 3, reps: '10 / side', tip: 'On your back, arms up and knees over your hips. Slowly lower the opposite arm and leg while you press your lower back into the floor.' },
   ]},
   // Outdoor running: you log distance and time (from your watch or running app), the app works out your pace
   { id: 'running', name: 'Running', short: 'RUN', group: 'running', optional: true, exercises: [
-    { id: 'outdoor-run', type: 'run', name: 'Outdoor Run', img: 'cardio/outdoor-run.svg', muscles: ['Heart', 'Legs', 'Endurance'], sets: 1, reps: '3-5 km', tip: 'Start with 5 min easy jogging. Run at a pace where you can still talk. Copy distance and time from your watch or running app. Log intervals or laps as separate rows.' },
+    { id: 'outdoor-run', type: 'run', name: 'Outdoor Run', img: 'outdoor-run-3d.webp', muscles: ['Heart', 'Legs', 'Endurance'], sets: 1, reps: '3-5 km', tip: 'Start with 5 min easy jogging. Run at a pace where you can still talk. Copy distance and time from your watch or running app. Log intervals or laps as separate rows.' },
   ]},
 ];
 const GROUPS = { shoulder: 'Shoulders', chest: 'Chest', back: 'Back', legs: 'Legs' };
