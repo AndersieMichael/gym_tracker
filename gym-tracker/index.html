@@ -425,9 +425,18 @@ label .field, label input { color: var(--text); }
 
 <script>
 // App version: shown in More. Bump `n` together with VERSION in sw.js on every update.
-const APP_VERSION = { n: 18.1, date: '2026-11-04' };
+const APP_VERSION = { n: 18.4, date: '2026-11-05' };
 // What's new, shown in Settings under the version. Add the new version at the top.
 const CHANGELOG = [
+  { n: 18.4, date: '2026-11-05', groups: [
+    ['🗂️ Tidier files', ['Pictures and videos are sorted into folders (3d, photos, videos, cardio). Nothing changes in the app itself']],
+  ]},
+  { n: 18.3, date: '2026-11-05', groups: [
+    ['🖼️ New pictures', ['New clean cut-out pictures for Machine Ab Crunch, Cable Triceps Pushdown, Barbell Deadlift, Dumbbell Romanian Deadlift, One-arm Dumbbell Row, Dumbbell Pullover, Chair Dips, Farmer’s Hold and Dead Hang']],
+  ]},
+  { n: 18.2, date: '2026-11-05', groups: [
+    ['🗓️ Train 2–3 times a week', ['The week goal is now 2 classes a week; a 3rd class makes it a great week', 'Home suggests the class you trained longest ago, so all 4 classes still take turns', 'Week Warrior badge: 3 different classes in one week']],
+  ]},
   { n: 18.1, date: '2026-11-04', groups: [
     ['🖼️ New pictures', ['New clean cut-out pictures for Cable Face Pull, Pec Deck Fly, Lat Pulldown, Seated Cable Row and Treadmill']],
   ]},
@@ -507,7 +516,7 @@ const PLANS = [
   // Home versions (`alt`) only need dumbbells, a chair/sofa and the floor.
   // db: uses dumbbells (gets rep tips at home) · light: normally done with light dumbbells · bw: bodyweight, no dumbbells
   { id: 'shoulder', name: 'Shoulder Day', short: 'SHO', group: 'shoulder', modes: ['🏋️ Gym', '🏠 Home'], homeName: 'Shoulder Day · Home', exercises: [
-    { id: 'shoulder-press-machine', name: 'Machine Shoulder Press', img: 'shoulder-press-machine-3d.webp', video: 'shoulder-press-machine/shoulder-press-machine.mp4', muscles: ['Front delts', 'Triceps'], sets: 3, reps: '10-12', tip: 'Back flat on the pad. Press up without slamming the elbows locked.',
+    { id: 'shoulder-press-machine', name: 'Machine Shoulder Press', img: 'shoulder-press-machine-3d.webp', video: 'videos/shoulder-press-machine.mp4', muscles: ['Front delts', 'Triceps'], sets: 3, reps: '10-12', tip: 'Back flat on the pad. Press up without slamming the elbows locked.',
       altLabels: HOME_LABELS,
       alt: { id: 'seated-dumbbell-press', name: 'Seated Dumbbell Shoulder Press', img: 'home/seated-dumbbell-press.svg', db: true, muscles: ['Front delts', 'Triceps'], sets: 3, reps: '10-12', tip: 'Sit tall on a chair with your back supported. Press the dumbbells up until your arms are almost straight.' } },
     { id: 'lateral-raise-machine', name: 'Machine Lateral Raise', img: 'lateral-raise-machine', muscles: ['Side delts'], sets: 3, reps: '12-15', tip: 'Lead with your elbows and pause at shoulder height.',
@@ -520,34 +529,34 @@ const PLANS = [
     { id: 'hammer-curl', name: 'Dumbbell Hammer Curl', img: 'hammer-curl-3d.webp', db: true, muscles: ['Biceps', 'Forearms'], sets: 3, reps: '10-12', tip: 'Palms face each other, elbows stay by your sides. Works at the gym and at home.' },
   ]},
   { id: 'chest', name: 'Chest Day', short: 'CHE', group: 'chest', modes: ['🏋️ Gym', '🏠 Home'], homeName: 'Chest Day · Home', exercises: [
-    { id: 'chest-press-machine', name: 'Machine Chest Press', img: 'chest-press-machine-3d.webp', video: 'chest-press-machine/chest-press-machine.mp4', muscles: ['Chest', 'Triceps', 'Front delts'], sets: 3, reps: '8-12', tip: 'Handles at mid-chest height. Push out, control the way back.',
+    { id: 'chest-press-machine', name: 'Machine Chest Press', img: 'chest-press-machine-3d.webp', video: 'videos/chest-press-machine.mp4', muscles: ['Chest', 'Triceps', 'Front delts'], sets: 3, reps: '8-12', tip: 'Handles at mid-chest height. Push out, control the way back.',
       altLabels: HOME_LABELS,
       alt: { id: 'push-up', name: 'Push-ups', img: 'home/push-up.svg', bw: true, muscles: ['Chest', 'Triceps', 'Front delts'], sets: 3, reps: 'max', tip: 'Body in one straight line. Lower your chest close to the floor. Too hard? Do them with your knees on the floor.' } },
     { id: 'pec-deck-fly', name: 'Pec Deck Fly', img: 'pec-deck-fly-3d.webp', muscles: ['Chest'], sets: 3, reps: '12-15', tip: 'Soft elbows. Squeeze the chest in the middle for 1 second.',
       altLabels: HOME_LABELS,
       alt: { id: 'dumbbell-floor-fly', name: 'Dumbbell Floor Fly', img: 'home/dumbbell-floor-fly.svg', db: true, light: true, muscles: ['Chest'], sets: 3, reps: '12-15', tip: 'Lie on the floor, slight bend in the elbows. Open your arms until they touch the floor, then squeeze back up.' } },
     { id: 'hammer-curl', name: 'Dumbbell Hammer Curl', img: 'hammer-curl-3d.webp', db: true, muscles: ['Biceps', 'Forearms'], sets: 3, reps: '10-12', tip: 'Palms face each other, elbows stay by your sides. Works at the gym and at home.' },
-    { id: 'ab-crunch-machine', name: 'Machine Ab Crunch', img: 'ab-crunch-machine', muscles: ['Abs'], sets: 3, reps: '15', tip: 'Curl your spine and breathe out as you crunch. Don\'t pull with the arms.',
+    { id: 'ab-crunch-machine', name: 'Machine Ab Crunch', img: 'ab-crunch-machine-3d.webp', muscles: ['Abs'], sets: 3, reps: '15', tip: 'Curl your spine and breathe out as you crunch. Don\'t pull with the arms.',
       altLabels: HOME_LABELS,
       alt: { id: 'floor-crunch', name: 'Floor Crunch', img: 'home/floor-crunch.svg', bw: true, muscles: ['Abs'], sets: 3, reps: '15-20', tip: 'Knees bent, hands lightly behind your head. Lift your shoulders off the floor and breathe out.' } },
   ]},
   { id: 'back', name: 'Back Day', short: 'BAC', group: 'back', modes: ['🏋️ Gym', '🏠 Home'], homeName: 'Back Day · Home', exercises: [
-    { id: 'lat-pulldown', name: 'Lat Pulldown', img: 'lat-pulldown-3d.webp', video: 'lat-pulldown/lat-pulldown.mp4', muscles: ['Lats', 'Biceps'], sets: 3, reps: '10-12', tip: 'Pull the bar to your upper chest. Chest up, don\'t lean far back.',
+    { id: 'lat-pulldown', name: 'Lat Pulldown', img: 'lat-pulldown-3d.webp', video: 'videos/lat-pulldown.mp4', muscles: ['Lats', 'Biceps'], sets: 3, reps: '10-12', tip: 'Pull the bar to your upper chest. Chest up, don\'t lean far back.',
       altLabels: HOME_LABELS,
-      alt: { id: 'dumbbell-pullover', name: 'Dumbbell Pullover', img: 'home/dumbbell-pullover.svg', db: true, muscles: ['Lats', 'Chest'], sets: 3, reps: '10-12', tip: 'Lie on the floor holding one dumbbell with both hands. Lower it behind your head, then pull it back over your chest.' } },
-    { id: 'seated-cable-row', name: 'Seated Cable Row', img: 'seated-cable-row-3d.webp', video: 'seated-cable-row/seated-cable-row.mp4', muscles: ['Mid back', 'Lats'], sets: 3, reps: '10-12', tip: 'Straight back, pull to your belly, squeeze the shoulder blades.',
+      alt: { id: 'dumbbell-pullover', name: 'Dumbbell Pullover', img: 'dumbbell-pullover-3d.webp', db: true, muscles: ['Lats', 'Chest'], sets: 3, reps: '10-12', tip: 'Lie on the floor holding one dumbbell with both hands. Lower it behind your head, then pull it back over your chest.' } },
+    { id: 'seated-cable-row', name: 'Seated Cable Row', img: 'seated-cable-row-3d.webp', video: 'videos/seated-cable-row.mp4', muscles: ['Mid back', 'Lats'], sets: 3, reps: '10-12', tip: 'Straight back, pull to your belly, squeeze the shoulder blades.',
       altLabels: HOME_LABELS,
-      alt: { id: 'one-arm-dumbbell-row', name: 'One-arm Dumbbell Row', img: 'home/one-arm-dumbbell-row.svg', db: true, muscles: ['Mid back', 'Lats'], sets: 3, reps: '10-12 / arm', tip: 'One hand and knee on the sofa, flat back. Pull the dumbbell to your hip and squeeze.' } },
-    { id: 'deadlift', name: 'Barbell Deadlift', img: 'deadlift', muscles: ['Lower back', 'Glutes', 'Hamstrings'], sets: 4, reps: '5-8', tip: 'Flat back, bar close to the legs, push the floor away.',
+      alt: { id: 'one-arm-dumbbell-row', name: 'One-arm Dumbbell Row', img: 'one-arm-dumbbell-row-3d.webp', db: true, muscles: ['Mid back', 'Lats'], sets: 3, reps: '10-12 / arm', tip: 'One hand and knee on the sofa, flat back. Pull the dumbbell to your hip and squeeze.' } },
+    { id: 'deadlift', name: 'Barbell Deadlift', img: 'deadlift-3d.webp', muscles: ['Lower back', 'Glutes', 'Hamstrings'], sets: 4, reps: '5-8', tip: 'Flat back, bar close to the legs, push the floor away.',
       altLabels: HOME_LABELS,
-      alt: { id: 'dumbbell-rdl', name: 'Dumbbell Romanian Deadlift', img: 'home/dumbbell-rdl.svg', db: true, muscles: ['Hamstrings', 'Glutes', 'Lower back'], sets: 3, reps: '10-12', tip: 'Soft knees, push your hips back and keep the dumbbells close to your legs. Stand up by squeezing your glutes.' } },
-    { id: 'triceps-pushdown', name: 'Cable Triceps Pushdown', img: 'triceps-pushdown', muscles: ['Triceps'], sets: 3, reps: '12-15', tip: 'Elbows pinned to your sides, straighten fully at the bottom.',
+      alt: { id: 'dumbbell-rdl', name: 'Dumbbell Romanian Deadlift', img: 'dumbbell-rdl-3d.webp', db: true, muscles: ['Hamstrings', 'Glutes', 'Lower back'], sets: 3, reps: '10-12', tip: 'Soft knees, push your hips back and keep the dumbbells close to your legs. Stand up by squeezing your glutes.' } },
+    { id: 'triceps-pushdown', name: 'Cable Triceps Pushdown', img: 'triceps-pushdown-3d.webp', muscles: ['Triceps'], sets: 3, reps: '12-15', tip: 'Elbows pinned to your sides, straighten fully at the bottom.',
       altLabels: HOME_LABELS,
-      alt: { id: 'chair-dips', name: 'Chair Dips', img: 'home/chair-dips.svg', bw: true, muscles: ['Triceps'], sets: 3, reps: 'max', tip: 'Hands on the front edge of a sturdy chair. Lower until your elbows bend about 90°, then push back up.' } },
+      alt: { id: 'chair-dips', name: 'Chair Dips', img: 'chair-dips-3d.webp', bw: true, muscles: ['Triceps'], sets: 3, reps: 'max', tip: 'Hands on the front edge of a sturdy chair. Lower until your elbows bend about 90°, then push back up.' } },
     // grip finisher: last, so tired hands don't hold back the pulldowns, rows and deadlift.
     // type 'hold': timed in seconds (t) with the hold timer, plus the weight (w) unless it's bodyweight
-    { id: 'farmers-hold', type: 'hold', holdMax: 60, maxTip: '60 s, the top goal! Next time try heavier dumbbells.', name: 'Dumbbell Farmer’s Hold', img: 'grip/farmers-hold.svg', db: true, muscles: ['Grip', 'Forearms', 'Traps'], sets: 3, reps: '30-45 s', tip: 'Stand tall with a heavy dumbbell in each hand, arms straight by your sides, shoulders down. Squeeze the handles hard. Works at the gym and at home.' },
-    { id: 'dead-hang', type: 'hold', bw: true, holdMax: 60, maxTip: '60 s, the top goal! Keep it there, your grip is strong.', name: 'Dead Hang', img: 'grip/dead-hang.svg', muscles: ['Grip', 'Forearms', 'Shoulders'], sets: 3, reps: '20-40 s', tip: 'Hang from a pull-up bar with straight arms, hands shoulder-width apart. Keep still, no swinging. Feet can touch a box to make it easier.',
+    { id: 'farmers-hold', type: 'hold', holdMax: 60, maxTip: '60 s, the top goal! Next time try heavier dumbbells.', name: 'Dumbbell Farmer’s Hold', img: 'farmers-hold-3d.webp', db: true, muscles: ['Grip', 'Forearms', 'Traps'], sets: 3, reps: '30-45 s', tip: 'Stand tall with a heavy dumbbell in each hand, arms straight by your sides, shoulders down. Squeeze the handles hard. Works at the gym and at home.' },
+    { id: 'dead-hang', type: 'hold', bw: true, holdMax: 60, maxTip: '60 s, the top goal! Keep it there, your grip is strong.', name: 'Dead Hang', img: 'dead-hang-3d.webp', muscles: ['Grip', 'Forearms', 'Shoulders'], sets: 3, reps: '20-40 s', tip: 'Hang from a pull-up bar with straight arms, hands shoulder-width apart. Keep still, no swinging. Feet can touch a box to make it easier.',
       altLabels: HOME_LABELS,
       alt: { id: 'wrist-curl', name: 'Dumbbell Wrist Curl', img: 'grip/wrist-curl.svg', db: true, light: true, muscles: ['Forearms', 'Grip'], sets: 3, reps: '15', tip: 'Sit with your forearms on your thighs, palms up. Let the dumbbells roll down to your fingers, then curl your wrists up.' } },
   ]},
@@ -569,7 +578,7 @@ const PLANS = [
   ]},
   // Optional: extra classes you can add any day. Not suggested and not counted in the week goal.
   { id: 'cardio', name: 'Cardio', short: 'CAR', group: 'cardio', optional: true, exercises: [
-    { id: 'treadmill', type: 'cardio', name: 'Treadmill', img: 'treadmill-3d.webp', video: 'treadmill/treadmill.mp4', muscles: ['Heart', 'Legs', 'Fat burn'], sets: 1, reps: '20-30 min', tip: 'Start with 5 min walking to warm up, then walk fast or run. Add incline for extra burn. Log each part (warm-up, run, cool-down) as its own row.' },
+    { id: 'treadmill', type: 'cardio', name: 'Treadmill', img: 'treadmill-3d.webp', video: 'videos/treadmill.mp4', muscles: ['Heart', 'Legs', 'Fat burn'], sets: 1, reps: '20-30 min', tip: 'Start with 5 min walking to warm up, then walk fast or run. Add incline for extra burn. Log each part (warm-up, run, cool-down) as its own row.' },
   ]},
   // Core: no equipment, so it works at the gym and at home. Add it after any class or on a rest day.
   // holdMax: the hold goal goes up 5 s at a time until here (see holdGoal); sides: timed left, then right
@@ -581,10 +590,13 @@ const PLANS = [
   ]},
   // Outdoor running: you log distance and time (from your watch or running app), the app works out your pace
   { id: 'running', name: 'Running', short: 'RUN', group: 'running', optional: true, exercises: [
-    { id: 'outdoor-run', type: 'run', name: 'Outdoor Run', img: 'outdoor-run.svg', muscles: ['Heart', 'Legs', 'Endurance'], sets: 1, reps: '3-5 km', tip: 'Start with 5 min easy jogging. Run at a pace where you can still talk. Copy distance and time from your watch or running app. Log intervals or laps as separate rows.' },
+    { id: 'outdoor-run', type: 'run', name: 'Outdoor Run', img: 'cardio/outdoor-run.svg', muscles: ['Heart', 'Legs', 'Endurance'], sets: 1, reps: '3-5 km', tip: 'Start with 5 min easy jogging. Run at a pace where you can still talk. Copy distance and time from your watch or running app. Log intervals or laps as separate rows.' },
   ]},
 ];
 const GROUPS = { shoulder: 'Shoulders', chest: 'Chest', back: 'Back', legs: 'Legs' };
+// Train 2–3 times a week: 2 different classes hits the week goal, 3 is a great week.
+// The suggestion picks the class you trained longest ago, so all 4 classes rotate over the weeks.
+const WEEK_GOAL = { min: 2, max: 3 };
 const COLOR = id => `var(--c-${id})`;
 
 // ---------- Storage ----------
@@ -660,8 +672,8 @@ function lastSetsFor(exId) {
   return s ? s.exercises.find(e => e.exId === exId).sets : null;
 }
 const setText = s => (s.t !== undefined ? `${num(s.w) ? `${s.w} ${unit()} · ` : ''}${num(s.tl) ? `L ${s.tl} s · R ${s.tr} s` : `${s.t} s`}` : s.d !== undefined ? `${s.d} km · ${fmtTime(s.m) || '–'}${paceOf(s) ? ` · ${fmtPace(paceOf(s))}/km` : ''}` : s.m !== undefined ? `${fmtTime(s.m) || '–'}${num(s.v) ? ` @ ${s.v} km/h` : ''}${num(s.i) ? ` · ${s.i}%` : ''}` : num(s.w) ? `${s.w}×${s.r}` : `${s.r} reps`);
-// guide pictures are .jpg; drawn ones (like the treadmill) give their own extension
-const src = img => `images/${img.includes('.') ? img : img + '.jpg'}`;
+// pictures: a bare name is a photo (images/photos/name.jpg), name-3d.webp is a cut-out (images/3d/), anything else is a path inside images/
+const src = img => `images/${!img.includes('.') ? `photos/${img}.jpg` : img.endsWith('-3d.webp') ? `3d/${img}` : img}`;
 // tapping a picture shows it bigger, or plays its tutorial video when the exercise has one
 const tapAttrs = (img, video) => (video ? `data-video="images/${video}"` : `data-zoom="${src(img)}"`);
 const photo = (img, cls = '', zoom = false, video = '') => `<div class="photo ${cls} ${zoom && video ? 'has-video' : ''}" ${zoom ? tapAttrs(img, video) : ''}><img src="${src(img)}" alt="" loading="lazy"></div>`;
@@ -977,11 +989,13 @@ const greeting = () => { const h = new Date().getHours(); return h < 11 ? 'Good 
 function finishMessage(s, prs) {
   const ws = monday(fromKey(s.date)), we = dayKey(addDays(ws, 6)), wk = dayKey(ws);
   const groups = new Set(db.sessions.filter(x => x.date >= wk && x.date <= we).map(x => planById(x.planId)?.group));
-  const left = Object.keys(GROUPS).filter(g => !groups.has(g)).length, streak = weekStreak();
+  const done = Object.keys(GROUPS).filter(g => groups.has(g)).length, left = WEEK_GOAL.min - done, streak = weekStreak();
+  const main = !planById(s.planId).optional;
   if (prs.length) return '🏆 New personal record! All that hard work is paying off.';
-  if (!planById(s.planId).optional && !left) return '🎯 Week goal complete! Every class done this week. Legend.';
+  if (main && done >= WEEK_GOAL.max) return `🎯 ${done} classes this week, a perfect week. Legend.`;
+  if (main && done >= WEEK_GOAL.min) return '🎯 Week goal complete! One more class makes it a great week.';
   if (streak >= 2) return `🔥 ${streak} weeks in a row. Consistency beats motivation, keep it going!`;
-  if (!planById(s.planId).optional && left) return `💪 ${left} more class${left === 1 ? '' : 'es'} to hit your week goal. You’ve got this!`;
+  if (main && left > 0) return `💪 ${left} more class${left === 1 ? '' : 'es'} to hit your week goal. You’ve got this!`;
   return '💪 Great job. Every workout counts!';
 }
 
@@ -1113,6 +1127,7 @@ function viewToday() {
   const inWeek = s => s.date >= weekKeys[0] && s.date <= weekKeys[6];
   const weekSess = db.sessions.filter(inWeek);
   const doneGroups = new Set(weekSess.map(s => planById(s.planId)?.group));
+  const doneCount = Object.keys(GROUPS).filter(g => doneGroups.has(g)).length;
   const todaySess = sessionsOn(today);
   const todayPlan = plannedOn(today);
 
@@ -1152,18 +1167,23 @@ function viewToday() {
   } else if (todayPlan.length) {
     const p = planById(todayPlan[0].planId);
     hero = bigCard(p, 'Planned today', `${exCount(p)}`);
-  } else if (suggest) {
+  } else if (suggest && doneCount >= WEEK_GOAL.min && doneCount < WEEK_GOAL.max) {
+    // week goal hit: a third class is a bonus
+    const p = PLANS.find(x => x.group === suggest);
+    sub = 'Week goal done 🎉';
+    hero = bigCard(p, 'Bonus', `Week goal done ✓ · one more class makes it a great week`);
+  } else if (suggest && doneCount < WEEK_GOAL.min) {
     const p = PLANS.find(x => x.group === suggest), last = lastGroupDate(suggest);
     hero = bigCard(p, 'Suggested', `You haven't trained ${GROUPS[suggest].toLowerCase()} this week${last ? ` · last ${agoText(last)}` : ''}`);
   } else {
-    sub = 'Every class done this week 🎉';
-    hero = `<div class="hero"><div class="htext"><span class="badge">Week complete</span><div class="title">All classes done</div>
-      <div class="muted small">Rest, or pick any class below for an extra session.</div></div>
+    sub = `${doneCount} classes this week 🎉`;
+    hero = `<div class="hero"><div class="htext"><span class="badge">Week complete</span><div class="title">Great week!</div>
+      <div class="muted small">Rest and recover, or pick any class below for an extra session.</div></div>
       <div class="havatar">${avatar(db.settings.avatar, 118)}</div></div>`;
   }
 
-  const total = Object.keys(GROUPS).length, doneCount = Object.keys(GROUPS).filter(g => doneGroups.has(g)).length;
-  const pct = Math.round(doneCount / total * 100);
+  // the ring fills at 2 classes (the week goal)
+  const pct = Math.round(Math.min(doneCount, WEEK_GOAL.min) / WEEK_GOAL.min * 100);
   const mins = Math.round(weekSess.reduce((a, s) => a + (s.duration || 0), 0) / 60);
   const sets = weekSess.reduce((a, s) => a + (s.exercises || []).reduce((n, e) => n + e.sets.length, 0), 0);
   const C = 2 * Math.PI * 46;
@@ -1206,7 +1226,7 @@ function viewToday() {
     <div class="card ring-card" style="margin-top:12px">${ring}
       <div><div class="row between" style="margin-bottom:10px"><b>This week</b><span class="muted small">${fmtDay(weekKeys[0], { day: 'numeric', month: 'short' })} – ${fmtDay(weekKeys[6], { day: 'numeric', month: 'short' })}</span></div>
       <div class="kv">
-        <div><span class="dot" style="background:var(--accent)"></span>Classes<b>${doneCount} / ${total}</b></div>
+        <div><span class="dot" style="background:var(--accent)"></span>Classes<b>${doneCount} / ${WEEK_GOAL.min}–${WEEK_GOAL.max}</b></div>
         <div><span class="dot" style="background:var(--coral)"></span>Workouts<b>${weekSess.length}</b></div>
         <div><span class="dot" style="background:var(--sky)"></span>Time<b>${mins} min</b></div>
         <div><span class="dot" style="background:var(--amber)"></span>Sets<b>${sets}</b></div>
@@ -1243,7 +1263,7 @@ function viewToday() {
     </div>
 
     <h2>Not done this week <span class="muted">(${notDone.length})</span></h2>
-    <div class="todo">${notDone.length ? notDone.map(p => classRow(p, p.group === suggest ? '<span class="badge">Suggested</span>' : '')).join('') : '<div class="empty">Every class is done this week. Nice work! 💪</div>'}</div>
+    <div class="todo">${notDone.length ? notDone.map(p => classRow(p, p.group === suggest && doneCount < WEEK_GOAL.max ? `<span class="badge">${doneCount >= WEEK_GOAL.min ? 'Bonus' : 'Suggested'}</span>` : '')).join('') : '<div class="empty">Every class is done this week. Nice work! 💪</div>'}</div>
 
     ${done.length ? `<h2>Done this week</h2><div class="todo">${done.map(p => {
       const d = db.sessions.filter(s => planById(s.planId).group === p.group && inWeek(s)).map(s => s.date).sort().pop();
@@ -1572,14 +1592,14 @@ function viewOverview() {
   const setCount = month.reduce((a, s) => a + (s.exercises || []).reduce((n, e) => n + e.sets.length, 0), 0);
   const thisWeek = db.sessions.filter(s => s.date >= dayKey(ws)).length;
 
-  // workouts per week, last 12 weeks (dashed line = your week goal of 4 classes)
+  // workouts per week, last 12 weeks (dashed line = your week goal of 2 workouts)
   const weeks = [...Array(12)].map((_, i) => { const st = addDays(ws, -7 * (11 - i)), a = dayKey(st), b = dayKey(addDays(st, 6)); return { st, n: db.sessions.filter(s => s.date >= a && s.date <= b).length }; });
-  const goal = Object.keys(GROUPS).length, top = Math.max(goal + 1, ...weeks.map(w => w.n));
+  const goal = WEEK_GOAL.min, top = Math.max(WEEK_GOAL.max + 1, ...weeks.map(w => w.n));
   const W = 600, H = 210, L = 10, R = 10, T = 22, B = 30, bw = (W - L - R) / 12;
   const yy = v => T + (1 - v / top) * (H - T - B);
   const weekChart = `<svg class="chart" viewBox="0 0 ${W} ${H}" role="img" aria-label="Workouts per week">
     <line x1="${L}" x2="${W - R}" y1="${yy(goal)}" y2="${yy(goal)}" stroke="var(--accent)" stroke-width="2" stroke-dasharray="8 7" opacity=".7"/>
-    <text x="${L}" y="${yy(goal) - 6}" text-anchor="start" style="fill:var(--accent);font-size:17px">goal ${goal}</text>
+    <text x="${L}" y="${yy(goal) - 6}" text-anchor="start" style="fill:var(--accent);font-size:17px">goal ${WEEK_GOAL.min}–${WEEK_GOAL.max}</text>
     ${weeks.map((w, i) => { const x = L + i * bw + bw * .18, h = (H - T - B) * w.n / top, cur = i === 11;
       return `<rect x="${x.toFixed(1)}" y="${(H - B - h).toFixed(1)}" width="${(bw * .64).toFixed(1)}" height="${Math.max(h, 3).toFixed(1)}" rx="7" fill="${w.n >= goal ? 'var(--accent)' : cur ? '#FF7A59' : 'rgba(255,255,255,.22)'}"/>
         ${w.n ? `<text x="${(x + bw * .32).toFixed(1)}" y="${(H - B - h - 6).toFixed(1)}" text-anchor="middle" style="fill:var(--text);font-size:17px;font-weight:700">${w.n}</text>` : ''}
@@ -1612,7 +1632,7 @@ function viewOverview() {
       <div class="stat"><div class="v">${setCount}</div><div class="l">Sets this month</div></div>
     </div>
     <h2>Workouts per week</h2>
-    <div class="card">${weekChart}<div class="muted small" style="margin-top:4px">Green = you hit your week goal of ${goal} classes</div></div>
+    <div class="card">${weekChart}<div class="muted small" style="margin-top:4px">Green = you hit your week goal of ${WEEK_GOAL.min}–${WEEK_GOAL.max} workouts</div></div>
     <h2>Class balance <span class="muted">· last 30 days</span></h2>
     <div class="card stack">${balance}</div>
     <h2>Recent records 🏆</h2>
@@ -1793,7 +1813,7 @@ function badgeStats() {
     }
   }
   const main = Object.keys(GROUPS);
-  S.fullWeek = Object.values(weeks).some(set => main.every(g => set.has(g)));
+  S.fullWeek = Object.values(weeks).some(set => main.filter(g => set.has(g)).length >= WEEK_GOAL.max);
   S.fullMonth = Object.values(months).some(set => main.every(g => set.has(g)));
   // longest run of weeks in a row with at least one workout
   const wkKeys = Object.keys(weeks).sort(); let run = 0, best = 0, prev = null;
@@ -1809,7 +1829,7 @@ const BADGES = [
   ['first-step', '👟', 'First Step', 'Finish your first workout', S => [S.workouts, 1]],
   ['warmed-up', '🔥', 'Warmed Up', 'Do 10 warm-ups', S => [S.warm, 10]],
   ['zen', '🧘', 'Zen Mode', 'Do 10 cool-downs', S => [S.cool, 10]],
-  ['week-warrior', '🗓️', 'Week Warrior', 'All 4 classes in one week', S => [+S.fullWeek, 1]],
+  ['week-warrior', '🗓️', 'Week Warrior', '3 different classes in one week', S => [+S.fullWeek, 1]],
   ['on-fire', '🔥', 'On Fire', 'Train 3 weeks in a row', S => [S.streak, 3]],
   ['unstoppable', '⚡', 'Unstoppable', 'Train 8 weeks in a row', S => [S.streak, 8]],
   ['w10', '🥉', '10 Workouts', 'Finish 10 workouts', S => [S.workouts, 10]],

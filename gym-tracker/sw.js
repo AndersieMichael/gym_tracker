@@ -1,27 +1,26 @@
 // Offline support: keeps the app and your guide pictures on the phone.
 // Bump VERSION when you change any file so phones pick up the new version (bug fixes: 11.1, 11.2…).
 // Keep the number the same as APP_VERSION.n in index.html.
-const VERSION = 'gym-v18.1';
+const VERSION = 'gym-v18.4';
+// Folders in images/: 3d (cut-outs), photos (jpg), videos (tutorials), cardio, moves (warm-up / cool-down),
+// home, grip and core (drawn pictures), avatars.
 const FILES = [
   './', 'index.html', 'manifest.webmanifest',
   'icons/icon-192.png', 'icons/icon-512.png', 'icons/icon-maskable-512.png', 'icons/apple-touch-icon.png',
-  // guide pictures still in use (the others were replaced by the -3d.webp versions below)
+  ...['shoulder-press-machine', 'chest-press-machine', 'pec-deck-fly', 'hammer-curl', 'face-pull', 'lat-pulldown', 'seated-cable-row', 'treadmill',
+    'ab-crunch-machine', 'triceps-pushdown', 'deadlift', 'dumbbell-rdl', 'one-arm-dumbbell-row', 'dumbbell-pullover', 'chair-dips', 'farmers-hold', 'dead-hang',
+  ].map(n => `images/3d/${n}-3d.webp`),
   ...[
-    'lateral-raise-machine', 'dumbbell-lateral-raise', 'seated-front-raise', 'ab-crunch-machine',
-    'deadlift', 'triceps-pushdown',
+    'lateral-raise-machine', 'dumbbell-lateral-raise', 'seated-front-raise',
     'barbell-squat', 'leg-extension', 'lying-leg-curl', 'leg-press',
     'bodyweight-squat', 'bulgarian-split-squat', 'single-leg-rdl', 'glute-bridge', 'calf-raise',
-  ].map(n => `images/${n}.jpg`),
-  'images/outdoor-run.svg',
+  ].map(n => `images/photos/${n}.jpg`),
+  ...['shoulder-press-machine', 'chest-press-machine', 'lat-pulldown', 'seated-cable-row', 'treadmill'].map(n => `images/videos/${n}.mp4`),
+  'images/cardio/outdoor-run.svg',
   ...['arm-circles', 'cross-body-stretch', 'wall-slides', 'arm-swings', 'doorway-stretch', 'incline-push-up', 'cat-cow', 'thoracic-rotation', 'hip-hinge', 'leg-swings', 'hip-circles', 'march-in-place', 'high-knees', 'ankle-circles', 'overhead-triceps-stretch', 'childs-pose', 'lying-twist', 'quad-stretch', 'hamstring-stretch', 'calf-stretch', 'figure-four', 'hip-flexor-stretch'].map(n => `images/moves/${n}.svg`),
-  ...['pec-deck-fly', 'chest-press-machine', 'hammer-curl', 'face-pull', 'seated-cable-row', 'lat-pulldown', 'treadmill'].map(n => `images/${n}-3d.webp`),
-  'images/lat-pulldown/lat-pulldown.mp4', 'images/treadmill/treadmill.mp4',
-  'images/chest-press-machine/chest-press-machine.mp4', 'images/seated-cable-row/seated-cable-row.mp4',
-  ...['seated-dumbbell-press', 'dumbbell-reverse-fly', 'push-up', 'dumbbell-floor-fly', 'floor-crunch', 'dumbbell-pullover', 'one-arm-dumbbell-row', 'dumbbell-rdl', 'chair-dips'].map(n => `images/home/${n}.svg`),
-  ...['farmers-hold', 'dead-hang', 'wrist-curl'].map(n => `images/grip/${n}.svg`),
+  ...['seated-dumbbell-press', 'dumbbell-reverse-fly', 'push-up', 'dumbbell-floor-fly', 'floor-crunch'].map(n => `images/home/${n}.svg`),
+  ...['wrist-curl'].map(n => `images/grip/${n}.svg`),
   ...['plank', 'side-plank', 'dead-bug'].map(n => `images/core/${n}.svg`),
-  'images/shoulder-press-machine-3d.webp',
-  'images/shoulder-press-machine/shoulder-press-machine.mp4',
   ...['hamster', 'cat', 'mike', 'squidward', 'gigachad', 'dumbbelldore'].map(n => `images/avatars/${n}.jpg`),
 ];
 
