@@ -425,9 +425,15 @@ label .field, label input { color: var(--text); }
 
 <script>
 // App version: shown in More. Bump `n` together with VERSION in sw.js on every update.
-const APP_VERSION = { n: 18.4, date: '2026-11-05' };
+const APP_VERSION = { n: 18.6, date: '2026-11-05' };
 // What's new, shown in Settings under the version. Add the new version at the top.
 const CHANGELOG = [
+  { n: 18.6, date: '2026-11-05', groups: [
+    ['🎬 New tutorial video', ['Cable Triceps Pushdown now has a video: tap the ▶ on the picture', 'Silent, and saved on your phone so it plays with no signal']],
+  ]},
+  { n: 18.5, date: '2026-11-05', groups: [
+    ['🖼️ New Leg Day pictures', ['New clean cut-out pictures for Leg Press, Leg Extension, Lying Leg Curl, Barbell Back Squat, Calf Raise and Bodyweight Squat']],
+  ]},
   { n: 18.4, date: '2026-11-05', groups: [
     ['🗂️ Tidier files', ['Pictures and videos are sorted into folders (3d, photos, videos, cardio). Nothing changes in the app itself']],
   ]},
@@ -550,7 +556,7 @@ const PLANS = [
     { id: 'deadlift', name: 'Barbell Deadlift', img: 'deadlift-3d.webp', muscles: ['Lower back', 'Glutes', 'Hamstrings'], sets: 4, reps: '5-8', tip: 'Flat back, bar close to the legs, push the floor away.',
       altLabels: HOME_LABELS,
       alt: { id: 'dumbbell-rdl', name: 'Dumbbell Romanian Deadlift', img: 'dumbbell-rdl-3d.webp', db: true, muscles: ['Hamstrings', 'Glutes', 'Lower back'], sets: 3, reps: '10-12', tip: 'Soft knees, push your hips back and keep the dumbbells close to your legs. Stand up by squeezing your glutes.' } },
-    { id: 'triceps-pushdown', name: 'Cable Triceps Pushdown', img: 'triceps-pushdown-3d.webp', muscles: ['Triceps'], sets: 3, reps: '12-15', tip: 'Elbows pinned to your sides, straighten fully at the bottom.',
+    { id: 'triceps-pushdown', name: 'Cable Triceps Pushdown', img: 'triceps-pushdown-3d.webp', video: 'videos/triceps-pushdown.mp4', muscles: ['Triceps'], sets: 3, reps: '12-15', tip: 'Elbows pinned to your sides, straighten fully at the bottom.',
       altLabels: HOME_LABELS,
       alt: { id: 'chair-dips', name: 'Chair Dips', img: 'chair-dips-3d.webp', bw: true, muscles: ['Triceps'], sets: 3, reps: 'max', tip: 'Hands on the front edge of a sturdy chair. Lower until your elbows bend about 90°, then push back up.' } },
     // grip finisher: last, so tired hands don't hold back the pulldowns, rows and deadlift.
@@ -562,19 +568,19 @@ const PLANS = [
   ]},
   // Leg Day and Leg Day · House Edition combined: each gym exercise has its home version as `alt`
   { id: 'legs', name: 'Leg Day', short: 'LEG', group: 'legs', modes: ['🏋️ Gym', '🏠 Home'], homeName: 'Leg Day · Home', exercises: [
-    { id: 'barbell-squat', name: 'Barbell Back Squat', img: 'barbell-squat', muscles: ['Quads', 'Glutes'], sets: 4, reps: '6-10', tip: 'Chest up, knees follow the toes, go down to at least parallel.',
+    { id: 'barbell-squat', name: 'Barbell Back Squat', img: 'barbell-squat-3d.webp', muscles: ['Quads', 'Glutes'], sets: 4, reps: '6-10', tip: 'Chest up, knees follow the toes, go down to at least parallel.',
       altLabels: ['At home? Do this instead', 'At the gym? Do this instead'],
-      alt: { id: 'bodyweight-squat', name: 'Bodyweight Squat', img: 'bodyweight-squat', bw: true, muscles: ['Quads', 'Glutes'], sets: 3, reps: '15-20', tip: 'Arms forward for balance, sit back and down.' } },
-    { id: 'leg-extension', name: 'Leg Extension', img: 'leg-extension', muscles: ['Quads'], sets: 3, reps: '12-15', tip: 'Pause and squeeze at the top, lower slowly.',
+      alt: { id: 'bodyweight-squat', name: 'Bodyweight Squat', img: 'bodyweight-squat-3d.webp', bw: true, muscles: ['Quads', 'Glutes'], sets: 3, reps: '15-20', tip: 'Arms forward for balance, sit back and down.' } },
+    { id: 'leg-extension', name: 'Leg Extension', img: 'leg-extension-3d.webp', muscles: ['Quads'], sets: 3, reps: '12-15', tip: 'Pause and squeeze at the top, lower slowly.',
       altLabels: ['At home? Do this instead', 'At the gym? Do this instead'],
       alt: { id: 'bulgarian-split-squat', name: 'Bulgarian Split Squat', img: 'bulgarian-split-squat', db: true, muscles: ['Quads', 'Glutes'], sets: 3, reps: '10 / leg', tip: 'Back foot on a bench or sofa. Front knee over the foot.' } },
-    { id: 'lying-leg-curl', name: 'Lying Leg Curl', img: 'lying-leg-curl', muscles: ['Hamstrings'], sets: 3, reps: '10-12', tip: 'Hips stay down on the pad. Curl your heels to your glutes.',
+    { id: 'lying-leg-curl', name: 'Lying Leg Curl', img: 'lying-leg-curl-3d.webp', muscles: ['Hamstrings'], sets: 3, reps: '10-12', tip: 'Hips stay down on the pad. Curl your heels to your glutes.',
       altLabels: ['At home? Do this instead', 'At the gym? Do this instead'],
       alt: { id: 'single-leg-rdl', name: 'Single-Leg Romanian Deadlift', img: 'single-leg-rdl', db: true, muscles: ['Hamstrings', 'Glutes'], sets: 3, reps: '10 / leg', tip: 'Hinge at the hip with a flat back, slight bend in the standing knee.' } },
-    { id: 'leg-press', name: 'Leg Press', img: 'leg-press', muscles: ['Quads', 'Glutes'], sets: 3, reps: '10-12', tip: 'Don\'t lock the knees at the top. Lower back stays on the pad.',
+    { id: 'leg-press', name: 'Leg Press', img: 'leg-press-3d.webp', muscles: ['Quads', 'Glutes'], sets: 3, reps: '10-12', tip: 'Don\'t lock the knees at the top. Lower back stays on the pad.',
       altLabels: ['At home? Do this instead', 'At the gym? Do this instead'],
       alt: { id: 'glute-bridge', name: 'Glute Bridge', img: 'glute-bridge', bw: true, muscles: ['Glutes', 'Hamstrings'], sets: 3, reps: '15', tip: 'Push through the heels, squeeze glutes at the top for 1 second.' } },
-    { id: 'calf-raise', name: 'Dumbbell Calf Raise', img: 'calf-raise', db: true, muscles: ['Calves'], sets: 3, reps: '15-20', tip: 'Use a step. Full stretch at the bottom, pause at the top. Works at the gym and at home.' },
+    { id: 'calf-raise', name: 'Dumbbell Calf Raise', img: 'calf-raise-3d.webp', db: true, muscles: ['Calves'], sets: 3, reps: '15-20', tip: 'Use a step. Full stretch at the bottom, pause at the top. Works at the gym and at home.' },
   ]},
   // Optional: extra classes you can add any day. Not suggested and not counted in the week goal.
   { id: 'cardio', name: 'Cardio', short: 'CAR', group: 'cardio', optional: true, exercises: [
@@ -855,7 +861,7 @@ const MOVES = {
   'hip-hinge': { name: 'Hip Hinge (no weight)', reps: 10, tip: 'Soft knees, push your hips back with a flat back, then stand up tall.' },
   'leg-swings': { name: 'Leg Swings', reps: 10, sides: true, tip: 'Hold a wall. Swing one leg forward and back, relaxed. Then switch legs.' },
   'hip-circles': { name: 'Hip Circles', secs: 30, tip: 'Hands on your hips, draw big slow circles. Switch direction halfway.' },
-  'bodyweight-squat': { name: 'Bodyweight Squat', reps: 15, img: 'bodyweight-squat', tip: 'Easy squats to warm up your knees and hips.' },
+  'bodyweight-squat': { name: 'Bodyweight Squat', reps: 15, img: 'bodyweight-squat-3d.webp', tip: 'Easy squats to warm up your knees and hips.' },
   'glute-bridge': { name: 'Glute Bridge', reps: 10, img: 'glute-bridge', tip: 'Push through your heels and squeeze your glutes at the top.' },
   'march-in-place': { name: 'March in Place', secs: 60, tip: 'Lift your knees and swing your arms. Start easy, get a bit faster.' },
   'high-knees': { name: 'High Knees', secs: 30, tip: 'Jog on the spot, bringing your knees up to hip height.' },

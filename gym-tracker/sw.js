@@ -1,7 +1,7 @@
 // Offline support: keeps the app and your guide pictures on the phone.
 // Bump VERSION when you change any file so phones pick up the new version (bug fixes: 11.1, 11.2…).
 // Keep the number the same as APP_VERSION.n in index.html.
-const VERSION = 'gym-v18.4';
+const VERSION = 'gym-v18.6';
 // Folders in images/: 3d (cut-outs), photos (jpg), videos (tutorials), cardio, moves (warm-up / cool-down),
 // home, grip and core (drawn pictures), avatars.
 const FILES = [
@@ -9,13 +9,13 @@ const FILES = [
   'icons/icon-192.png', 'icons/icon-512.png', 'icons/icon-maskable-512.png', 'icons/apple-touch-icon.png',
   ...['shoulder-press-machine', 'chest-press-machine', 'pec-deck-fly', 'hammer-curl', 'face-pull', 'lat-pulldown', 'seated-cable-row', 'treadmill',
     'ab-crunch-machine', 'triceps-pushdown', 'deadlift', 'dumbbell-rdl', 'one-arm-dumbbell-row', 'dumbbell-pullover', 'chair-dips', 'farmers-hold', 'dead-hang',
+    'leg-press', 'leg-extension', 'lying-leg-curl', 'barbell-squat', 'calf-raise', 'bodyweight-squat',
   ].map(n => `images/3d/${n}-3d.webp`),
   ...[
     'lateral-raise-machine', 'dumbbell-lateral-raise', 'seated-front-raise',
-    'barbell-squat', 'leg-extension', 'lying-leg-curl', 'leg-press',
-    'bodyweight-squat', 'bulgarian-split-squat', 'single-leg-rdl', 'glute-bridge', 'calf-raise',
+    'bulgarian-split-squat', 'single-leg-rdl', 'glute-bridge',
   ].map(n => `images/photos/${n}.jpg`),
-  ...['shoulder-press-machine', 'chest-press-machine', 'lat-pulldown', 'seated-cable-row', 'treadmill'].map(n => `images/videos/${n}.mp4`),
+  ...['shoulder-press-machine', 'chest-press-machine', 'lat-pulldown', 'seated-cable-row', 'treadmill', 'triceps-pushdown'].map(n => `images/videos/${n}.mp4`),
   'images/cardio/outdoor-run.svg',
   ...['arm-circles', 'cross-body-stretch', 'wall-slides', 'arm-swings', 'doorway-stretch', 'incline-push-up', 'cat-cow', 'thoracic-rotation', 'hip-hinge', 'leg-swings', 'hip-circles', 'march-in-place', 'high-knees', 'ankle-circles', 'overhead-triceps-stretch', 'childs-pose', 'lying-twist', 'quad-stretch', 'hamstring-stretch', 'calf-stretch', 'figure-four', 'hip-flexor-stretch'].map(n => `images/moves/${n}.svg`),
   ...['seated-dumbbell-press', 'dumbbell-reverse-fly', 'push-up', 'dumbbell-floor-fly', 'floor-crunch'].map(n => `images/home/${n}.svg`),
