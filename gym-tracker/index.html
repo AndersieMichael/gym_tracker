@@ -27,7 +27,7 @@
   --danger: #FF5C6C;
   --photo-a: #E4F1EE; --photo-b: #F3E3DC;
   --radius: 24px;
-  --c-shoulder: #FFB547; --c-chest: #FF6B81; --c-back: #5AB8FF; --c-legs: #3EE59B; --c-cardio: #B197FC; --c-running: #F7A6FF; --c-core: #5EE7F0;
+  --c-shoulder: #FFB547; --c-chest: #FF6B81; --c-back: #5AB8FF; --c-legs: #3EE59B; --c-cardio: #B197FC; --c-running: #F7A6FF; --c-core: #5EE7F0; --c-grip: #E8B07A;
   --font: "Plus Jakarta Sans", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
   --tabs-h: 66px;
   color-scheme: dark;
@@ -425,9 +425,14 @@ label .field, label input { color: var(--text); }
 
 <script>
 // App version: shown in More. Bump `n` together with VERSION in sw.js on every update.
-const APP_VERSION = { n: 18.8, date: '2026-11-08' };
+const APP_VERSION = { n: 19, date: '2026-11-09' };
 // What's new, shown in Settings under the version. Add the new version at the top.
 const CHANGELOG = [
+  { n: 19, date: '2026-11-09', groups: [
+    ['💪 New Grip class', ['Farmer’s Hold, Dead Hang (Wrist Curl at home) and the new Reverse Wrist Curl, about 10–12 minutes', 'Optional, like Core: do it after any class, or on its own when you’re short on time', 'Your hold goals and history carry over']],
+    ['🏋️ Shorter Back Day', ['The grip moves moved out of Back Day into the Grip class, so Back Day is 4 exercises again (and ✅ Full Class is easier)', 'Old Back Day workouts keep their grip sets, also when you edit them']],
+    ['⏳ Longer get-ready countdown', ['The hold timer now counts 5 · 4 · 3 · 2 · 1 with a beep each second before GO, so you have time to grab the bar or the dumbbells', 'Change it in Settings → Get-ready countdown: 3, 5 or 10 seconds']],
+  ]},
   { n: 18.8, date: '2026-11-08', groups: [
     ['🖼️ New pictures', ['New clean cut-out pictures for Bulgarian Split Squat, Machine Chest Press, Lying Leg Curl, Dumbbell Lateral Raise, Dumbbell Floor Fly, Floor Crunch, Push-ups, Bent-over Reverse Fly, Seated Dumbbell Shoulder Press and the March in Place warm-up']],
   ]},
@@ -565,12 +570,6 @@ const PLANS = [
     { id: 'triceps-pushdown', name: 'Cable Triceps Pushdown', img: 'triceps-pushdown-3d.webp', video: 'videos/triceps-pushdown.mp4', muscles: ['Triceps'], sets: 3, reps: '12-15', tip: 'Elbows pinned to your sides, straighten fully at the bottom.',
       altLabels: HOME_LABELS,
       alt: { id: 'chair-dips', name: 'Chair Dips', img: 'chair-dips-3d.webp', bw: true, muscles: ['Triceps'], sets: 3, reps: 'max', tip: 'Hands on the front edge of a sturdy chair. Lower until your elbows bend about 90°, then push back up.' } },
-    // grip finisher: last, so tired hands don't hold back the pulldowns, rows and deadlift.
-    // type 'hold': timed in seconds (t) with the hold timer, plus the weight (w) unless it's bodyweight
-    { id: 'farmers-hold', type: 'hold', holdMax: 60, maxTip: '60 s, the top goal! Next time try heavier dumbbells.', name: 'Dumbbell Farmer’s Hold', img: 'farmers-hold-3d.webp', db: true, muscles: ['Grip', 'Forearms', 'Traps'], sets: 3, reps: '30-45 s', tip: 'Stand tall with a heavy dumbbell in each hand, arms straight by your sides, shoulders down. Squeeze the handles hard. Works at the gym and at home.' },
-    { id: 'dead-hang', type: 'hold', bw: true, holdMax: 60, maxTip: '60 s, the top goal! Keep it there, your grip is strong.', name: 'Dead Hang', img: 'dead-hang-3d.webp', muscles: ['Grip', 'Forearms', 'Shoulders'], sets: 3, reps: '20-40 s', tip: 'Hang from a pull-up bar with straight arms, hands shoulder-width apart. Keep still, no swinging. Feet can touch a box to make it easier.',
-      altLabels: HOME_LABELS,
-      alt: { id: 'wrist-curl', name: 'Dumbbell Wrist Curl', img: 'grip/wrist-curl.svg', db: true, light: true, muscles: ['Forearms', 'Grip'], sets: 3, reps: '15', tip: 'Sit with your forearms on your thighs, palms up. Let the dumbbells roll down to your fingers, then curl your wrists up.' } },
   ]},
   // Leg Day and Leg Day · House Edition combined: each gym exercise has its home version as `alt`
   { id: 'legs', name: 'Leg Day', short: 'LEG', group: 'legs', modes: ['🏋️ Gym', '🏠 Home'], homeName: 'Leg Day · Home', exercises: [
@@ -599,6 +598,15 @@ const PLANS = [
     { id: 'side-plank', type: 'hold', bw: true, sides: true, holdMax: 60, maxTip: '1:00 per side, the top goal! Keep it, or lift your top leg to make it harder.', name: 'Side Plank', img: 'side-plank-3d.webp', muscles: ['Obliques', 'Core', 'Hips'], sets: 3, reps: '30-45 s / side', tip: 'Elbow under your shoulder, hips up so your body is one straight line. Too hard? Put your bottom knee down.' },
     { id: 'glute-bridge', name: 'Glute Bridge', img: 'glute-bridge', bw: true, muscles: ['Glutes', 'Hamstrings'], sets: 3, reps: '15', tip: 'Push through the heels, squeeze glutes at the top for 1 second.' },
     { id: 'dead-bug', name: 'Dead Bug', img: 'dead-bug-3d.webp', bw: true, muscles: ['Deep abs', 'Core'], sets: 3, reps: '10 / side', tip: 'On your back, arms up and knees over your hips. Slowly lower the opposite arm and leg while you press your lower back into the floor.' },
+  ]},
+  // Grip: Farmer’s Hold and Dead Hang (moved out of Back Day in v19, so Back Day is shorter), plus forearm work.
+  // type 'hold': timed in seconds (t) with the hold timer, plus the weight (w) unless it's bodyweight. Short: add it after any class or on its own.
+  { id: 'grip', name: 'Grip', short: 'GRI', group: 'grip', optional: true, exercises: [
+    { id: 'farmers-hold', type: 'hold', holdMax: 60, maxTip: '60 s, the top goal! Next time try heavier dumbbells.', name: 'Dumbbell Farmer’s Hold', img: 'farmers-hold-3d.webp', db: true, muscles: ['Grip', 'Forearms', 'Traps'], sets: 3, reps: '30-45 s', tip: 'Stand tall with a heavy dumbbell in each hand, arms straight by your sides, shoulders down. Squeeze the handles hard. Works at the gym and at home.' },
+    { id: 'dead-hang', type: 'hold', bw: true, holdMax: 60, maxTip: '60 s, the top goal! Keep it there, your grip is strong.', name: 'Dead Hang', img: 'dead-hang-3d.webp', muscles: ['Grip', 'Forearms', 'Shoulders'], sets: 3, reps: '20-40 s', tip: 'Hang from a pull-up bar with straight arms, hands shoulder-width apart. Keep still, no swinging. Feet can touch a box to make it easier.',
+      altLabels: HOME_LABELS,
+      alt: { id: 'wrist-curl', name: 'Dumbbell Wrist Curl', img: 'grip/wrist-curl.svg', db: true, light: true, muscles: ['Forearms', 'Grip'], sets: 3, reps: '15', tip: 'Sit with your forearms on your thighs, palms up. Let the dumbbells roll down to your fingers, then curl your wrists up.' } },
+    { id: 'reverse-wrist-curl', name: 'Dumbbell Reverse Wrist Curl', img: 'grip/reverse-wrist-curl.svg', db: true, light: true, muscles: ['Forearms'], sets: 3, reps: '15', tip: 'Like the wrist curl, but palms down: forearms on your thighs, lift the back of your hands up slowly. Use a light weight. It balances your grip work and helps keep elbows healthy.' },
   ]},
   // Outdoor running: you log distance and time (from your watch or running app), the app works out your pace
   { id: 'running', name: 'Running', short: 'RUN', group: 'running', optional: true, exercises: [
@@ -657,6 +665,8 @@ const withAlts = list => list.flatMap(e => e.alt ? [e, e.alt] : [e]);
 const exName = id => { for (const p of PLANS) for (const e of withAlts(p.exercises)) if (e.id === id) return ex(e).name; return id; };
 // slot = the exercise position in the plan; chosen = the version you picked for it
 const slotOf = (p, id) => p.exercises.find(x => x.id === id || x.alt?.id === id);
+// like slotOf, but an exercise that has left the class (grip moves in old Back Day workouts) is its own slot
+const slotFor = (p, id) => slotOf(p, id) || findEx(id);
 const useAlt = () => (db.settings.useAlt = db.settings.useAlt || {});
 const chosen = slot => (slot.alt && useAlt()[slot.id] ? slot.alt : slot);
 // Gym / Home switch for plans with `modes`: 'main', 'alt' or 'mix' (some of each)
@@ -889,6 +899,7 @@ const ROUTINES = {
   legs: { warm: ['leg-swings', 'hip-circles', 'bodyweight-squat', 'glute-bridge'], cool: ['quad-stretch', 'hamstring-stretch', 'calf-stretch', 'figure-four'] },
   cardio: { warm: ['march-in-place', 'high-knees', 'leg-swings', 'ankle-circles'], cool: ['quad-stretch', 'calf-stretch', 'hamstring-stretch', 'hip-flexor-stretch'] },
   core: { warm: ['cat-cow', 'hip-circles', 'glute-bridge', 'arm-swings'], cool: ['childs-pose', 'lying-twist', 'hip-flexor-stretch'] },
+  grip: { warm: ['arm-circles', 'arm-swings', 'cross-body-stretch', 'wall-slides'], cool: ['overhead-triceps-stretch', 'cross-body-stretch', 'doorway-stretch'] },
 };
 const routine = (planId, kind) => (ROUTINES[planById(planId).group] || ROUTINES.cardio)[kind];
 const moveImg = id => MOVES[id].img || `moves/${id}.svg`;
@@ -1377,7 +1388,7 @@ function viewWorkout() {
     })() : ''}
     <div class="stack">
     ${a.exercises.map((we, i) => {
-      const slot = slotOf(p, we.exId), e = ex(slot.alt?.id === we.exId ? slot.alt : slot), prev = lastSetsFor(e.id) || [];
+      const slot = slotFor(p, we.exId), e = ex(slot.alt?.id === we.exId ? slot.alt : slot), prev = lastSetsFor(e.id) || [];
       const other = slot.alt && ex(slot.alt.id === we.exId ? slot : slot.alt);
       return `<div class="card wo-ex">
         <div class="top">${photo(e.img, '', true, e.video)}
@@ -2296,6 +2307,8 @@ function viewSettings() {
         <div class="seg" style="width:140px">${['kg', 'lb'].map(u => `<button class="${unit() === u ? 'on' : ''}" data-act="unit" data-u="${u}">${u}</button>`).join('')}</div></div>
       <div class="row between"><span>Rest timer after each set</span>
         <select class="field" style="width:120px" data-act="rest-set">${[0, 60, 90, 120, 180].map(s => `<option value="${s}" ${db.settings.rest === s ? 'selected' : ''}>${s ? fmtDur(s) : 'Off'}</option>`).join('')}</select></div>
+      <div class="row between"><span>Get-ready countdown<br><span class="muted small">before planks and holds</span></span>
+        <select class="field" style="width:120px" data-act="ready-set">${[3, 5, 10].map(s => `<option value="${s}" ${readySecs() === s ? 'selected' : ''}>${s} seconds</option>`).join('')}</select></div>
     </div>
     <h2>🔔 Alerts</h2>
     <div class="card stack">
@@ -2374,6 +2387,8 @@ function startWorkout(planId, opts = {}) {
     const goal = isHold(e) ? saved?.goal || holdGoal(e.id, opts.edit?.id).goal : 0;
     return { exId: e.id, sets, ...(goal ? { goal } : {}) };
   });
+  // editing an old workout: keep exercises that have since left the class (like the grip moves in Back Day)
+  for (const x of opts.edit?.exercises || []) if (!slotOf(p, x.exId) && x.sets.length) exercises.push({ exId: x.exId, sets: x.sets.map(s => ({ ...s, done: true })), ...(x.goal ? { goal: x.goal } : {}) });
   db.active = { planId, date, start: opts.edit?.start || Date.now(), exercises, ...(home ? { home } : {}), ...(opts.edit ? { editId: opts.edit.id } : {}) };
   db.planned = db.planned.filter(x => !(x.date === date && x.planId === planId));
   save();
@@ -2571,6 +2586,8 @@ function swStopSheet() {
 // Ready → 3, 2, 1 (beeps) → GO (long beep) → counts up → beeps in the last 3 s → long beep when time is up.
 // Exercises with `sides` (side plank) do the left side, then 5 s to switch (beeps at 3, 2, 1), then the right side.
 let hold = null;
+// seconds to get into position before GO (Settings → Get-ready countdown)
+const readySecs = () => db.settings.ready || 5;
 function holdOpen(i) {
   const a = db.active, we = a.exercises[i];
   let j = we.sets.findIndex(s => !s.done);
@@ -2638,7 +2655,8 @@ function holdTick() {
   if (now < h.go) {
     const n = Math.ceil((h.go - now) / 1000), b = h.el.querySelector('[data-hb]');
     if (b) b.textContent = n;
-    if (n <= 3 && n !== h.cue) { h.cue = n; beep(); buzz(90); }
+    // get ready: a beep every second · switching sides: beeps at 3, 2, 1
+    if ((h.phase === 'count' || n <= 3) && n !== h.cue) { h.cue = n; beep(); buzz(90); }
     return;
   }
   if (h.phase !== 'hold') { if (h.phase === 'switch') h.side = 1; h.phase = 'hold'; h.cue = null; beep(true); buzz(300); holdDraw(); }
@@ -2655,7 +2673,7 @@ document.addEventListener('click', e => {
   const h = hold, act = b.dataset.h;
   if (act === 'close') holdClose();
   else if (act === 'step') { h.target = Math.max(5, h.target + Number(b.dataset.d)); holdDraw(); }
-  else if (act === 'go') { Object.assign(h, { phase: 'count', go: Date.now() + 3000, cue: null, side: 0, times: [] }); holdDraw(); }
+  else if (act === 'go') { Object.assign(h, { phase: 'count', go: Date.now() + readySecs() * 1000, cue: null, side: 0, times: [] }); holdDraw(); }
   else if (act === 'again') { h.phase = 'ready'; holdDraw(); }
   else if (act === 'stop') {
     // countdown: back to Ready · switching sides: start the right side now · holding: save what you held
@@ -2814,7 +2832,7 @@ document.addEventListener('click', e => {
     }
     case 'swap-wo': {
       // keeps the numbers you already typed, and remembers the choice for next time
-      const we = a.exercises[b.dataset.i], slot = slotOf(planById(a.planId), we.exId);
+      const we = a.exercises[b.dataset.i], slot = slotFor(planById(a.planId), we.exId);
       we.exId = we.exId === slot.id ? slot.alt.id : slot.id;
       useAlt()[slot.id] = we.exId !== slot.id; save(); render();
       break;
@@ -2917,7 +2935,7 @@ document.addEventListener('input', e => {
     const pace = row.querySelector('.pace'); if (pace) pace.textContent = fmtPace(paceOf(s)); // runs: pace updates as you type
     if (t.dataset.f === 'w' && db.active.home) {
       // home workout: the rep target follows the weight you type
-      const we = db.active.exercises[row.dataset.i], slot = slotOf(planById(db.active.planId), we.exId);
+      const we = db.active.exercises[row.dataset.i], slot = slotFor(planById(db.active.planId), we.exId);
       const r = recFor(db.active, ex(slot.alt?.id === we.exId ? slot.alt : slot), we);
       $(`[data-rec="${row.dataset.i}"]`).innerHTML = r.target;
       $(`[data-recnote="${row.dataset.i}"]`).textContent = r.note;
@@ -2934,6 +2952,7 @@ document.addEventListener('input', e => {
 document.addEventListener('change', e => {
   const t = e.target;
   if (t.dataset.act === 'rest-set') { db.settings.rest = Number(t.value); save(); }
+  if (t.dataset.act === 'ready-set') { db.settings.ready = Number(t.value); save(); }
   if (t.dataset.act === 'name') { db.settings.name = t.value.trim().slice(0, 24); save(); render(); }
   if (t.id === 'importFile' && t.files[0]) {
     const r = new FileReader();
