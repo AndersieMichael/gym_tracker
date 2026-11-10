@@ -425,9 +425,13 @@ label .field, label input { color: var(--text); }
 
 <script>
 // App version: shown in More. Bump `n` together with VERSION in sw.js on every update.
-const APP_VERSION = { n: 19, date: '2026-11-09' };
+const APP_VERSION = { n: 19.1, date: '2026-11-10' };
 // What's new, shown in Settings under the version. Add the new version at the top.
 const CHANGELOG = [
+  { n: 19.1, date: '2026-11-10', groups: [
+    ['✍️ Sets follow the set before', ['Type 12 kg in set 1, and sets 2 and 3 suggest 12 kg too (not last time’s 10 kg): just tap ✓', 'Works for reps as well, and you can still type a different number in any set']],
+    ['⏳ Get ready in warm-up and cool-down', ['Every timed move starts with a get-ready countdown and beeps, so you have time to read the move and get into position', 'A long beep when the move starts and when it ends', 'Uses your Get-ready countdown from Settings (3, 5 or 10 seconds)']],
+  ]},
   { n: 19, date: '2026-11-09', groups: [
     ['💪 New Grip class', ['Farmer’s Hold, Dead Hang (Wrist Curl at home) and the new Reverse Wrist Curl, about 10–12 minutes', 'Optional, like Core: do it after any class, or on its own when you’re short on time', 'Your hold goals and history carry over']],
     ['🏋️ Shorter Back Day', ['The grip moves moved out of Back Day into the Grip class, so Back Day is 4 exercises again (and ✅ Full Class is easier)', 'Old Back Day workouts keep their grip sets, also when you edit them']],
@@ -664,6 +668,15 @@ const ex = e => Object.assign({}, e, db.overrides[e.id] || {});
 const withAlts = list => list.flatMap(e => e.alt ? [e, e.alt] : [e]);
 const exName = id => { for (const p of PLANS) for (const e of withAlts(p.exercises)) if (e.id === id) return ex(e).name; return id; };
 // slot = the exercise position in the plan; chosen = the version you picked for it
+// An empty weight or reps box suggests what you typed in the nearest set above it (this workout);
+// only when nothing is typed above does it fall back to last time / the target (kept in data-ph).
+const carry = (sets, j, f) => { for (let k = j - 1; k >= 0; k--) if (sets[k][f] !== '' && sets[k][f] != null) return sets[k][f]; return ''; };
+const carryPh = (sets, j, f, fallback) => `placeholder="${esc(carry(sets, j, f) || fallback)}" data-ph="${esc(fallback)}"`;
+// after typing or ticking a set: refresh the suggestions in the sets below it, without redrawing (keeps the keyboard open)
+function carryDown(i) {
+  const sets = db.active.exercises[i].sets;
+  document.querySelectorAll(`.setrow[data-i="${i}"] input[data-ph]`).forEach(inp => { inp.placeholder = carry(sets, Number(inp.closest('.setrow').dataset.j), inp.dataset.f) || inp.dataset.ph; });
+}
 const slotOf = (p, id) => p.exercises.find(x => x.id === id || x.alt?.id === id);
 // like slotOf, but an exercise that has left the class (grip moves in old Back Day workouts) is its own slot
 const slotFor = (p, id) => slotOf(p, id) || findEx(id);
@@ -920,7 +933,9 @@ function guideStep(i) {
   const g = guide; g.i = i; g.paused = false;
   if (i >= g.steps.length) return guideEnd();
   const st = g.steps[i], m = MOVES[st.id];
-  g.left = m.secs || 0; g.until = m.secs ? Date.now() + m.secs * 1000 : 0;
+  // timed moves start with a get-ready countdown (same setting as the hold timer), so you can read the move and get into position
+  g.left = m.secs || 0; g.until = 0; g.cue = null;
+  g.readyLeft = m.secs ? readySecs() : 0; g.readyAt = m.secs ? Date.now() + g.readyLeft * 1000 : 0;
   const title = g.kind === 'warm' ? '🔥 Warm-up' : '🧘 Cool-down';
   g.el.innerHTML = `<div class="guide-in">
     <div class="row between"><span class="eyebrow" style="color:var(--text)">${title} · ${i + 1} / ${g.steps.length}</span><button class="round" data-g="close" aria-label="Close">✕</button></div>
@@ -929,7 +944,8 @@ function guideStep(i) {
     <div class="display" style="font-size:24px;margin-top:14px">${esc(m.name)}</div>
     ${st.side ? `<div class="badge" style="margin-top:6px;display:inline-block">${st.side}</div>` : ''}
     <div class="muted small" style="margin-top:8px;min-height:38px">${esc(m.tip)}</div>
-    <div class="guide-count" data-gcount>${m.secs ? fmtDur(m.secs) : `${m.reps} reps`}</div>
+    <div class="muted" style="text-align:center;min-height:22px;margin-top:6px" data-glabel>${m.secs ? `Get ready… then ${fmtDur(m.secs)}` : ''}</div>
+    <div class="guide-count" style="margin-top:0" data-gcount>${m.secs ? g.readyLeft : `${m.reps} reps`}</div>
     <div class="row" style="margin-top:6px">
       ${m.secs ? `<button class="btn" style="flex:1" data-g="pause">⏸ Pause</button>` : ''}
       <button class="btn primary" style="flex:1" data-g="next">${m.secs ? 'Next ›' : '✓ Done'}</button>
@@ -952,10 +968,18 @@ function closeGuide(completed) {
   if (completed) g.onDone?.();
 }
 function guideTick() {
-  const g = guide; if (!g || g.paused || !g.until) return;
-  const left = Math.max(0, Math.ceil((g.until - Date.now()) / 1000));
-  const el = g.el.querySelector('[data-gcount]'); if (el) el.textContent = fmtDur(left);
-  if (left <= 0) { g.until = 0; buzz(150); setTimeout(() => guide === g && guideStep(g.i + 1), 600); }
+  const g = guide; if (!g || g.paused || !(g.until || g.readyAt)) return;
+  const el = g.el.querySelector('[data-gcount]'), now = Date.now();
+  if (g.readyAt) {
+    // get ready: a beep every second, then a long one when the move starts
+    const n = Math.ceil((g.readyAt - now) / 1000);
+    if (n > 0) { if (el) el.textContent = n; if (n !== g.cue) { g.cue = n; beep(); buzz(90); } return; }
+    g.readyAt = 0; g.readyLeft = 0; g.until = now + g.left * 1000; beep(true); buzz(300);
+    const label = g.el.querySelector('[data-glabel]'); if (label) label.textContent = 'Go!';
+  }
+  const left = Math.max(0, Math.ceil((g.until - now) / 1000));
+  if (el) el.textContent = fmtDur(left);
+  if (left <= 0) { g.until = 0; buzz(150); beep(true); setTimeout(() => guide === g && guideStep(g.i + 1), 600); }
 }
 setInterval(guideTick, 250);
 document.addEventListener('click', e => {
@@ -963,8 +987,9 @@ document.addEventListener('click', e => {
   const g = guide, act = b.dataset.g;
   if (act === 'next') guideStep(g.i + 1);
   else if (act === 'pause') {
-    if (g.paused) { g.paused = false; g.until = Date.now() + g.left * 1000; b.textContent = '⏸ Pause'; }
-    else { g.paused = true; g.left = Math.max(0, Math.ceil((g.until - Date.now()) / 1000)); b.textContent = '▶ Resume'; }
+    // pausing works in the get-ready countdown too
+    if (g.paused) { g.paused = false; if (g.readyAt) g.readyAt = Date.now() + g.readyLeft * 1000; else g.until = Date.now() + g.left * 1000; b.textContent = '⏸ Pause'; }
+    else { g.paused = true; if (g.readyAt) g.readyLeft = Math.max(1, Math.ceil((g.readyAt - Date.now()) / 1000)); else g.left = Math.max(0, Math.ceil((g.until - Date.now()) / 1000)); b.textContent = '▶ Resume'; }
   }
   else if (act === 'skip' || act === 'close') closeGuide(false);
   else if (act === 'finish') closeGuide(true);
@@ -1431,7 +1456,7 @@ function viewWorkout() {
             return `<div class="setrow ${s.done ? 'done' : ''}" data-i="${i}" data-j="${j}">
               <span class="sn">${j + 1}</span>
               <button class="prev" data-act="copy-prev" ${pv ? '' : 'disabled'}>${pv ? esc(setText(pv)) : '—'}</button>
-              ${e.bw ? '<span class="muted small" style="text-align:center">Body</span>' : `<input inputmode="decimal" data-f="w" value="${esc(s.w)}" placeholder="${pv ? esc(pv.w || '') : a.home && e.db && homeDb() ? homeDb() : ''}">`}
+              ${e.bw ? '<span class="muted small" style="text-align:center">Body</span>' : `<input inputmode="decimal" data-f="w" value="${esc(s.w)}" ${carryPh(we.sets, j, 'w', pv ? pv.w || '' : a.home && e.db && homeDb() ? homeDb() : '')}>`}
               <input inputmode="numeric" data-f="t" value="${esc(s.t)}" placeholder="${recFor(a, e, we).goal}">
               <button class="chk" data-act="check">✓</button>
             </div>`;
@@ -1444,8 +1469,8 @@ function viewWorkout() {
             return `<div class="setrow ${s.done ? 'done' : ''}" data-i="${i}" data-j="${j}">
               <span class="sn">${j + 1}</span>
               <button class="prev" data-act="copy-prev" ${pv ? '' : 'disabled'}>${pv ? esc(setText(pv)) : '—'}</button>
-              <input inputmode="decimal" data-f="w" value="${esc(s.w)}" placeholder="${pv ? esc(pv.w || '') : a.home && e.db && homeDb() ? homeDb() : ''}">
-              <input inputmode="numeric" data-f="r" value="${esc(s.r)}" placeholder="${pv ? esc(pv.r) : esc(String(recFor(a, e, we).reps).match(/\d+/)?.[0] || '')}">
+              <input inputmode="decimal" data-f="w" value="${esc(s.w)}" ${carryPh(we.sets, j, 'w', pv ? pv.w || '' : a.home && e.db && homeDb() ? homeDb() : '')}>
+              <input inputmode="numeric" data-f="r" value="${esc(s.r)}" ${carryPh(we.sets, j, 'r', pv ? pv.r : String(recFor(a, e, we).reps).match(/\d+/)?.[0] || '')}>
               <button class="chk" data-act="check">✓</button>
             </div>`;
           }).join('')}
@@ -2307,7 +2332,7 @@ function viewSettings() {
         <div class="seg" style="width:140px">${['kg', 'lb'].map(u => `<button class="${unit() === u ? 'on' : ''}" data-act="unit" data-u="${u}">${u}</button>`).join('')}</div></div>
       <div class="row between"><span>Rest timer after each set</span>
         <select class="field" style="width:120px" data-act="rest-set">${[0, 60, 90, 120, 180].map(s => `<option value="${s}" ${db.settings.rest === s ? 'selected' : ''}>${s ? fmtDur(s) : 'Off'}</option>`).join('')}</select></div>
-      <div class="row between"><span>Get-ready countdown<br><span class="muted small">before planks and holds</span></span>
+      <div class="row between"><span>Get-ready countdown<br><span class="muted small">before holds, warm-up and cool-down moves</span></span>
         <select class="field" style="width:120px" data-act="ready-set">${[3, 5, 10].map(s => `<option value="${s}" ${readySecs() === s ? 'selected' : ''}>${s} seconds</option>`).join('')}</select></div>
     </div>
     <h2>🔔 Alerts</h2>
@@ -2809,6 +2834,7 @@ document.addEventListener('click', e => {
         s.w = s.w || wi.placeholder || (row.dataset.j > 0 ? sets[row.dataset.j - 1].w : '');
         s.r = s.r || ri.placeholder; wi.value = s.w; ri.value = s.r;
         if (!num(s.r)) { ri.focus(); return; }
+        carryDown(row.dataset.i);
       }
       s.done = !s.done; row.classList.toggle('done', s.done); save();
       s.done && isLive(a) ? startRest() : stopRest();
@@ -2932,6 +2958,7 @@ document.addEventListener('input', e => {
     s[t.dataset.f] = t.value;
     if (t.dataset.f === 't') { delete s.tl; delete s.tr; } // typed by hand: one time for both sides
     save();
+    if (t.dataset.f === 'w' || t.dataset.f === 'r') carryDown(row.dataset.i);
     const pace = row.querySelector('.pace'); if (pace) pace.textContent = fmtPace(paceOf(s)); // runs: pace updates as you type
     if (t.dataset.f === 'w' && db.active.home) {
       // home workout: the rep target follows the weight you type
