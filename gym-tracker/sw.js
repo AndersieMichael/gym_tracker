@@ -1,7 +1,7 @@
 // Offline support: keeps the app and your guide pictures on the phone.
 // Bump VERSION when you change any file so phones pick up the new version (bug fixes: 11.1, 11.2…).
 // Keep the number the same as APP_VERSION.n in index.html.
-const VERSION = 'gym-v19.2';
+const VERSION = 'gym-v19.3';
 // Folders in images/: 3d (cut-outs), photos (jpg), videos (tutorials), moves (warm-up / cool-down),
 // grip (drawn pictures), avatars.
 const FILES = [
@@ -14,10 +14,12 @@ const FILES = [
     'bulgarian-split-squat', 'dumbbell-lateral-raise', 'dumbbell-floor-fly', 'floor-crunch', 'push-up',
     'dumbbell-reverse-fly', 'seated-dumbbell-press', 'march-in-place',
     'single-leg-rdl', 'leg-swings', 'hip-circles', 'wall-slides', 'arm-circles', 'cross-body-stretch-left', 'cross-body-stretch-right',
+    'arm-swings', 'lateral-raise-machine', 'doorway-stretch-left', 'doorway-stretch-right', 'incline-push-up',
+    'overhead-triceps-stretch-left', 'overhead-triceps-stretch-right', 'childs-pose', 'glute-bridge',
   ].map(n => `images/3d/${n}-3d.webp`),
-  ...['lateral-raise-machine', 'seated-front-raise', 'glute-bridge'].map(n => `images/photos/${n}.jpg`),
-  ...['shoulder-press-machine', 'chest-press-machine', 'lat-pulldown', 'seated-cable-row', 'treadmill', 'triceps-pushdown'].map(n => `images/videos/${n}.mp4`),
-  ...['arm-swings', 'doorway-stretch', 'incline-push-up', 'cat-cow', 'thoracic-rotation', 'hip-hinge', 'high-knees', 'ankle-circles', 'overhead-triceps-stretch', 'childs-pose', 'lying-twist', 'quad-stretch', 'hamstring-stretch', 'calf-stretch', 'figure-four', 'hip-flexor-stretch'].map(n => `images/moves/${n}.svg`),
+  ...['seated-front-raise'].map(n => `images/photos/${n}.jpg`),
+  ...['shoulder-press-machine', 'chest-press-machine', 'lat-pulldown', 'seated-cable-row', 'treadmill', 'triceps-pushdown', 'pec-deck-fly'].map(n => `images/videos/${n}.mp4`),
+  ...['cat-cow', 'thoracic-rotation', 'hip-hinge', 'high-knees', 'ankle-circles', 'lying-twist', 'quad-stretch', 'hamstring-stretch', 'calf-stretch', 'figure-four', 'hip-flexor-stretch'].map(n => `images/moves/${n}.svg`),
   ...['wrist-curl', 'reverse-wrist-curl'].map(n => `images/grip/${n}.svg`),
   ...['hamster', 'cat', 'mike', 'squidward', 'gigachad', 'dumbbelldore'].map(n => `images/avatars/${n}.jpg`),
 ];

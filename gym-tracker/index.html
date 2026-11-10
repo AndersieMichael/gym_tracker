@@ -425,9 +425,13 @@ label .field, label input { color: var(--text); }
 
 <script>
 // App version: shown in More. Bump `n` together with VERSION in sw.js on every update.
-const APP_VERSION = { n: 19.2, date: '2026-11-10' };
+const APP_VERSION = { n: 19.3, date: '2026-11-10' };
 // What's new, shown in Settings under the version. Add the new version at the top.
 const CHANGELOG = [
+  { n: 19.3, date: '2026-11-10', groups: [
+    ['🎬 New tutorial video', ['Pec Deck Fly now has a video: tap the ▶ on the picture', 'Silent, and saved on your phone so it plays with no signal']],
+    ['🖼️ New pictures', ['New clean cut-out pictures for Machine Lateral Raise, Glute Bridge and the moves Arm Swings, Doorway Chest Stretch, Incline Push-ups, Overhead Triceps Stretch and Child’s Pose', 'The doorway and overhead triceps stretches show the left arm for the left side and the right arm for the right side']],
+  ]},
   { n: 19.2, date: '2026-11-10', groups: [
     ['📱 New app icon', ['A new glowing dumbbell icon on your home screen. Already installed? Remove the app from your home screen and add it again to see it']],
     ['🖼️ New pictures', ['New clean cut-out pictures for Single-Leg Romanian Deadlift and the warm-up moves Leg Swings, Hip Circles, Wall Slides, Arm Circles and Cross-body Shoulder Stretch', 'The cross-body stretch shows the left arm for the left side and the right arm for the right side']],
@@ -544,7 +548,7 @@ const PLANS = [
     { id: 'shoulder-press-machine', name: 'Machine Shoulder Press', img: 'shoulder-press-machine-3d.webp', video: 'videos/shoulder-press-machine.mp4', muscles: ['Front delts', 'Triceps'], sets: 3, reps: '10-12', tip: 'Back flat on the pad. Press up without slamming the elbows locked.',
       altLabels: HOME_LABELS,
       alt: { id: 'seated-dumbbell-press', name: 'Seated Dumbbell Shoulder Press', img: 'seated-dumbbell-press-3d.webp', db: true, muscles: ['Front delts', 'Triceps'], sets: 3, reps: '10-12', tip: 'Sit tall on a chair with your back supported. Press the dumbbells up until your arms are almost straight.' } },
-    { id: 'lateral-raise-machine', name: 'Machine Lateral Raise', img: 'lateral-raise-machine', muscles: ['Side delts'], sets: 3, reps: '12-15', tip: 'Lead with your elbows and pause at shoulder height.',
+    { id: 'lateral-raise-machine', name: 'Machine Lateral Raise', img: 'lateral-raise-machine-3d.webp', muscles: ['Side delts'], sets: 3, reps: '12-15', tip: 'Lead with your elbows and pause at shoulder height.',
       altLabels: ['No machine / at home? Do this instead', 'At the gym? Do this instead'],
       alt: { id: 'dumbbell-lateral-raise', name: 'Dumbbell Lateral Raise', img: 'dumbbell-lateral-raise-3d.webp', db: true, light: true, muscles: ['Side delts'], sets: 3, reps: '12-15', tip: 'Slight bend in the elbows, raise to shoulder height, lower slowly.' } },
     { id: 'seated-front-raise', name: 'Seated Dumbbell Front Raise', img: 'seated-front-raise', db: true, light: true, muscles: ['Front delts'], sets: 3, reps: '10-12', tip: 'Raise to eye level. No swinging. Works at the gym and at home.' },
@@ -557,7 +561,7 @@ const PLANS = [
     { id: 'chest-press-machine', name: 'Machine Chest Press', img: 'chest-press-machine-3d.webp', video: 'videos/chest-press-machine.mp4', muscles: ['Chest', 'Triceps', 'Front delts'], sets: 3, reps: '8-12', tip: 'Handles at mid-chest height. Push out, control the way back.',
       altLabels: HOME_LABELS,
       alt: { id: 'push-up', name: 'Push-ups', img: 'push-up-3d.webp', bw: true, muscles: ['Chest', 'Triceps', 'Front delts'], sets: 3, reps: 'max', tip: 'Body in one straight line. Lower your chest close to the floor. Too hard? Do them with your knees on the floor.' } },
-    { id: 'pec-deck-fly', name: 'Pec Deck Fly', img: 'pec-deck-fly-3d.webp', muscles: ['Chest'], sets: 3, reps: '12-15', tip: 'Soft elbows. Squeeze the chest in the middle for 1 second.',
+    { id: 'pec-deck-fly', name: 'Pec Deck Fly', img: 'pec-deck-fly-3d.webp', video: 'videos/pec-deck-fly.mp4', muscles: ['Chest'], sets: 3, reps: '12-15', tip: 'Soft elbows. Squeeze the chest in the middle for 1 second.',
       altLabels: HOME_LABELS,
       alt: { id: 'dumbbell-floor-fly', name: 'Dumbbell Floor Fly', img: 'dumbbell-floor-fly-3d.webp', db: true, light: true, muscles: ['Chest'], sets: 3, reps: '12-15', tip: 'Lie on the floor, slight bend in the elbows. Open your arms until they touch the floor, then squeeze back up.' } },
     { id: 'hammer-curl', name: 'Dumbbell Hammer Curl', img: 'hammer-curl-3d.webp', db: true, muscles: ['Biceps', 'Forearms'], sets: 3, reps: '10-12', tip: 'Palms face each other, elbows stay by your sides. Works at the gym and at home.' },
@@ -592,7 +596,7 @@ const PLANS = [
       alt: { id: 'single-leg-rdl', name: 'Single-Leg Romanian Deadlift', img: 'single-leg-rdl-3d.webp', db: true, muscles: ['Hamstrings', 'Glutes'], sets: 3, reps: '10 / leg', tip: 'Hinge at the hip with a flat back, slight bend in the standing knee.' } },
     { id: 'leg-press', name: 'Leg Press', img: 'leg-press-3d.webp', muscles: ['Quads', 'Glutes'], sets: 3, reps: '10-12', tip: 'Don\'t lock the knees at the top. Lower back stays on the pad.',
       altLabels: ['At home? Do this instead', 'At the gym? Do this instead'],
-      alt: { id: 'glute-bridge', name: 'Glute Bridge', img: 'glute-bridge', bw: true, muscles: ['Glutes', 'Hamstrings'], sets: 3, reps: '15', tip: 'Push through the heels, squeeze glutes at the top for 1 second.' } },
+      alt: { id: 'glute-bridge', name: 'Glute Bridge', img: 'glute-bridge-3d.webp', bw: true, muscles: ['Glutes', 'Hamstrings'], sets: 3, reps: '15', tip: 'Push through the heels, squeeze glutes at the top for 1 second.' } },
     { id: 'calf-raise', name: 'Dumbbell Calf Raise', img: 'calf-raise-3d.webp', db: true, muscles: ['Calves'], sets: 3, reps: '15-20', tip: 'Use a step. Full stretch at the bottom, pause at the top. Works at the gym and at home.' },
   ]},
   // Optional: extra classes you can add any day. Not suggested and not counted in the week goal.
@@ -604,7 +608,7 @@ const PLANS = [
   { id: 'core', name: 'Core', short: 'COR', group: 'core', optional: true, exercises: [
     { id: 'plank', type: 'hold', bw: true, holdMax: 120, maxTip: '2:00 plank, the top goal! Keep it, or lift one foot to make it harder.', name: 'Plank', img: 'plank-3d.webp', muscles: ['Abs', 'Core', 'Shoulders'], sets: 3, reps: '45-60 s', tip: 'Forearms under your shoulders, body in one straight line from head to heels. Squeeze your glutes and don’t let your hips sag.' },
     { id: 'side-plank', type: 'hold', bw: true, sides: true, holdMax: 60, maxTip: '1:00 per side, the top goal! Keep it, or lift your top leg to make it harder.', name: 'Side Plank', img: 'side-plank-3d.webp', muscles: ['Obliques', 'Core', 'Hips'], sets: 3, reps: '30-45 s / side', tip: 'Elbow under your shoulder, hips up so your body is one straight line. Too hard? Put your bottom knee down.' },
-    { id: 'glute-bridge', name: 'Glute Bridge', img: 'glute-bridge', bw: true, muscles: ['Glutes', 'Hamstrings'], sets: 3, reps: '15', tip: 'Push through the heels, squeeze glutes at the top for 1 second.' },
+    { id: 'glute-bridge', name: 'Glute Bridge', img: 'glute-bridge-3d.webp', bw: true, muscles: ['Glutes', 'Hamstrings'], sets: 3, reps: '15', tip: 'Push through the heels, squeeze glutes at the top for 1 second.' },
     { id: 'dead-bug', name: 'Dead Bug', img: 'dead-bug-3d.webp', bw: true, muscles: ['Deep abs', 'Core'], sets: 3, reps: '10 / side', tip: 'On your back, arms up and knees over your hips. Slowly lower the opposite arm and leg while you press your lower back into the floor.' },
   ]},
   // Grip: Farmer’s Hold and Dead Hang (moved out of Back Day in v19, so Back Day is shorter), plus forearm work.
@@ -886,21 +890,21 @@ const MOVES = {
   'arm-circles': { name: 'Arm Circles', img: 'arm-circles-3d.webp', secs: 30, tip: 'Arms out to the sides. Small circles forward, then backward, slowly getting bigger.' },
   'cross-body-stretch': { name: 'Cross-body Shoulder Stretch', img: 'cross-body-stretch-left-3d.webp', imgRight: 'cross-body-stretch-right-3d.webp', secs: 30, sides: true, tip: 'Pull one arm across your chest with the other hand. Keep the shoulder down.' },
   'wall-slides': { name: 'Wall Slides', img: 'wall-slides-3d.webp', reps: 10, tip: 'Back and arms against a wall. Slide your arms up and down slowly, keeping them on the wall.' },
-  'arm-swings': { name: 'Arm Swings', secs: 30, tip: 'Swing your arms open wide, then give yourself a hug. Easy and relaxed.' },
-  'doorway-stretch': { name: 'Doorway Chest Stretch', secs: 30, sides: true, tip: 'Forearm on a door frame, step forward until you feel a gentle stretch in your chest.' },
-  'incline-push-up': { name: 'Incline Push-ups', reps: 10, tip: 'Hands on a bench, chair or wall. Easy, controlled reps to wake up your chest.' },
+  'arm-swings': { name: 'Arm Swings', img: 'arm-swings-3d.webp', secs: 30, tip: 'Swing your arms open wide, then give yourself a hug. Easy and relaxed.' },
+  'doorway-stretch': { name: 'Doorway Chest Stretch', img: 'doorway-stretch-left-3d.webp', imgRight: 'doorway-stretch-right-3d.webp', secs: 30, sides: true, tip: 'Forearm on a door frame, step forward until you feel a gentle stretch in your chest.' },
+  'incline-push-up': { name: 'Incline Push-ups', img: 'incline-push-up-3d.webp', reps: 10, tip: 'Hands on a bench, chair or wall. Easy, controlled reps to wake up your chest.' },
   'cat-cow': { name: 'Cat-Cow', reps: 10, tip: 'On hands and knees. Round your back up, then let it sink down. Move with your breath.' },
   'thoracic-rotation': { name: 'Thoracic Rotation', reps: 8, sides: true, tip: 'On hands and knees. Reach one arm up to the ceiling and follow it with your eyes.' },
   'hip-hinge': { name: 'Hip Hinge (no weight)', reps: 10, tip: 'Soft knees, push your hips back with a flat back, then stand up tall.' },
   'leg-swings': { name: 'Leg Swings', img: 'leg-swings-3d.webp', reps: 10, sides: true, tip: 'Hold a wall. Swing one leg forward and back, relaxed. Then switch legs.' },
   'hip-circles': { name: 'Hip Circles', img: 'hip-circles-3d.webp', secs: 30, tip: 'Hands on your hips, draw big slow circles. Switch direction halfway.' },
   'bodyweight-squat': { name: 'Bodyweight Squat', reps: 15, img: 'bodyweight-squat-3d.webp', tip: 'Easy squats to warm up your knees and hips.' },
-  'glute-bridge': { name: 'Glute Bridge', reps: 10, img: 'glute-bridge', tip: 'Push through your heels and squeeze your glutes at the top.' },
+  'glute-bridge': { name: 'Glute Bridge', reps: 10, img: 'glute-bridge-3d.webp', tip: 'Push through your heels and squeeze your glutes at the top.' },
   'march-in-place': { name: 'March in Place', img: 'march-in-place-3d.webp', secs: 60, tip: 'Lift your knees and swing your arms. Start easy, get a bit faster.' },
   'high-knees': { name: 'High Knees', secs: 30, tip: 'Jog on the spot, bringing your knees up to hip height.' },
   'ankle-circles': { name: 'Ankle Circles', secs: 20, sides: true, tip: 'Lift one foot and draw circles with your toes, both directions.' },
-  'overhead-triceps-stretch': { name: 'Overhead Triceps Stretch', secs: 30, sides: true, tip: 'Hand behind your head, gently push the elbow down with your other hand.' },
-  'childs-pose': { name: 'Child’s Pose', secs: 40, tip: 'Sit back on your heels, arms stretched forward, forehead down. Breathe slowly.' },
+  'overhead-triceps-stretch': { name: 'Overhead Triceps Stretch', img: 'overhead-triceps-stretch-left-3d.webp', imgRight: 'overhead-triceps-stretch-right-3d.webp', secs: 30, sides: true, tip: 'Hand behind your head, gently push the elbow down with your other hand.' },
+  'childs-pose': { name: 'Child’s Pose', img: 'childs-pose-3d.webp', secs: 40, tip: 'Sit back on your heels, arms stretched forward, forehead down. Breathe slowly.' },
   'lying-twist': { name: 'Lying Twist', secs: 30, sides: true, tip: 'On your back, drop one bent knee across your body. Keep both shoulders on the floor.' },
   'quad-stretch': { name: 'Standing Quad Stretch', secs: 30, sides: true, tip: 'Hold a wall and pull your heel to your glute. Keep your knees together.' },
   'hamstring-stretch': { name: 'Seated Hamstring Stretch', secs: 40, tip: 'Legs straight, reach for your toes with a long back. No bouncing.' },
