@@ -425,9 +425,13 @@ label .field, label input { color: var(--text); }
 
 <script>
 // App version: shown in More. Bump `n` together with VERSION in sw.js on every update.
-const APP_VERSION = { n: 19.1, date: '2026-11-10' };
+const APP_VERSION = { n: 19.2, date: '2026-11-10' };
 // What's new, shown in Settings under the version. Add the new version at the top.
 const CHANGELOG = [
+  { n: 19.2, date: '2026-11-10', groups: [
+    ['📱 New app icon', ['A new glowing dumbbell icon on your home screen. Already installed? Remove the app from your home screen and add it again to see it']],
+    ['🖼️ New pictures', ['New clean cut-out pictures for Single-Leg Romanian Deadlift and the warm-up moves Leg Swings, Hip Circles, Wall Slides, Arm Circles and Cross-body Shoulder Stretch', 'The cross-body stretch shows the left arm for the left side and the right arm for the right side']],
+  ]},
   { n: 19.1, date: '2026-11-10', groups: [
     ['✍️ Sets follow the set before', ['Type 12 kg in set 1, and sets 2 and 3 suggest 12 kg too (not last time’s 10 kg): just tap ✓', 'Works for reps as well, and you can still type a different number in any set']],
     ['⏳ Get ready in warm-up and cool-down', ['Every timed move starts with a get-ready countdown and beeps, so you have time to read the move and get into position', 'A long beep when the move starts and when it ends', 'Uses your Get-ready countdown from Settings (3, 5 or 10 seconds)']],
@@ -585,7 +589,7 @@ const PLANS = [
       alt: { id: 'bulgarian-split-squat', name: 'Bulgarian Split Squat', img: 'bulgarian-split-squat-3d.webp', db: true, muscles: ['Quads', 'Glutes'], sets: 3, reps: '10 / leg', tip: 'Back foot on a bench or sofa. Front knee over the foot.' } },
     { id: 'lying-leg-curl', name: 'Lying Leg Curl', img: 'lying-leg-curl-3d.webp', muscles: ['Hamstrings'], sets: 3, reps: '10-12', tip: 'Hips stay down on the pad. Curl your heels to your glutes.',
       altLabels: ['At home? Do this instead', 'At the gym? Do this instead'],
-      alt: { id: 'single-leg-rdl', name: 'Single-Leg Romanian Deadlift', img: 'single-leg-rdl', db: true, muscles: ['Hamstrings', 'Glutes'], sets: 3, reps: '10 / leg', tip: 'Hinge at the hip with a flat back, slight bend in the standing knee.' } },
+      alt: { id: 'single-leg-rdl', name: 'Single-Leg Romanian Deadlift', img: 'single-leg-rdl-3d.webp', db: true, muscles: ['Hamstrings', 'Glutes'], sets: 3, reps: '10 / leg', tip: 'Hinge at the hip with a flat back, slight bend in the standing knee.' } },
     { id: 'leg-press', name: 'Leg Press', img: 'leg-press-3d.webp', muscles: ['Quads', 'Glutes'], sets: 3, reps: '10-12', tip: 'Don\'t lock the knees at the top. Lower back stays on the pad.',
       altLabels: ['At home? Do this instead', 'At the gym? Do this instead'],
       alt: { id: 'glute-bridge', name: 'Glute Bridge', img: 'glute-bridge', bw: true, muscles: ['Glutes', 'Hamstrings'], sets: 3, reps: '15', tip: 'Push through the heels, squeeze glutes at the top for 1 second.' } },
@@ -879,17 +883,17 @@ const coverImg = p => chosen(p.exercises[0]).img;
 // ---------- Warm-up & cool-down ----------
 // Each move is timed (secs) or counted (reps); `sides` means it's done once per side.
 const MOVES = {
-  'arm-circles': { name: 'Arm Circles', secs: 30, tip: 'Arms out to the sides. Small circles forward, then backward, slowly getting bigger.' },
-  'cross-body-stretch': { name: 'Cross-body Shoulder Stretch', secs: 30, sides: true, tip: 'Pull one arm across your chest with the other hand. Keep the shoulder down.' },
-  'wall-slides': { name: 'Wall Slides', reps: 10, tip: 'Back and arms against a wall. Slide your arms up and down slowly, keeping them on the wall.' },
+  'arm-circles': { name: 'Arm Circles', img: 'arm-circles-3d.webp', secs: 30, tip: 'Arms out to the sides. Small circles forward, then backward, slowly getting bigger.' },
+  'cross-body-stretch': { name: 'Cross-body Shoulder Stretch', img: 'cross-body-stretch-left-3d.webp', imgRight: 'cross-body-stretch-right-3d.webp', secs: 30, sides: true, tip: 'Pull one arm across your chest with the other hand. Keep the shoulder down.' },
+  'wall-slides': { name: 'Wall Slides', img: 'wall-slides-3d.webp', reps: 10, tip: 'Back and arms against a wall. Slide your arms up and down slowly, keeping them on the wall.' },
   'arm-swings': { name: 'Arm Swings', secs: 30, tip: 'Swing your arms open wide, then give yourself a hug. Easy and relaxed.' },
   'doorway-stretch': { name: 'Doorway Chest Stretch', secs: 30, sides: true, tip: 'Forearm on a door frame, step forward until you feel a gentle stretch in your chest.' },
   'incline-push-up': { name: 'Incline Push-ups', reps: 10, tip: 'Hands on a bench, chair or wall. Easy, controlled reps to wake up your chest.' },
   'cat-cow': { name: 'Cat-Cow', reps: 10, tip: 'On hands and knees. Round your back up, then let it sink down. Move with your breath.' },
   'thoracic-rotation': { name: 'Thoracic Rotation', reps: 8, sides: true, tip: 'On hands and knees. Reach one arm up to the ceiling and follow it with your eyes.' },
   'hip-hinge': { name: 'Hip Hinge (no weight)', reps: 10, tip: 'Soft knees, push your hips back with a flat back, then stand up tall.' },
-  'leg-swings': { name: 'Leg Swings', reps: 10, sides: true, tip: 'Hold a wall. Swing one leg forward and back, relaxed. Then switch legs.' },
-  'hip-circles': { name: 'Hip Circles', secs: 30, tip: 'Hands on your hips, draw big slow circles. Switch direction halfway.' },
+  'leg-swings': { name: 'Leg Swings', img: 'leg-swings-3d.webp', reps: 10, sides: true, tip: 'Hold a wall. Swing one leg forward and back, relaxed. Then switch legs.' },
+  'hip-circles': { name: 'Hip Circles', img: 'hip-circles-3d.webp', secs: 30, tip: 'Hands on your hips, draw big slow circles. Switch direction halfway.' },
   'bodyweight-squat': { name: 'Bodyweight Squat', reps: 15, img: 'bodyweight-squat-3d.webp', tip: 'Easy squats to warm up your knees and hips.' },
   'glute-bridge': { name: 'Glute Bridge', reps: 10, img: 'glute-bridge', tip: 'Push through your heels and squeeze your glutes at the top.' },
   'march-in-place': { name: 'March in Place', img: 'march-in-place-3d.webp', secs: 60, tip: 'Lift your knees and swing your arms. Start easy, get a bit faster.' },
@@ -915,7 +919,8 @@ const ROUTINES = {
   grip: { warm: ['arm-circles', 'arm-swings', 'cross-body-stretch', 'wall-slides'], cool: ['overhead-triceps-stretch', 'cross-body-stretch', 'doorway-stretch'] },
 };
 const routine = (planId, kind) => (ROUTINES[planById(planId).group] || ROUTINES.cardio)[kind];
-const moveImg = id => MOVES[id].img || `moves/${id}.svg`;
+// imgRight: a separate picture for the right side of a two-sided move
+const moveImg = (id, side) => (side === 'Right side' && MOVES[id].imgRight) || MOVES[id].img || `moves/${id}.svg`;
 // rough length in minutes (counted moves take ~3 s per rep)
 const routineMins = ids => Math.max(1, Math.round(ids.reduce((t, id) => { const m = MOVES[id]; return t + (m.secs || m.reps * 3) * (m.sides ? 2 : 1); }, 0) / 60));
 
@@ -940,7 +945,7 @@ function guideStep(i) {
   g.el.innerHTML = `<div class="guide-in">
     <div class="row between"><span class="eyebrow" style="color:var(--text)">${title} · ${i + 1} / ${g.steps.length}</span><button class="round" data-g="close" aria-label="Close">✕</button></div>
     <div class="guide-bar"><i style="width:${Math.round(i / g.steps.length * 100)}%"></i></div>
-    <div class="photo guide-pic"><img src="${src(moveImg(st.id))}" alt=""></div>
+    <div class="photo guide-pic"><img src="${src(moveImg(st.id, st.side))}" alt=""></div>
     <div class="display" style="font-size:24px;margin-top:14px">${esc(m.name)}</div>
     ${st.side ? `<div class="badge" style="margin-top:6px;display:inline-block">${st.side}</div>` : ''}
     <div class="muted small" style="margin-top:8px;min-height:38px">${esc(m.tip)}</div>
