@@ -425,9 +425,12 @@ label .field, label input { color: var(--text); }
 
 <script>
 // App version: shown in More. Bump `n` together with VERSION in sw.js on every update.
-const APP_VERSION = { n: 20, date: '2026-11-11' };
+const APP_VERSION = { n: 20.1, date: '2026-11-11' };
 // What's new, shown in Settings under the version. Add the new version at the top.
 const CHANGELOG = [
+  { n: 20.1, date: '2026-11-11', groups: [
+    ['🐛 Fix', ['Import backup now shows all files, so your backup no longer hides in the file picker on some Android phones', 'Settings → Backup says where the backup file is and how to find it']],
+  ]},
   { n: 20, date: '2026-11-11', groups: [
     ['⚖️ Which kg to type', ['Every exercise now says what the kg box means: one dumbbell, the whole barbell (bar + all plates), or the number on the machine', 'Barbell Squat and Deadlift have “🧮 Add it up”: pick the bar (20, 15 or 10 kg), type the plates on one side, and the total is filled in']],
     ['🧹 Volume removed', ['The total “volume” in kg is gone from the finish screen, workout summaries and exercise charts: it confused more than it helped', 'The three “kg moved” badges (Ton Day, Heavy Lifter, Titan) are gone with it. Top weight, reps and records are still there']],
@@ -2380,7 +2383,9 @@ function viewSettings() {
     <div class="card stack">
       <div class="muted small">Your data is saved only in this browser on this device. Export a backup now and then, and use Import to move it to another phone or computer.</div>
       <div class="row"><button class="btn" data-act="export">⬇ Export backup</button><button class="btn" data-act="import">⬆ Import backup</button></div>
-      <input type="file" id="importFile" accept="application/json,.json" hidden>
+      <div class="muted small">Export saves a file called <b>gym-tracker-backup-(date).json</b> in your phone’s <b>Downloads</b>. To import: tap Import, open the ☰ menu in the file picker, choose <b>Downloads</b>, then tap the newest backup.</div>
+      <!-- no "accept" filter: some Android phones don't recognise .json files and hide them; the import checks the file itself -->
+      <input type="file" id="importFile" hidden>
     </div>
     <h2>ℹ️ App</h2>
     <div class="card" style="text-align:center">
@@ -3027,7 +3032,7 @@ document.addEventListener('change', e => {
         const { app, version, exported, ...rest } = data;
         db = migrate(Object.assign(blank(), rest)); save(); render();
         alert('Backup imported ✓');
-      } catch (err) { alert('That file is not a Gym Tracker backup.'); }
+      } catch (err) { alert('That file is not a Gym Tracker backup.\n\nLook for a file called gym-tracker-backup-(date).json in Downloads.'); }
     };
     r.readAsText(t.files[0]);
     t.value = '';
