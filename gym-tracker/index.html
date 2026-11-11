@@ -425,9 +425,13 @@ label .field, label input { color: var(--text); }
 
 <script>
 // App version: shown in More. Bump `n` together with VERSION in sw.js on every update.
-const APP_VERSION = { n: 19.3, date: '2026-11-10' };
+const APP_VERSION = { n: 20, date: '2026-11-11' };
 // What's new, shown in Settings under the version. Add the new version at the top.
 const CHANGELOG = [
+  { n: 20, date: '2026-11-11', groups: [
+    ['⚖️ Which kg to type', ['Every exercise now says what the kg box means: one dumbbell, the whole barbell (bar + all plates), or the number on the machine', 'Barbell Squat and Deadlift have “🧮 Add it up”: pick the bar (20, 15 or 10 kg), type the plates on one side, and the total is filled in']],
+    ['🧹 Volume removed', ['The total “volume” in kg is gone from the finish screen, workout summaries and exercise charts: it confused more than it helped', 'The three “kg moved” badges (Ton Day, Heavy Lifter, Titan) are gone with it. Top weight, reps and records are still there']],
+  ]},
   { n: 19.3, date: '2026-11-10', groups: [
     ['🎬 New tutorial video', ['Pec Deck Fly now has a video: tap the ▶ on the picture', 'Silent, and saved on your phone so it plays with no signal']],
     ['🖼️ New pictures', ['New clean cut-out pictures for Machine Lateral Raise, Glute Bridge and the moves Arm Swings, Doorway Chest Stretch, Incline Push-ups, Overhead Triceps Stretch and Child’s Pose', 'The doorway and overhead triceps stretches show the left arm for the left side and the right arm for the right side']],
@@ -576,7 +580,7 @@ const PLANS = [
     { id: 'seated-cable-row', name: 'Seated Cable Row', img: 'seated-cable-row-3d.webp', video: 'videos/seated-cable-row.mp4', muscles: ['Mid back', 'Lats'], sets: 3, reps: '10-12', tip: 'Straight back, pull to your belly, squeeze the shoulder blades.',
       altLabels: HOME_LABELS,
       alt: { id: 'one-arm-dumbbell-row', name: 'One-arm Dumbbell Row', img: 'one-arm-dumbbell-row-3d.webp', db: true, muscles: ['Mid back', 'Lats'], sets: 3, reps: '10-12 / arm', tip: 'One hand and knee on the sofa, flat back. Pull the dumbbell to your hip and squeeze.' } },
-    { id: 'deadlift', name: 'Barbell Deadlift', img: 'deadlift-3d.webp', muscles: ['Lower back', 'Glutes', 'Hamstrings'], sets: 4, reps: '5-8', tip: 'Flat back, bar close to the legs, push the floor away.',
+    { id: 'deadlift', bar: true, name: 'Barbell Deadlift', img: 'deadlift-3d.webp', muscles: ['Lower back', 'Glutes', 'Hamstrings'], sets: 4, reps: '5-8', tip: 'Flat back, bar close to the legs, push the floor away.',
       altLabels: HOME_LABELS,
       alt: { id: 'dumbbell-rdl', name: 'Dumbbell Romanian Deadlift', img: 'dumbbell-rdl-3d.webp', db: true, muscles: ['Hamstrings', 'Glutes', 'Lower back'], sets: 3, reps: '10-12', tip: 'Soft knees, push your hips back and keep the dumbbells close to your legs. Stand up by squeezing your glutes.' } },
     { id: 'triceps-pushdown', name: 'Cable Triceps Pushdown', img: 'triceps-pushdown-3d.webp', video: 'videos/triceps-pushdown.mp4', muscles: ['Triceps'], sets: 3, reps: '12-15', tip: 'Elbows pinned to your sides, straighten fully at the bottom.',
@@ -585,7 +589,7 @@ const PLANS = [
   ]},
   // Leg Day and Leg Day · House Edition combined: each gym exercise has its home version as `alt`
   { id: 'legs', name: 'Leg Day', short: 'LEG', group: 'legs', modes: ['🏋️ Gym', '🏠 Home'], homeName: 'Leg Day · Home', exercises: [
-    { id: 'barbell-squat', name: 'Barbell Back Squat', img: 'barbell-squat-3d.webp', muscles: ['Quads', 'Glutes'], sets: 4, reps: '6-10', tip: 'Chest up, knees follow the toes, go down to at least parallel.',
+    { id: 'barbell-squat', bar: true, name: 'Barbell Back Squat', img: 'barbell-squat-3d.webp', muscles: ['Quads', 'Glutes'], sets: 4, reps: '6-10', tip: 'Chest up, knees follow the toes, go down to at least parallel.',
       altLabels: ['At home? Do this instead', 'At the gym? Do this instead'],
       alt: { id: 'bodyweight-squat', name: 'Bodyweight Squat', img: 'bodyweight-squat-3d.webp', bw: true, muscles: ['Quads', 'Glutes'], sets: 3, reps: '15-20', tip: 'Arms forward for balance, sit back and down.' } },
     { id: 'leg-extension', name: 'Leg Extension', img: 'leg-extension-3d.webp', muscles: ['Quads'], sets: 3, reps: '12-15', tip: 'Pause and squeeze at the top, lower slowly.',
@@ -676,6 +680,32 @@ const ex = e => Object.assign({}, e, db.overrides[e.id] || {});
 const withAlts = list => list.flatMap(e => e.alt ? [e, e.alt] : [e]);
 const exName = id => { for (const p of PLANS) for (const e of withAlts(p.exercises)) if (e.id === id) return ex(e).name; return id; };
 // slot = the exercise position in the plan; chosen = the version you picked for it
+// What the kg box means for an exercise, so nobody has to guess "one or both?":
+// db = the weight of ONE dumbbell · bar = the whole barbell (bar + all plates) · bw = bodyweight · anything else = the machine's number
+const kgHint = e => (e.bw ? 'Bodyweight: leave the weight empty' : e.db ? `${unit()} = the weight of <b>one</b> dumbbell` : e.bar ? `${unit()} = the <b>total</b>: bar + all plates` : `${unit()} = the number on the machine`);
+// barbell calculator: pick the bar, type the plates on one side, and the total goes into the next open set
+function barSheet(i) {
+  const a = db.active, we = a.exercises[i], lb = unit() === 'lb', bars = lb ? [45, 35, 25] : [20, 15, 10];
+  let bar = bars.includes(db.settings.bar) ? db.settings.bar : bars[0];
+  const j = Math.max(0, we.sets.findIndex(s => !s.done));
+  const o = sheet(`<h2 style="margin-top:0;text-align:center">🏋️ Barbell weight</h2>
+    <div class="muted small" style="text-align:center">The app wants the total: the bar plus the plates on both sides.</div>
+    <div class="small muted" style="margin-top:14px">The bar (${unit()})</div>
+    <div class="seg" style="margin-top:6px">${bars.map(b => `<button data-bar="${b}">${b}</button>`).join('')}</div>
+    <label class="small muted" style="display:block;margin-top:14px">Plates on <b>one</b> side (${unit()}, added up)
+      <input class="field big-in" id="barSide" inputmode="decimal" placeholder="e.g. 5"></label>
+    <div class="tb-line" id="barLine"></div>
+    <button class="btn primary block" style="margin-top:14px" id="barUse">Use for set ${j + 1}</button>`);
+  const side = o.querySelector('#barSide'), total = () => round1(bar + 2 * num(side.value));
+  const update = () => {
+    o.querySelectorAll('[data-bar]').forEach(b => b.classList.toggle('on', Number(b.dataset.bar) === bar));
+    o.querySelector('#barLine').textContent = `${bar} + ${num(side.value)} + ${num(side.value)} = ${total()} ${unit()}`;
+    o.querySelector('#barUse').textContent = `Use ${total()} ${unit()} for set ${j + 1}`;
+  };
+  o.querySelectorAll('[data-bar]').forEach(b => b.addEventListener('click', () => { bar = Number(b.dataset.bar); update(); }));
+  side.addEventListener('input', update); update(); setTimeout(() => side.focus(), 60);
+  o.querySelector('#barUse').addEventListener('click', () => { db.settings.bar = bar; we.sets[j].w = String(total()); save(); o.remove(); render(); });
+}
 // An empty weight or reps box suggests what you typed in the nearest set above it (this workout);
 // only when nothing is typed above does it fall back to last time / the target (kept in data-ph).
 const carry = (sets, j, f) => { for (let k = j - 1; k >= 0; k--) if (sets[k][f] !== '' && sets[k][f] != null) return sets[k][f]; return ''; };
@@ -879,7 +909,7 @@ function sessionSummary(s) {
   const parts = s.duration ? [fmtDur(s.duration)] : [];
   if (cardio.length) parts.push(fmtTime(mins(cardio)), `${round1(km(cardio))} km`);
   const strength = s.exercises.reduce((n, e) => n + e.sets.length, 0) - cardio.length;
-  if (strength) parts.push(`${strength} set${strength === 1 ? '' : 's'}`, `${Math.round(volume(s))} ${unit()} volume`);
+  if (strength) parts.push(`${strength} set${strength === 1 ? '' : 's'}`);
   return parts.join(' · ');
 }
 const coverImg = p => chosen(p.exercises[0]).img;
@@ -1365,6 +1395,7 @@ function viewClass(id) {
           ${isHold(e) && !editing ? `<div class="small" style="margin-top:4px;color:var(--amber)">${recFor({}, e, {}).note}</div>` : ''}
           <div style="margin-top:6px">${e.muscles.map(m => `<span class="chip">${esc(m)}</span>`).join('')}</div>
           <div class="tip">💡 ${esc(e.tip)}</div>
+          ${isCardio(e) ? '' : `<div class="small muted" style="margin-top:6px">⚖️ ${kgHint(e)}</div>`}
           ${prev ? `<div class="small" style="margin-top:8px"><span class="muted">Last time:</span> <b>${prev.map(s => setText(s)).join(', ')}</b> ${isRun(e) ? '' : isCardio(e) ? `· ${round1(km(prev))} km` : !isHold(e) && num(prev[0].w) ? unit() : ''}</div>` : ''}
           ${other ? `<div class="alt">
             ${photo(other.img, '', true, other.video)}
@@ -1459,6 +1490,7 @@ function viewWorkout() {
           <div class="small muted" style="margin-top:6px">${mins(we.sets) ? `Total: <b style="color:var(--text)">${fmtTime(mins(we.sets))} · ${round1(km(we.sets))} km</b>` : '⌚ Tap Time to fill in hours, minutes and seconds'}</div>
           ${isLive(a) ? swBar(a, i, e) : ''}
         </div>` : isHold(e) ? `<div class="sets">
+          ${e.bw ? '' : `<div class="small muted" style="margin-bottom:8px">⚖️ ${kgHint(e)}</div>`}
           <div class="hdr"><span style="text-align:center">Set</span><span>Previous</span><span style="text-align:center">${e.bw ? '' : unit()}</span><span style="text-align:center">${e.sides ? 'Sec/side' : 'Sec'}</span><span></span></div>
           ${we.sets.map((s, j) => {
             const pv = prev[j];
@@ -1472,6 +1504,7 @@ function viewWorkout() {
           }).join('')}
           ${isLive(a) ? `<button class="btn primary block" style="margin-top:10px" data-act="hold-open" data-i="${i}">⏱️ Hold timer · ${(j => j < 0 ? 'extra set' : `set ${j + 1}`)(we.sets.findIndex(s => !s.done))}</button>` : ''}
         </div>` : `<div class="sets">
+          <div class="row between small muted" style="margin-bottom:8px"><span>⚖️ ${kgHint(e)}</span>${e.bar ? `<button class="btn sm" data-act="bar-calc" data-i="${i}" style="flex:none">🧮 Add it up</button>` : ''}</div>
           <div class="hdr"><span style="text-align:center">Set</span><span>Previous</span><span style="text-align:center">${unit()}</span><span style="text-align:center">Reps</span><span></span></div>
           ${we.sets.map((s, j) => {
             const pv = prev[j];
@@ -1560,7 +1593,6 @@ function viewCalendar(sel) {
   `;
 }
 
-const volume = s => s.exercises.reduce((v, e) => v + e.sets.reduce((a, x) => a + num(x.w) * num(x.r), 0), 0);
 
 // ---------- Stats ----------
 // Three tabs: Overview (the big picture), Exercises (list with mini charts → detail), Body weight.
@@ -1582,7 +1614,6 @@ function exPoints(exId) {
         date: s.date,
         top: Math.max(...sets.map(x => num(x.w))),
         e1rm: Math.max(...sets.map(x => num(x.w) * (1 + num(x.r) / 30))),
-        vol: sets.reduce((a, x) => a + num(x.w) * num(x.r), 0),
         reps: sets.reduce((a, x) => a + num(x.r), 0),
         maxReps: Math.max(...sets.map(x => num(x.r))),
         min: mins(sets),
@@ -1604,7 +1635,7 @@ function exMetrics(exId, pts) {
   if (isCardio(e)) return [['min', 'Time'], ['km', 'Distance'], ['speed', 'Top speed']];
   if (isHold(e)) return pts.some(p => p.top > 0) ? [['hold', 'Longest hold'], ['top', 'Weight']] : [['hold', 'Longest hold']];
   if (pts.length && pts.every(p => p.top === 0)) return [['maxReps', 'Best set'], ['reps', 'Total reps']];
-  return [['top', 'Top weight'], ['e1rm', 'Est. 1RM'], ['vol', 'Volume'], ['reps', 'Total reps']];
+  return [['top', 'Top weight'], ['e1rm', 'Est. 1RM'], ['reps', 'Total reps']];
 }
 const UNITS = { reps: 'reps', maxReps: 'reps', min: '', km: 'km', speed: 'km/h', pace: '/km', hold: 's' };
 const metricUnit = k => (k in UNITS ? UNITS[k] : unit()); // time (min) has no unit: it shows as 27:30
@@ -1849,7 +1880,7 @@ function heightSheet() {
 // ---------- Badges ----------
 // Worked out from your history (old workouts count too). db.badges remembers when each was earned.
 function badgeStats() {
-  const S = { workouts: db.sessions.length, warm: 0, cool: 0, home: 0, early: 0, night: 0, maxVol: 0, totalVol: 0, maxRun: 0, totalRun: 0, bestPace: 0, maxSets: 0, totalSets: 0, fullClass: 0 };
+  const S = { workouts: db.sessions.length, warm: 0, cool: 0, home: 0, early: 0, night: 0, maxRun: 0, totalRun: 0, bestPace: 0, maxSets: 0, totalSets: 0, fullClass: 0 };
   const weeks = {}, months = {};
   for (const s of db.sessions) {
     if (s.warmup) S.warm++; if (s.cooldown) S.cool++; if (s.home) S.home++;
@@ -1857,7 +1888,6 @@ function badgeStats() {
     (weeks[wk] = weeks[wk] || new Set()).add(g); (months[mo] = months[mo] || new Set()).add(g);
     // early / late only for workouts done live (logged afterwards has no real start time)
     if (s.duration > 0 && dayKey(new Date(s.start)) === s.date) { const h = new Date(s.start).getHours(); if (h < 7) S.early++; if (h >= 21) S.night++; }
-    const v = volume(s); S.totalVol += v; S.maxVol = Math.max(S.maxVol, v);
     // sets: gym and home exercises only (a run or treadmill counts as one "set", so it's left out)
     const lifts = (s.exercises || []).filter(e => !isCardio(findEx(e.exId) || {}));
     const n = lifts.reduce((a, e) => a + e.sets.length, 0); S.totalSets += n; S.maxSets = Math.max(S.maxSets, n);
@@ -1895,10 +1925,7 @@ const BADGES = [
   ['w100', '💎', '100 Workouts', 'Finish 100 workouts', S => [S.workouts, 100]],
   ['new-record', '🏆', 'New Record', 'Beat one of your personal bests', S => [S.records, 1]],
   ['record-breaker', '🎖️', 'Record Breaker', 'Set 10 personal records', S => [S.records, 10]],
-  // kg badges count volume: weight × reps of every set, added up (not one heavy lift)
-  ['ton-day', '🏋️', 'Ton Day', '1,000 kg moved in one workout (all sets added up)', S => [Math.round(S.maxVol), 1000]],
-  ['heavy', '🦍', 'Heavy Lifter', '10,000 kg moved over all your workouts', S => [Math.round(S.totalVol), 10000]],
-  ['titan', '🐘', 'Titan', '100,000 kg moved over all your workouts', S => [Math.round(S.totalVol), 100000]],
+  // (the "kg moved" badges Ton Day, Heavy Lifter and Titan were removed in v20 together with volume: the total kg confused people)
   ['full-class', '✅', 'Full Class', 'Do every set your class plans', S => [S.fullClass, 1]],
   ['extra-mile', '💪', 'Extra Mile', '15 sets in one class', S => [S.maxSets, 15]],
   ['set-machine', '🔩', 'Set Machine', '20 sets in one class', S => [S.maxSets, 20]],
@@ -1935,7 +1962,6 @@ function badgesSection() {
   const all = badgeStates(), got = all.filter(b => b.done).length;
   const fmtN = (b, n) => (b.need >= 1000 ? `${Math.round(n).toLocaleString('en-US')}` : round1(n));
   return `<h2 id="badges">🏅 Badges <span class="muted">· ${got} / ${all.length}</span></h2>
-    <p class="muted small" style="margin:-4px 0 10px">“kg moved” = weight × reps of every set, added up. Example: 3 sets × 10 reps × 35 kg = 1,050 kg.</p>
     <div class="badges">${all.sort((a, b) => b.done - a.done || (b.have / b.need) - (a.have / a.need)).map(b => `<div class="badge-c ${b.done ? 'on' : ''}">
       <div class="be">${b.emoji}</div><b>${esc(b.name)}</b>
       <div class="muted small">${esc(b.how)}</div>
@@ -2482,7 +2508,7 @@ function finishWorkout() {
         ? `<div class="stat"><div class="v">${fmtTime(mins(cardioSets))}</div><div class="l">Time</div></div>
            <div class="stat"><div class="v">${round1(km(cardioSets))}</div><div class="l">Distance (km)</div></div>`
         : `<div class="stat"><div class="v">${count}</div><div class="l">Sets</div></div>
-           <div class="stat"><div class="v">${Math.round(volume(s))}</div><div class="l">Volume (${unit()})</div></div>`}</div>
+           <div class="stat"><div class="v">${exercises.filter(e => e.sets.length).length}</div><div class="l">Exercises</div></div>`}</div>
     ${old ? '' : `<div class="card quote" style="margin-top:12px"><div class="qtext" style="font-size:16px">${esc(finishMessage(s, prs))}</div></div>`}
     ${freshBadges.length ? `<div class="card new-badges" style="margin-top:12px"><div class="eyebrow" style="color:var(--accent)">🏅 New badge${freshBadges.length > 1 ? 's' : ''} unlocked!</div>${freshBadges.map(b => `<div class="row" style="margin-top:8px"><span style="font-size:30px">${b.emoji}</span><span><b>${esc(b.name)}</b><br><span class="muted small">${esc(b.how)}</span></span></div>`).join('')}</div>` : ''}
     ${prs.length ? `<h2>New records 🏆</h2><div class="card stack small">${prs.map(x => `<div>${esc(x)}</div>`).join('')}</div>` : ''}
@@ -2804,6 +2830,7 @@ document.addEventListener('click', e => {
     }
     case 'sw-stop': if (a.sw) swStopSheet(); break;
     case 'hold-open': holdOpen(Number(b.dataset.i)); break;
+    case 'bar-calc': barSheet(Number(b.dataset.i)); break;
     case 'time-edit':
       if (a.sw && a.sw.i === Number(row.dataset.i) && a.sw.j === Number(row.dataset.j)) break; // the stopwatch is timing it
       timeSheet(Number(row.dataset.i), Number(row.dataset.j)); break;
