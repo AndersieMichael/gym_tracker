@@ -1,7 +1,7 @@
 // Offline support: keeps the app and your guide pictures on the phone.
 // Bump VERSION when you change any file so phones pick up the new version (bug fixes: 11.1, 11.2…).
 // Keep the number the same as APP_VERSION.n in index.html.
-const VERSION = 'gym-v20.1';
+const VERSION = 'gym-v20.2';
 // Folders in images/: 3d (cut-outs), photos (jpg), videos (tutorials), moves (warm-up / cool-down),
 // grip (drawn pictures), avatars.
 const FILES = [
@@ -18,7 +18,7 @@ const FILES = [
     'overhead-triceps-stretch-left', 'overhead-triceps-stretch-right', 'childs-pose', 'glute-bridge',
   ].map(n => `images/3d/${n}-3d.webp`),
   ...['seated-front-raise'].map(n => `images/photos/${n}.jpg`),
-  ...['shoulder-press-machine', 'chest-press-machine', 'lat-pulldown', 'seated-cable-row', 'treadmill', 'triceps-pushdown', 'pec-deck-fly'].map(n => `images/videos/${n}.mp4`),
+  ...['shoulder-press-machine', 'chest-press-machine', 'lat-pulldown', 'seated-cable-row', 'treadmill', 'triceps-pushdown', 'pec-deck-fly', 'dumbbell-lateral-raise', 'barbell-squat', 'leg-extension'].map(n => `images/videos/${n}.mp4`),
   ...['cat-cow', 'thoracic-rotation', 'hip-hinge', 'high-knees', 'ankle-circles', 'lying-twist', 'quad-stretch', 'hamstring-stretch', 'calf-stretch', 'figure-four', 'hip-flexor-stretch'].map(n => `images/moves/${n}.svg`),
   ...['wrist-curl', 'reverse-wrist-curl'].map(n => `images/grip/${n}.svg`),
   ...['hamster', 'cat', 'mike', 'squidward', 'gigachad', 'dumbbelldore'].map(n => `images/avatars/${n}.jpg`),
