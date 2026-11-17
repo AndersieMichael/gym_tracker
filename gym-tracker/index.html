@@ -425,9 +425,12 @@ label .field, label input { color: var(--text); }
 
 <script>
 // App version: shown in More. Bump `n` together with VERSION in sw.js on every update.
-const APP_VERSION = { n: 20.2, date: '2026-11-12' };
+const APP_VERSION = { n: 20.3, date: '2026-11-17' };
 // What's new, shown in Settings under the version. Add the new version at the top.
 const CHANGELOG = [
+  { n: 20.3, date: '2026-11-17', groups: [
+    ['🎬 8 new tutorial videos', ['Hammer Curl, Machine Ab Crunch, Leg Press, Chair Dips, Calf Raise, Seated Dumbbell Shoulder Press, Bent-over Reverse Fly and Single-Leg Romanian Deadlift now have a video: tap the ▶ on the picture', 'Silent, and saved on your phone so they play with no signal']],
+  ]},
   { n: 20.2, date: '2026-11-12', groups: [
     ['🎬 3 new tutorial videos', ['Dumbbell Lateral Raise, Barbell Back Squat and Leg Extension now have a video: tap the ▶ on the picture', 'Silent, and saved on your phone so they play with no signal']],
   ]},
@@ -557,15 +560,15 @@ const PLANS = [
   { id: 'shoulder', name: 'Shoulder Day', short: 'SHO', group: 'shoulder', modes: ['🏋️ Gym', '🏠 Home'], homeName: 'Shoulder Day · Home', exercises: [
     { id: 'shoulder-press-machine', name: 'Machine Shoulder Press', img: 'shoulder-press-machine-3d.webp', video: 'videos/shoulder-press-machine.mp4', muscles: ['Front delts', 'Triceps'], sets: 3, reps: '10-12', tip: 'Back flat on the pad. Press up without slamming the elbows locked.',
       altLabels: HOME_LABELS,
-      alt: { id: 'seated-dumbbell-press', name: 'Seated Dumbbell Shoulder Press', img: 'seated-dumbbell-press-3d.webp', db: true, muscles: ['Front delts', 'Triceps'], sets: 3, reps: '10-12', tip: 'Sit tall on a chair with your back supported. Press the dumbbells up until your arms are almost straight.' } },
+      alt: { id: 'seated-dumbbell-press', name: 'Seated Dumbbell Shoulder Press', img: 'seated-dumbbell-press-3d.webp', video: 'videos/seated-dumbbell-press.mp4', db: true, muscles: ['Front delts', 'Triceps'], sets: 3, reps: '10-12', tip: 'Sit tall on a chair with your back supported. Press the dumbbells up until your arms are almost straight.' } },
     { id: 'lateral-raise-machine', name: 'Machine Lateral Raise', img: 'lateral-raise-machine-3d.webp', muscles: ['Side delts'], sets: 3, reps: '12-15', tip: 'Lead with your elbows and pause at shoulder height.',
       altLabels: ['No machine / at home? Do this instead', 'At the gym? Do this instead'],
       alt: { id: 'dumbbell-lateral-raise', name: 'Dumbbell Lateral Raise', img: 'dumbbell-lateral-raise-3d.webp', video: 'videos/dumbbell-lateral-raise.mp4', db: true, light: true, muscles: ['Side delts'], sets: 3, reps: '12-15', tip: 'Slight bend in the elbows, raise to shoulder height, lower slowly.' } },
     { id: 'seated-front-raise', name: 'Seated Dumbbell Front Raise', img: 'seated-front-raise', db: true, light: true, muscles: ['Front delts'], sets: 3, reps: '10-12', tip: 'Raise to eye level. No swinging. Works at the gym and at home.' },
     { id: 'face-pull', name: 'Cable Face Pull', img: 'face-pull-3d.webp', muscles: ['Rear delts', 'Upper back'], sets: 3, reps: '15', tip: 'Pull the rope to your face with elbows high, squeeze the shoulder blades.',
       altLabels: HOME_LABELS,
-      alt: { id: 'dumbbell-reverse-fly', name: 'Bent-over Dumbbell Reverse Fly', img: 'dumbbell-reverse-fly-3d.webp', db: true, light: true, muscles: ['Rear delts', 'Upper back'], sets: 3, reps: '12-15', tip: 'Hinge forward with a flat back. Raise the dumbbells out to the sides and squeeze your shoulder blades together.' } },
-    { id: 'hammer-curl', name: 'Dumbbell Hammer Curl', img: 'hammer-curl-3d.webp', db: true, muscles: ['Biceps', 'Forearms'], sets: 3, reps: '10-12', tip: 'Palms face each other, elbows stay by your sides. Works at the gym and at home.' },
+      alt: { id: 'dumbbell-reverse-fly', name: 'Bent-over Dumbbell Reverse Fly', img: 'dumbbell-reverse-fly-3d.webp', video: 'videos/dumbbell-reverse-fly.mp4', db: true, light: true, muscles: ['Rear delts', 'Upper back'], sets: 3, reps: '12-15', tip: 'Hinge forward with a flat back. Raise the dumbbells out to the sides and squeeze your shoulder blades together.' } },
+    { id: 'hammer-curl', name: 'Dumbbell Hammer Curl', img: 'hammer-curl-3d.webp', video: 'videos/hammer-curl.mp4', db: true, muscles: ['Biceps', 'Forearms'], sets: 3, reps: '10-12', tip: 'Palms face each other, elbows stay by your sides. Works at the gym and at home.' },
   ]},
   { id: 'chest', name: 'Chest Day', short: 'CHE', group: 'chest', modes: ['🏋️ Gym', '🏠 Home'], homeName: 'Chest Day · Home', exercises: [
     { id: 'chest-press-machine', name: 'Machine Chest Press', img: 'chest-press-machine-3d.webp', video: 'videos/chest-press-machine.mp4', muscles: ['Chest', 'Triceps', 'Front delts'], sets: 3, reps: '8-12', tip: 'Handles at mid-chest height. Push out, control the way back.',
@@ -574,8 +577,8 @@ const PLANS = [
     { id: 'pec-deck-fly', name: 'Pec Deck Fly', img: 'pec-deck-fly-3d.webp', video: 'videos/pec-deck-fly.mp4', muscles: ['Chest'], sets: 3, reps: '12-15', tip: 'Soft elbows. Squeeze the chest in the middle for 1 second.',
       altLabels: HOME_LABELS,
       alt: { id: 'dumbbell-floor-fly', name: 'Dumbbell Floor Fly', img: 'dumbbell-floor-fly-3d.webp', db: true, light: true, muscles: ['Chest'], sets: 3, reps: '12-15', tip: 'Lie on the floor, slight bend in the elbows. Open your arms until they touch the floor, then squeeze back up.' } },
-    { id: 'hammer-curl', name: 'Dumbbell Hammer Curl', img: 'hammer-curl-3d.webp', db: true, muscles: ['Biceps', 'Forearms'], sets: 3, reps: '10-12', tip: 'Palms face each other, elbows stay by your sides. Works at the gym and at home.' },
-    { id: 'ab-crunch-machine', name: 'Machine Ab Crunch', img: 'ab-crunch-machine-3d.webp', muscles: ['Abs'], sets: 3, reps: '15', tip: 'Curl your spine and breathe out as you crunch. Don\'t pull with the arms.',
+    { id: 'hammer-curl', name: 'Dumbbell Hammer Curl', img: 'hammer-curl-3d.webp', video: 'videos/hammer-curl.mp4', db: true, muscles: ['Biceps', 'Forearms'], sets: 3, reps: '10-12', tip: 'Palms face each other, elbows stay by your sides. Works at the gym and at home.' },
+    { id: 'ab-crunch-machine', name: 'Machine Ab Crunch', img: 'ab-crunch-machine-3d.webp', video: 'videos/ab-crunch-machine.mp4', muscles: ['Abs'], sets: 3, reps: '15', tip: 'Curl your spine and breathe out as you crunch. Don\'t pull with the arms.',
       altLabels: HOME_LABELS,
       alt: { id: 'floor-crunch', name: 'Floor Crunch', img: 'floor-crunch-3d.webp', bw: true, muscles: ['Abs'], sets: 3, reps: '15-20', tip: 'Knees bent, hands lightly behind your head. Lift your shoulders off the floor and breathe out.' } },
   ]},
@@ -591,7 +594,7 @@ const PLANS = [
       alt: { id: 'dumbbell-rdl', name: 'Dumbbell Romanian Deadlift', img: 'dumbbell-rdl-3d.webp', db: true, muscles: ['Hamstrings', 'Glutes', 'Lower back'], sets: 3, reps: '10-12', tip: 'Soft knees, push your hips back and keep the dumbbells close to your legs. Stand up by squeezing your glutes.' } },
     { id: 'triceps-pushdown', name: 'Cable Triceps Pushdown', img: 'triceps-pushdown-3d.webp', video: 'videos/triceps-pushdown.mp4', muscles: ['Triceps'], sets: 3, reps: '12-15', tip: 'Elbows pinned to your sides, straighten fully at the bottom.',
       altLabels: HOME_LABELS,
-      alt: { id: 'chair-dips', name: 'Chair Dips', img: 'chair-dips-3d.webp', bw: true, muscles: ['Triceps'], sets: 3, reps: 'max', tip: 'Hands on the front edge of a sturdy chair. Lower until your elbows bend about 90°, then push back up.' } },
+      alt: { id: 'chair-dips', name: 'Chair Dips', img: 'chair-dips-3d.webp', video: 'videos/chair-dips.mp4', bw: true, muscles: ['Triceps'], sets: 3, reps: 'max', tip: 'Hands on the front edge of a sturdy chair. Lower until your elbows bend about 90°, then push back up.' } },
   ]},
   // Leg Day and Leg Day · House Edition combined: each gym exercise has its home version as `alt`
   { id: 'legs', name: 'Leg Day', short: 'LEG', group: 'legs', modes: ['🏋️ Gym', '🏠 Home'], homeName: 'Leg Day · Home', exercises: [
@@ -603,11 +606,11 @@ const PLANS = [
       alt: { id: 'bulgarian-split-squat', name: 'Bulgarian Split Squat', img: 'bulgarian-split-squat-3d.webp', db: true, muscles: ['Quads', 'Glutes'], sets: 3, reps: '10 / leg', tip: 'Back foot on a bench or sofa. Front knee over the foot.' } },
     { id: 'lying-leg-curl', name: 'Lying Leg Curl', img: 'lying-leg-curl-3d.webp', muscles: ['Hamstrings'], sets: 3, reps: '10-12', tip: 'Hips stay down on the pad. Curl your heels to your glutes.',
       altLabels: ['At home? Do this instead', 'At the gym? Do this instead'],
-      alt: { id: 'single-leg-rdl', name: 'Single-Leg Romanian Deadlift', img: 'single-leg-rdl-3d.webp', db: true, muscles: ['Hamstrings', 'Glutes'], sets: 3, reps: '10 / leg', tip: 'Hinge at the hip with a flat back, slight bend in the standing knee.' } },
-    { id: 'leg-press', name: 'Leg Press', img: 'leg-press-3d.webp', muscles: ['Quads', 'Glutes'], sets: 3, reps: '10-12', tip: 'Don\'t lock the knees at the top. Lower back stays on the pad.',
+      alt: { id: 'single-leg-rdl', name: 'Single-Leg Romanian Deadlift', img: 'single-leg-rdl-3d.webp', video: 'videos/single-leg-rdl.mp4', db: true, muscles: ['Hamstrings', 'Glutes'], sets: 3, reps: '10 / leg', tip: 'Hinge at the hip with a flat back, slight bend in the standing knee.' } },
+    { id: 'leg-press', name: 'Leg Press', img: 'leg-press-3d.webp', video: 'videos/leg-press.mp4', muscles: ['Quads', 'Glutes'], sets: 3, reps: '10-12', tip: 'Don\'t lock the knees at the top. Lower back stays on the pad.',
       altLabels: ['At home? Do this instead', 'At the gym? Do this instead'],
       alt: { id: 'glute-bridge', name: 'Glute Bridge', img: 'glute-bridge-3d.webp', bw: true, muscles: ['Glutes', 'Hamstrings'], sets: 3, reps: '15', tip: 'Push through the heels, squeeze glutes at the top for 1 second.' } },
-    { id: 'calf-raise', name: 'Dumbbell Calf Raise', img: 'calf-raise-3d.webp', db: true, muscles: ['Calves'], sets: 3, reps: '15-20', tip: 'Use a step. Full stretch at the bottom, pause at the top. Works at the gym and at home.' },
+    { id: 'calf-raise', name: 'Dumbbell Calf Raise', img: 'calf-raise-3d.webp', video: 'videos/calf-raise.mp4', db: true, muscles: ['Calves'], sets: 3, reps: '15-20', tip: 'Use a step. Full stretch at the bottom, pause at the top. Works at the gym and at home.' },
   ]},
   // Optional: extra classes you can add any day. Not suggested and not counted in the week goal.
   { id: 'cardio', name: 'Cardio', short: 'CAR', group: 'cardio', optional: true, exercises: [
