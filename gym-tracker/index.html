@@ -427,9 +427,15 @@ label .field, label input { color: var(--text); }
 
 <script>
 // App version: shown in More. Bump `n` together with VERSION in sw.js on every update.
-const APP_VERSION = { n: 21, date: '2026-11-20' };
+const APP_VERSION = { n: 22, date: '2026-11-20' };
 // What's new, shown in Settings under the version. Add the new version at the top.
 const CHANGELOG = [
+  { n: 22, date: '2026-11-20', groups: [
+    ['📈 Next weight', ['Lifts now tell you what to lift: did the top of the rep range on every set last time? “📈 Try 32.5 kg today”', 'Not yet? “🎯 Stay at 30 kg: get 12 reps on every set, then go heavier”', 'The grey boxes are filled in with that weight and reps, so one tap on ✓ logs it', 'Steps: dumbbells +2 kg, barbell and plate machines +2.5 kg, pin machines +5 kg. Pin and plate machines are followed separately']],
+    ['🏠 Easier Home screen', ['All classes are now right under the suggested class, so you can pick another one without scrolling down', 'Today’s motivation, weekly activity, body weight and quick actions moved below the classes']],
+    ['🧍 Suggestions from your body scans', ['With 2 or more scans, the suggested class looks at which body part gained the least muscle (legs → Leg Day, arms → Shoulder Day, torso → Chest or Back Day)', 'It still only picks classes you haven’t done this week, and says why on Home', 'Compared in %, so your big leg muscles don’t hide a small gain in your arms']],
+    ['🔔 Body scan reminder', ['Home reminds you when your last scan is 4 weeks old, with a tip to scan at the same time of day, before training', '“Not now” hides it for a week. Change it in Settings → Body scan reminder (2, 4 or 8 weeks, or off)']],
+  ]},
   { n: 21, date: '2026-11-20', groups: [
     ['🔩 Pin or plate machine', ['Machines and cables have a switch in the workout: 📍 Pin (a weight stack) or 🔩 Plates (you load plates yourself)', 'Plate machine: type only the plates you added, both sides. The empty machine counts as 0. “🧮 Add it up” fills in the total', '“Previous”, charts and records are kept apart for pin and plates, because their kg can’t be compared. The app starts on the machine you used last time', 'Your older workouts count as 📍 Pin; change one with Edit if it was a plate machine']],
     ['🦵 Good Morning at home', ['Leg Day at home: next to Glute Bridge you can now choose Dumbbell Good Morning instead of Leg Press', 'The app remembers which one you picked']],
@@ -907,7 +913,27 @@ function recFor(a, e, we) {
     return { target: `${esc(e.sets)} × ${goal} s${per}`, note, reps: e.reps, goal };
   }
   const adv = a.home && repAdvice(e, workingWeight(we));
-  return { target: adv ? `${esc(e.sets)} × ${esc(adv.reps)}` : targetText(e), note: adv ? `💡 ${adv.note}` : '', reps: adv ? adv.reps : e.reps };
+  if (adv) return { target: `${esc(e.sets)} × ${esc(adv.reps)}`, note: `💡 ${adv.note}`, reps: adv.reps };
+  const nx = nextLift(e, isMachine(e) ? mtOf(we) : '', a);
+  return { target: targetText(e), note: nx ? nx.note : '', reps: nx ? nx.r : e.reps, next: nx };
+}
+// Next weight for a lift ("double progression"): hit the top of the rep range on every set at your weight
+// → go one step heavier and start again at the bottom of the range; otherwise stay and add reps.
+// Not for bodyweight, home dumbbells (the app adjusts reps there), "max" reps or editing an old workout.
+// The step is the smallest usual jump: dumbbells 2 kg, barbell and plate machines 2.5 kg, pin stacks 5 kg.
+const repRange = e => { const m = String(e.reps).match(/(\d+)(?:\s*-\s*(\d+))?/); return m ? [Number(m[1]), Number(m[2] || m[1])] : null; };
+const liftStep = (e, mt) => (unit() === 'lb' ? (e.db || e.bar || mt === 'plates' ? 5 : 10) : e.db ? 2 : e.bar || mt === 'plates' ? 2.5 : 5);
+function nextLift(e, mt, a = {}) {
+  if (e.bw || e.type || a.editId || (a.home && e.db)) return null;
+  const range = repRange(e); if (!range) return null;
+  const [lo, hi] = range, last = lastExFor(e.id, mt); if (!last) return null;
+  const w0 = Math.max(...last.sets.map(s => num(s.w))); if (!(w0 > 0)) return null;
+  const atTop = last.sets.filter(s => num(s.w) >= w0), need = parseInt(e.sets) || 3;
+  if (atTop.length >= need && atTop.every(s => num(s.r) >= hi)) {
+    const w = round1(w0 + liftStep(e, mt));
+    return { w, r: lo, up: true, note: `📈 Try ${w} ${unit()} today: last time you did ${hi}+ reps on every set at ${w0}` };
+  }
+  return { w: w0, r: hi, up: false, note: `🎯 Stay at ${w0} ${unit()}: get ${hi} reps on every set, then go heavier` };
 }
 // opts.start: asked right before a home workout ("which dumbbells today?"); the weight is required then
 function dumbbellSheet(onDone, opts = {}) {
@@ -1255,10 +1281,13 @@ function viewToday() {
   const todaySess = sessionsOn(today);
   const todayPlan = plannedOn(today);
 
-  // Suggest the not-yet-done group that you trained longest ago
+  // Suggest a not-yet-done group: first the one for the body part your scans say is behind, else the one you trained longest ago
   const todoGroups = Object.keys(GROUPS).filter(g => !doneGroups.has(g))
     .sort((a, b) => (lastGroupDate(a) || '0').localeCompare(lastGroupDate(b) || '0'));
-  const suggest = todoGroups[0];
+  const focus = scanFocus(), focusGroup = focus && todoGroups.find(g => focus.groups.includes(g));
+  const suggest = focusGroup || todoGroups[0];
+  const why = focusGroup ? `🧍 Your ${focus.label} gained the least muscle since your last scan (${focus.text})` : '';
+  const scanDue = scanReminder();
   const name = (db.settings.name || '').trim();
 
   const startBtns = p => `<div class="btns">
@@ -1295,10 +1324,10 @@ function viewToday() {
     // week goal hit: a third class is a bonus
     const p = PLANS.find(x => x.group === suggest);
     sub = 'Week goal done 🎉';
-    hero = bigCard(p, 'Bonus', `Week goal done ✓ · one more class makes it a great week`);
+    hero = bigCard(p, 'Bonus', why || `Week goal done ✓ · one more class makes it a great week`);
   } else if (suggest && doneCount < WEEK_GOAL.min) {
     const p = PLANS.find(x => x.group === suggest), last = lastGroupDate(suggest);
-    hero = bigCard(p, 'Suggested', `You haven't trained ${GROUPS[suggest].toLowerCase()} this week${last ? ` · last ${agoText(last)}` : ''}`);
+    hero = bigCard(p, 'Suggested', why || `You haven't trained ${GROUPS[suggest].toLowerCase()} this week${last ? ` · last ${agoText(last)}` : ''}`);
   } else {
     sub = `${doneCount} classes this week 🎉`;
     hero = `<div class="hero"><div class="htext"><span class="badge">Week complete</span><div class="title">Great week!</div>
@@ -1335,16 +1364,12 @@ function viewToday() {
   const main = PLANS.filter(p => !p.optional), optional = PLANS.filter(p => p.optional);
   const notDone = main.filter(p => !doneGroups.has(p.group));
   const done = main.filter(p => doneGroups.has(p.group));
+  // order: this week → suggested class → all classes (so choosing another one needs no scrolling) → quote and the rest
   return `
     <div class="hello">
       <button class="avatar-btn" data-go="#/more" aria-label="Profile">${avatar(db.settings.avatar, 50)}</button>
       <div style="min-width:0"><div class="hi">Hi${name ? ', ' + esc(name) : ''} 👋</div><div class="muted small">${sub}</div></div>
       <button class="round" data-go="#/calendar" aria-label="Calendar">${ICON.cal}</button>
-    </div>
-
-    <div class="card quote" style="margin-top:16px">
-      <div class="muted small">💬 Today’s motivation</div>
-      <div class="qtext">“${esc(dailyQuote())}”</div>
     </div>
 
     <div class="card ring-card" style="margin-top:12px">${ring}
@@ -1358,6 +1383,32 @@ function viewToday() {
     </div>
 
     <div style="margin-top:12px">${hero}</div>
+    ${scanDue ? `<div class="card" style="margin-top:12px">
+      <div class="row" style="gap:10px;align-items:flex-start"><span style="font-size:26px">🧍</span>
+        <span><b>${scanDue.first ? 'Add your first body scan' : 'Time for a body scan'}</b><br>
+          <span class="muted small">${scanDue.first ? 'Upload your FitScan result to track muscle and fat' : `Last one ${scanDue.days} days ago`} · scan at the same time of day, before training</span></span></div>
+      <div class="row" style="margin-top:10px"><button class="btn sm primary" data-act="add-scan">+ Add scan</button><button class="btn sm ghost" data-act="scan-later">Not now</button></div>
+    </div>` : ''}
+
+    <h2>Not done this week <span class="muted">(${notDone.length})</span></h2>
+    <div class="todo">${notDone.length ? notDone.map(p => classRow(p, p.group === suggest && doneCount < WEEK_GOAL.max ? `<span class="badge">${doneCount >= WEEK_GOAL.min ? 'Bonus' : 'Suggested'}</span>` : '')).join('') : '<div class="empty">Every class is done this week. Nice work! 💪</div>'}</div>
+
+    ${done.length ? `<h2>Done this week</h2><div class="todo">${done.map(p => {
+      const d = db.sessions.filter(s => planById(s.planId).group === p.group && inWeek(s)).map(s => s.date).sort().pop();
+      return classRow(p, `<span class="badge ok">✓ ${d ? fmtDay(d, { weekday: 'short' }) : ''}</span>`, true);
+    }).join('')}</div>` : ''}
+
+    <h2>Optional <span class="muted">· add any day</span></h2>
+    <div class="todo">${optional.map(p => {
+      const times = db.sessions.filter(s => s.planId === p.id && inWeek(s)).length;
+      return classRow(p, `<span class="badge ok">${times ? `${times}× this week` : 'Extra'}</span>`);
+    }).join('')}</div>
+    <div class="muted small" style="margin-top:6px">Optional classes don't count for the week goal.</div>
+
+    <div class="card quote" style="margin-top:24px">
+      <div class="muted small">💬 Today’s motivation</div>
+      <div class="qtext">“${esc(dailyQuote())}”</div>
+    </div>
 
     <div class="card act" style="margin-top:12px">
       <div class="row between"><b>Weekly activity</b><span class="muted small">${mins} min this week</span></div>
@@ -1386,20 +1437,7 @@ function viewToday() {
       ${qa('var(--amber)', ICON.save, 'Backup', 'Export data', 'data-go="#/more"')}
     </div>
 
-    <h2>Not done this week <span class="muted">(${notDone.length})</span></h2>
-    <div class="todo">${notDone.length ? notDone.map(p => classRow(p, p.group === suggest && doneCount < WEEK_GOAL.max ? `<span class="badge">${doneCount >= WEEK_GOAL.min ? 'Bonus' : 'Suggested'}</span>` : '')).join('') : '<div class="empty">Every class is done this week. Nice work! 💪</div>'}</div>
 
-    ${done.length ? `<h2>Done this week</h2><div class="todo">${done.map(p => {
-      const d = db.sessions.filter(s => planById(s.planId).group === p.group && inWeek(s)).map(s => s.date).sort().pop();
-      return classRow(p, `<span class="badge ok">✓ ${d ? fmtDay(d, { weekday: 'short' }) : ''}</span>`, true);
-    }).join('')}</div>` : ''}
-
-    <h2>Optional <span class="muted">· add any day</span></h2>
-    <div class="todo">${optional.map(p => {
-      const times = db.sessions.filter(s => s.planId === p.id && inWeek(s)).length;
-      return classRow(p, `<span class="badge ok">${times ? `${times}× this week` : 'Extra'}</span>`);
-    }).join('')}</div>
-    <div class="muted small" style="margin-top:6px">Optional classes don't count for the week goal.</div>
   `;
 }
 
@@ -1434,6 +1472,7 @@ function viewClass(id) {
           <div class="tip">💡 ${esc(e.tip)}</div>
           ${isCardio(e) ? '' : `<div class="small muted" style="margin-top:6px">⚖️ ${isMachine(e) ? 'Machine: pick 📍 Pin or 🔩 Plates in the workout' : kgHint(e)}</div>`}
           ${prev ? `<div class="small" style="margin-top:8px"><span class="muted">Last time${isMachine(e) ? ` (${MT[mtOf(last)]})` : ''}:</span> <b>${prev.map(s => setText(s)).join(', ')}</b> ${isRun(e) ? '' : isCardio(e) ? `· ${round1(km(prev))} km` : !isHold(e) && num(prev[0].w) ? unit() : ''}</div>` : ''}
+          ${(nx => nx ? `<div class="small" style="margin-top:4px;color:var(--amber)">${nx.note}</div>` : '')(isCardio(e) || isHold(e) || editing ? null : nextLift(e, isMachine(e) ? mtOf(last) : ''))}
           ${others.map(o => `<div class="alt">
             ${photo(o.img, '', true, o.video)}
             <div style="flex:1;min-width:0"><div class="muted small">${esc(slot.altLabels[o.id === slot.id ? 1 : 0])}</div><b>${esc(o.name)}</b></div>
@@ -1491,6 +1530,7 @@ function viewWorkout() {
     <div class="stack">
     ${a.exercises.map((we, i) => {
       const slot = slotFor(p, we.exId), e = ex(optionOf(slot, we.exId)), mt = isMachine(e) ? mtOf(we) : '', prev = lastSetsFor(e.id, mt) || [];
+      const nx = !isHold(e) && !isCardio(e) ? recFor(a, e, we).next : null; // next-weight suggestion fills the grey boxes
       const others = options(slot).filter(o => o.id !== e.id).map(ex);
       return `<div class="card wo-ex">
         <div class="top">${photo(e.img, '', true, e.video)}
@@ -1549,8 +1589,8 @@ function viewWorkout() {
             return `<div class="setrow ${s.done ? 'done' : ''}" data-i="${i}" data-j="${j}">
               <span class="sn">${j + 1}</span>
               <button class="prev" data-act="copy-prev" ${pv ? '' : 'disabled'}>${pv ? esc(setText(pv)) : '—'}</button>
-              <input inputmode="decimal" data-f="w" value="${esc(s.w)}" ${carryPh(we.sets, j, 'w', pv ? pv.w || '' : a.home && e.db && homeDb() ? homeDb() : '')}>
-              <input inputmode="numeric" data-f="r" value="${esc(s.r)}" ${carryPh(we.sets, j, 'r', pv ? pv.r : String(recFor(a, e, we).reps).match(/\d+/)?.[0] || '')}>
+              <input inputmode="decimal" data-f="w" value="${esc(s.w)}" ${carryPh(we.sets, j, 'w', nx ? nx.w : pv ? pv.w || '' : a.home && e.db && homeDb() ? homeDb() : '')}>
+              <input inputmode="numeric" data-f="r" value="${esc(s.r)}" ${carryPh(we.sets, j, 'r', nx ? nx.r : pv ? pv.r : String(recFor(a, e, we).reps).match(/\d+/)?.[0] || '')}>
               <button class="chk" data-act="check">✓</button>
             </div>`;
           }).join('')}
@@ -2027,6 +2067,29 @@ const SCAN_PARTS = [['rArm', 'Right arm'], ['lArm', 'Left arm'], ['torso', 'Tors
 const SCAN_TRENDS = ['fatPct', 'musclePct', 'fatMass', 'visceral', 'bmi', 'bmr', 'bodyAge', 'weight'];
 const scanLabel = k => SCAN_MAIN.find(x => x[0] === k);
 const scansSorted = () => db.scans.slice().sort((a, b) => a.date.localeCompare(b.date));
+// Which body part is behind: the one that gained the least muscle between your last two scans.
+// Compared in %, so the big legs don't hide a small gain in the arms. Needs 2 scans with all parts, and a clear gap (1 point).
+const SCAN_FOCUS = [['legs', ['rLegM', 'lLegM'], ['legs']], ['arms', ['rArmM', 'lArmM'], ['shoulder']], ['torso', ['torsoM'], ['chest', 'back']]];
+function scanFocus() {
+  const sc = scansSorted(); if (sc.length < 2) return null;
+  const [a, b] = sc.slice(-2), sum = (s, keys) => keys.reduce((t, k) => t + num(s[k]), 0);
+  const parts = SCAN_FOCUS.filter(([, keys]) => keys.every(k => num(a[k]) > 0 && num(b[k]) > 0))
+    .map(([label, keys, groups]) => { const gain = sum(b, keys) - sum(a, keys); return { label, groups, gain, pct: gain / sum(a, keys) * 100 }; })
+    .sort((x, y) => x.pct - y.pct);
+  if (parts.length < 2 || parts[1].pct - parts[0].pct < 1) return null;
+  const kg = g => (round1(g) === 0 ? '±0 kg' : `${g > 0 ? '+' : '−'}${Math.abs(round1(g))} kg`);
+  return { ...parts[0], text: `${kg(parts[0].gain)} vs ${parts.slice(1).map(p => `${kg(p.gain)} ${p.label}`).join(', ')}` };
+}
+// Body scan reminder (Settings → Body scan reminder, every 4 weeks by default). "Not now" hides it for a week;
+// with no scans yet it asks once.
+const scanEvery = () => db.settings.scanEvery ?? 28;
+function scanReminder() {
+  const last = scansSorted().at(-1), today = dayKey();
+  if (!scanEvery() || (db.settings.scanSnooze || '') > today) return null;
+  if (!last) return db.settings.scanAsked ? null : { first: true };
+  const days = daysAgo(last.date);
+  return days >= scanEvery() ? { days } : null;
+}
 
 // screenshots are kept privately on the phone (IndexedDB), not in the backup file
 let idbP = null;
@@ -2416,6 +2479,8 @@ function viewSettings() {
     <div class="card stack">
       ${[['sound', 'Beep sounds (rest, holds, run start)'], ['vibrate', 'Vibrate when rest is over'], ['keepAwake', 'Keep screen on during workouts']].map(([k, label]) => `<div class="row between"><span>${label}</span>
         <div class="seg" style="width:140px">${[[true, 'On'], [false, 'Off']].map(([v, l]) => `<button class="${(db.settings[k] !== false) === v ? 'on' : ''}" data-act="toggle-setting" data-k="${k}" data-v="${v}">${l}</button>`).join('')}</div></div>`).join('')}
+      <div class="row between"><span>Body scan reminder</span>
+        <select class="field" style="width:150px" data-act="scan-every">${[[14, 'Every 2 weeks'], [28, 'Every 4 weeks'], [56, 'Every 8 weeks'], [0, 'Off']].map(([d, l]) => `<option value="${d}" ${scanEvery() === d ? 'selected' : ''}>${l}</option>`).join('')}</select></div>
       <div class="muted small">Beeps play at your media volume, through your earphones if they’re in. Phones only beep and vibrate while the screen is on and the app is open, so keep “screen on” turned on for the alarms.</div>
     </div>
     <h2>💾 Backup</h2>
@@ -3022,6 +3087,10 @@ document.addEventListener('click', e => {
     case 'prog-mt': progMt = b.dataset.mt; render(); break;
     case 'log-weight': logWeightSheet(); break;
     case 'add-scan': addScan(); break;
+    case 'scan-later':
+      // the first-scan card asks once; the regular reminder comes back in a week
+      if (!scansSorted().length) db.settings.scanAsked = true; else db.settings.scanSnooze = dayKey(addDays(new Date(), 7));
+      save(); render(); break;
     case 'type-scan': scanForm(); break;
     case 'scan-detail': scanDetail(b.dataset.id); break;
     case 'scan-trend': scanTrend = b.dataset.k; render(); break;
@@ -3074,6 +3143,7 @@ document.addEventListener('change', e => {
   const t = e.target;
   if (t.dataset.act === 'rest-set') { db.settings.rest = Number(t.value); save(); }
   if (t.dataset.act === 'ready-set') { db.settings.ready = Number(t.value); save(); }
+  if (t.dataset.act === 'scan-every') { db.settings.scanEvery = Number(t.value); save(); }
   if (t.dataset.act === 'name') { db.settings.name = t.value.trim().slice(0, 24); save(); render(); }
   if (t.id === 'importFile' && t.files[0]) {
     const r = new FileReader();
