@@ -220,6 +220,8 @@ select.field option, select.field optgroup { background: #15191d; color: var(--t
 .setrow input { width: 100%; text-align: center; background: rgba(255, 255, 255, .06); border: 1px solid var(--glass-line); border-radius: 13px; padding: 10px 4px; font-weight: 700; font-variant-numeric: tabular-nums; }
 .setrow input:focus { outline: none; border-color: var(--accent); }
 .setrow .tbtn { width: 100%; text-align: center; background: rgba(255, 255, 255, .06); border: 1px solid var(--glass-line); border-radius: 13px; padding: 10px 2px; font-weight: 700; font-variant-numeric: tabular-nums; color: var(--text); font-size: 14px; white-space: nowrap; overflow: hidden; }
+.mt-seg { margin-bottom: 10px; }
+.mt-seg button { padding: 8px 4px; font-size: 14px; }
 .setrow .tbtn.empty { color: var(--muted); font-weight: 600; }
 /* hours : minutes : seconds boxes */
 .tb-row { display: flex; justify-content: center; align-items: flex-start; gap: 6px; margin-top: 16px; }
@@ -425,9 +427,13 @@ label .field, label input { color: var(--text); }
 
 <script>
 // App version: shown in More. Bump `n` together with VERSION in sw.js on every update.
-const APP_VERSION = { n: 20.3, date: '2026-11-17' };
+const APP_VERSION = { n: 21, date: '2026-11-20' };
 // What's new, shown in Settings under the version. Add the new version at the top.
 const CHANGELOG = [
+  { n: 21, date: '2026-11-20', groups: [
+    ['🔩 Pin or plate machine', ['Machines and cables have a switch in the workout: 📍 Pin (a weight stack) or 🔩 Plates (you load plates yourself)', 'Plate machine: type only the plates you added, both sides. The empty machine counts as 0. “🧮 Add it up” fills in the total', '“Previous”, charts and records are kept apart for pin and plates, because their kg can’t be compared. The app starts on the machine you used last time', 'Your older workouts count as 📍 Pin; change one with Edit if it was a plate machine']],
+    ['🦵 Good Morning at home', ['Leg Day at home: next to Glute Bridge you can now choose Dumbbell Good Morning instead of Leg Press', 'The app remembers which one you picked']],
+  ]},
   { n: 20.3, date: '2026-11-17', groups: [
     ['🎬 8 new tutorial videos', ['Hammer Curl, Machine Ab Crunch, Leg Press, Chair Dips, Calf Raise, Seated Dumbbell Shoulder Press, Bent-over Reverse Fly and Single-Leg Romanian Deadlift now have a video: tap the ▶ on the picture', 'Silent, and saved on your phone so they play with no signal']],
   ]},
@@ -609,6 +615,8 @@ const PLANS = [
       alt: { id: 'single-leg-rdl', name: 'Single-Leg Romanian Deadlift', img: 'single-leg-rdl-3d.webp', video: 'videos/single-leg-rdl.mp4', db: true, muscles: ['Hamstrings', 'Glutes'], sets: 3, reps: '10 / leg', tip: 'Hinge at the hip with a flat back, slight bend in the standing knee.' } },
     { id: 'leg-press', name: 'Leg Press', img: 'leg-press-3d.webp', video: 'videos/leg-press.mp4', muscles: ['Quads', 'Glutes'], sets: 3, reps: '10-12', tip: 'Don\'t lock the knees at the top. Lower back stays on the pad.',
       altLabels: ['At home? Do this instead', 'At the gym? Do this instead'],
+      // second home option: a hip hinge instead of the bridge
+      alt2: { id: 'good-morning', name: 'Dumbbell Good Morning', img: 'home/good-morning.svg', db: true, muscles: ['Hamstrings', 'Glutes', 'Lower back'], sets: 3, reps: '12', tip: 'Hold one dumbbell against your chest, or hands behind your head with no weight. Soft knees, push your hips back with a flat back until you feel your hamstrings, then stand up by squeezing your glutes.' },
       alt: { id: 'glute-bridge', name: 'Glute Bridge', img: 'glute-bridge-3d.webp', bw: true, muscles: ['Glutes', 'Hamstrings'], sets: 3, reps: '15', tip: 'Push through the heels, squeeze glutes at the top for 1 second.' } },
     { id: 'calf-raise', name: 'Dumbbell Calf Raise', img: 'calf-raise-3d.webp', video: 'videos/calf-raise.mp4', db: true, muscles: ['Calves'], sets: 3, reps: '15-20', tip: 'Use a step. Full stretch at the bottom, pause at the top. Works at the gym and at home.' },
   ]},
@@ -686,21 +694,33 @@ const unit = () => db.settings.unit;
 const planById = id => PLANS.find(p => p.id === id);
 const ex = e => Object.assign({}, e, db.overrides[e.id] || {});
 // every exercise in a plan, including the "instead" versions
-const withAlts = list => list.flatMap(e => e.alt ? [e, e.alt] : [e]);
+// a slot can have up to two "instead" versions: `alt` and `alt2` (a second home option, like Good Morning next to Glute Bridge)
+const options = slot => [slot, slot.alt, slot.alt2].filter(Boolean);
+const optionOf = (slot, id) => options(slot).find(o => o.id === id) || slot;
+const withAlts = list => list.flatMap(options);
 const exName = id => { for (const p of PLANS) for (const e of withAlts(p.exercises)) if (e.id === id) return ex(e).name; return id; };
 // slot = the exercise position in the plan; chosen = the version you picked for it
 // What the kg box means for an exercise, so nobody has to guess "one or both?":
 // db = the weight of ONE dumbbell · bar = the whole barbell (bar + all plates) · bw = bodyweight · anything else = the machine's number
-const kgHint = e => (e.bw ? 'Bodyweight: leave the weight empty' : e.db ? `${unit()} = the weight of <b>one</b> dumbbell` : e.bar ? `${unit()} = the <b>total</b>: bar + all plates` : `${unit()} = the number on the machine`);
-// barbell calculator: pick the bar, type the plates on one side, and the total goes into the next open set
+// machines and cables come in two kinds: 📍 pin (a weight stack) or 🔩 plates (you load plates; the empty machine counts as 0).
+// Their numbers can't be compared, so each workout saves which one you used (mt: 'plates'; nothing = pin) and
+// "Previous", charts and records only compare the same kind.
+const isMachine = e => !e.db && !e.bar && !e.bw && !e.type;
+const mtOf = x => x?.mt || 'pin';
+const MT = { pin: '📍 Pin', plates: '🔩 Plates' };
+const kgHint = (e, mt) => (e.bw ? 'Bodyweight: leave the weight empty' : e.db ? `${unit()} = the weight of <b>one</b> dumbbell` : e.bar ? `${unit()} = the <b>total</b>: bar + all plates`
+  : mt === 'plates' ? `${unit()} = only the plates you added, both sides · empty machine = 0` : `${unit()} = the number where the pin is`);
+// calculator: barbell = bar + plates on both sides; plate machine = plates on both sides (the empty machine counts as 0).
+// The total goes into the next open set.
 function barSheet(i) {
   const a = db.active, we = a.exercises[i], lb = unit() === 'lb', bars = lb ? [45, 35, 25] : [20, 15, 10];
-  let bar = bars.includes(db.settings.bar) ? db.settings.bar : bars[0];
+  const machine = isMachine(findEx(we.exId));
+  let bar = machine ? 0 : bars.includes(db.settings.bar) ? db.settings.bar : bars[0];
   const j = Math.max(0, we.sets.findIndex(s => !s.done));
-  const o = sheet(`<h2 style="margin-top:0;text-align:center">🏋️ Barbell weight</h2>
-    <div class="muted small" style="text-align:center">The app wants the total: the bar plus the plates on both sides.</div>
-    <div class="small muted" style="margin-top:14px">The bar (${unit()})</div>
-    <div class="seg" style="margin-top:6px">${bars.map(b => `<button data-bar="${b}">${b}</button>`).join('')}</div>
+  const o = sheet(`<h2 style="margin-top:0;text-align:center">${machine ? '🔩 Plate machine' : '🏋️ Barbell weight'}</h2>
+    <div class="muted small" style="text-align:center">${machine ? 'The app wants the plates on both sides. The empty machine counts as 0.' : 'The app wants the total: the bar plus the plates on both sides.'}</div>
+    ${machine ? '' : `<div class="small muted" style="margin-top:14px">The bar (${unit()})</div>
+    <div class="seg" style="margin-top:6px">${bars.map(b => `<button data-bar="${b}">${b}</button>`).join('')}</div>`}
     <label class="small muted" style="display:block;margin-top:14px">Plates on <b>one</b> side (${unit()}, added up)
       <input class="field big-in" id="barSide" inputmode="decimal" placeholder="e.g. 5"></label>
     <div class="tb-line" id="barLine"></div>
@@ -708,12 +728,12 @@ function barSheet(i) {
   const side = o.querySelector('#barSide'), total = () => round1(bar + 2 * num(side.value));
   const update = () => {
     o.querySelectorAll('[data-bar]').forEach(b => b.classList.toggle('on', Number(b.dataset.bar) === bar));
-    o.querySelector('#barLine').textContent = `${bar} + ${num(side.value)} + ${num(side.value)} = ${total()} ${unit()}`;
+    o.querySelector('#barLine').textContent = `${machine ? '' : `${bar} + `}${num(side.value)} + ${num(side.value)} = ${total()} ${unit()}`;
     o.querySelector('#barUse').textContent = `Use ${total()} ${unit()} for set ${j + 1}`;
   };
   o.querySelectorAll('[data-bar]').forEach(b => b.addEventListener('click', () => { bar = Number(b.dataset.bar); update(); }));
   side.addEventListener('input', update); update(); setTimeout(() => side.focus(), 60);
-  o.querySelector('#barUse').addEventListener('click', () => { db.settings.bar = bar; we.sets[j].w = String(total()); save(); o.remove(); render(); });
+  o.querySelector('#barUse').addEventListener('click', () => { if (!machine) db.settings.bar = bar; we.sets[j].w = String(total()); save(); o.remove(); render(); });
 }
 // An empty weight or reps box suggests what you typed in the nearest set above it (this workout);
 // only when nothing is typed above does it fall back to last time / the target (kept in data-ph).
@@ -724,18 +744,23 @@ function carryDown(i) {
   const sets = db.active.exercises[i].sets;
   document.querySelectorAll(`.setrow[data-i="${i}"] input[data-ph]`).forEach(inp => { inp.placeholder = carry(sets, Number(inp.closest('.setrow').dataset.j), inp.dataset.f) || inp.dataset.ph; });
 }
-const slotOf = (p, id) => p.exercises.find(x => x.id === id || x.alt?.id === id);
+const slotOf = (p, id) => p.exercises.find(x => options(x).some(o => o.id === id));
 // like slotOf, but an exercise that has left the class (grip moves in old Back Day workouts) is its own slot
 const slotFor = (p, id) => slotOf(p, id) || findEx(id);
+// useAlt()[slot.id]: false = the gym version, true = alt, or alt2's id when you picked the second home option
 const useAlt = () => (db.settings.useAlt = db.settings.useAlt || {});
-const chosen = slot => (slot.alt && useAlt()[slot.id] ? slot.alt : slot);
+const chosen = slot => { const v = useAlt()[slot.id]; return slot.alt2 && v === slot.alt2.id ? slot.alt2 : slot.alt && v ? slot.alt : slot; };
+// homePick remembers which home version you like (Glute Bridge or Good Morning), also after switching the class to Gym and back
+const homePick = () => (db.settings.homePick = db.settings.homePick || {});
+const pickOption = (slot, id) => { useAlt()[slot.id] = id === slot.id ? false : id === slot.alt?.id ? true : id; if (id !== slot.id) homePick()[slot.id] = id; };
 // Gym / Home switch for plans with `modes`: 'main', 'alt' or 'mix' (some of each)
 function planMode(p) {
   const slots = p.exercises.filter(x => x.alt);
   const n = slots.filter(x => useAlt()[x.id]).length;
   return n === 0 ? 'main' : n === slots.length ? 'alt' : 'mix';
 }
-function setMode(p, mode) { p.exercises.filter(x => x.alt).forEach(x => { useAlt()[x.id] = mode === 'alt'; }); }
+// switching to Home uses the home version you picked last time (Good Morning stays Good Morning)
+function setMode(p, mode) { p.exercises.filter(x => x.alt).forEach(x => { const v = homePick()[x.id]; useAlt()[x.id] = mode !== 'alt' ? false : x.alt2 && v === x.alt2.id ? v : true; }); }
 // how a session/plan entry is shown: one color and tag per class (gym or home);
 // the name still says "· Home" so the details show where you trained
 function look(x) {
@@ -748,11 +773,14 @@ const sessionsOn = k => db.sessions.filter(s => s.date === k);
 const plannedOn = k => db.planned.filter(p => p.date === k);
 const lastSessionOf = planId => db.sessions.filter(s => s.planId === planId).sort((a, b) => b.date.localeCompare(a.date) || b.start - a.start)[0];
 const lastGroupDate = group => db.sessions.filter(s => planById(s.planId)?.group === group).map(s => s.date).sort().pop();
-function lastSetsFor(exId) {
-  const s = db.sessions.filter(s => s.exercises?.some(e => e.exId === exId && e.sets.length))
+// mt: only look at workouts on that kind of machine (📍 pin / 🔩 plates)
+const sameEx = (e, exId, mt) => e.exId === exId && e.sets.length && (!mt || mtOf(e) === mt);
+function lastExFor(exId, mt) {
+  const s = db.sessions.filter(s => s.exercises?.some(e => sameEx(e, exId, mt)))
     .sort((a, b) => b.date.localeCompare(a.date) || b.start - a.start)[0];
-  return s ? s.exercises.find(e => e.exId === exId).sets : null;
+  return s ? s.exercises.find(e => sameEx(e, exId, mt)) : null;
 }
+const lastSetsFor = (exId, mt) => lastExFor(exId, mt)?.sets || null;
 const setText = s => (s.t !== undefined ? `${num(s.w) ? `${s.w} ${unit()} · ` : ''}${num(s.tl) ? `L ${s.tl} s · R ${s.tr} s` : `${s.t} s`}` : s.d !== undefined ? `${s.d} km · ${fmtTime(s.m) || '–'}${paceOf(s) ? ` · ${fmtPace(paceOf(s))}/km` : ''}` : s.m !== undefined ? `${fmtTime(s.m) || '–'}${num(s.v) ? ` @ ${s.v} km/h` : ''}${num(s.i) ? ` · ${s.i}%` : ''}` : num(s.w) ? `${s.w}×${s.r}` : `${s.r} reps`);
 // pictures: a bare name is a photo (images/photos/name.jpg), name-3d.webp is a cut-out (images/3d/), anything else is a path inside images/
 const src = img => `images/${!img.includes('.') ? `photos/${img}.jpg` : img.endsWith('-3d.webp') ? `3d/${img}` : img}`;
@@ -1390,8 +1418,8 @@ function viewClass(id) {
       ${mode === 'mix' ? '<div class="muted small" style="margin-top:6px;text-align:center">Mixed: some gym, some home exercises</div>' : ''}` : ''}
     <div class="stack" style="margin-top:14px">
     ${p.exercises.map((slot, i) => {
-      const e = ex(chosen(slot)), prev = lastSetsFor(e.id);
-      const other = slot.alt && ex(chosen(slot) === slot ? slot.alt : slot);
+      const e = ex(chosen(slot)), last = lastExFor(e.id), prev = last?.sets;
+      const others = options(slot).filter(o => o.id !== e.id).map(ex);
       return `<div class="card ex">
         <button class="pic photo ${e.video ? 'has-video' : ''}" ${tapAttrs(e.img, e.video)} aria-label="${e.video ? 'Play tutorial: ' : ''}${esc(e.name)}"><img src="${src(e.img)}" alt="${esc(e.name)}" loading="lazy"></button>
         <div class="body">
@@ -1404,13 +1432,13 @@ function viewClass(id) {
           ${isHold(e) && !editing ? `<div class="small" style="margin-top:4px;color:var(--amber)">${recFor({}, e, {}).note}</div>` : ''}
           <div style="margin-top:6px">${e.muscles.map(m => `<span class="chip">${esc(m)}</span>`).join('')}</div>
           <div class="tip">💡 ${esc(e.tip)}</div>
-          ${isCardio(e) ? '' : `<div class="small muted" style="margin-top:6px">⚖️ ${kgHint(e)}</div>`}
-          ${prev ? `<div class="small" style="margin-top:8px"><span class="muted">Last time:</span> <b>${prev.map(s => setText(s)).join(', ')}</b> ${isRun(e) ? '' : isCardio(e) ? `· ${round1(km(prev))} km` : !isHold(e) && num(prev[0].w) ? unit() : ''}</div>` : ''}
-          ${other ? `<div class="alt">
-            ${photo(other.img, '', true, other.video)}
-            <div style="flex:1;min-width:0"><div class="muted small">${esc(slot.altLabels[other.id === slot.alt.id ? 0 : 1])}</div><b>${esc(other.name)}</b></div>
-            <button class="btn sm" data-act="swap-plan" data-plan="${p.id}" data-slot="${slot.id}">Use this</button>
-          </div>` : ''}
+          ${isCardio(e) ? '' : `<div class="small muted" style="margin-top:6px">⚖️ ${isMachine(e) ? 'Machine: pick 📍 Pin or 🔩 Plates in the workout' : kgHint(e)}</div>`}
+          ${prev ? `<div class="small" style="margin-top:8px"><span class="muted">Last time${isMachine(e) ? ` (${MT[mtOf(last)]})` : ''}:</span> <b>${prev.map(s => setText(s)).join(', ')}</b> ${isRun(e) ? '' : isCardio(e) ? `· ${round1(km(prev))} km` : !isHold(e) && num(prev[0].w) ? unit() : ''}</div>` : ''}
+          ${others.map(o => `<div class="alt">
+            ${photo(o.img, '', true, o.video)}
+            <div style="flex:1;min-width:0"><div class="muted small">${esc(slot.altLabels[o.id === slot.id ? 1 : 0])}</div><b>${esc(o.name)}</b></div>
+            <button class="btn sm" data-act="swap-plan" data-plan="${p.id}" data-slot="${slot.id}" data-to="${o.id}">Use this</button>
+          </div>`).join('')}
         </div></div>`;
     }).join('')}
     </div>
@@ -1462,8 +1490,8 @@ function viewWorkout() {
     })() : ''}
     <div class="stack">
     ${a.exercises.map((we, i) => {
-      const slot = slotFor(p, we.exId), e = ex(slot.alt?.id === we.exId ? slot.alt : slot), prev = lastSetsFor(e.id) || [];
-      const other = slot.alt && ex(slot.alt.id === we.exId ? slot : slot.alt);
+      const slot = slotFor(p, we.exId), e = ex(optionOf(slot, we.exId)), mt = isMachine(e) ? mtOf(we) : '', prev = lastSetsFor(e.id, mt) || [];
+      const others = options(slot).filter(o => o.id !== e.id).map(ex);
       return `<div class="card wo-ex">
         <div class="top">${photo(e.img, '', true, e.video)}
           <div style="flex:1"><div class="name">${esc(e.name)}</div><div class="small muted">Target <span class="target" data-rec="${i}">${recFor(a, e, we).target}</span></div>
@@ -1513,8 +1541,9 @@ function viewWorkout() {
           }).join('')}
           ${isLive(a) ? `<button class="btn primary block" style="margin-top:10px" data-act="hold-open" data-i="${i}">⏱️ Hold timer · ${(j => j < 0 ? 'extra set' : `set ${j + 1}`)(we.sets.findIndex(s => !s.done))}</button>` : ''}
         </div>` : `<div class="sets">
-          <div class="row between small muted" style="margin-bottom:8px"><span>⚖️ ${kgHint(e)}</span>${e.bar ? `<button class="btn sm" data-act="bar-calc" data-i="${i}" style="flex:none">🧮 Add it up</button>` : ''}</div>
-          <div class="hdr"><span style="text-align:center">Set</span><span>Previous</span><span style="text-align:center">${unit()}</span><span style="text-align:center">Reps</span><span></span></div>
+          ${mt ? `<div class="seg mt-seg">${Object.entries(MT).map(([k, label]) => `<button class="${mt === k ? 'on' : ''}" data-act="mt" data-i="${i}" data-mt="${k}">${label}</button>`).join('')}</div>` : ''}
+          <div class="row between small muted" style="margin-bottom:8px"><span>⚖️ ${kgHint(e, mt)}</span>${e.bar || mt === 'plates' ? `<button class="btn sm" data-act="bar-calc" data-i="${i}" style="flex:none">🧮 Add it up</button>` : ''}</div>
+          <div class="hdr"><span style="text-align:center">Set</span><span>Previous${mt ? ` ${mt === 'plates' ? '🔩' : '📍'}` : ''}</span><span style="text-align:center">${unit()}</span><span style="text-align:center">Reps</span><span></span></div>
           ${we.sets.map((s, j) => {
             const pv = prev[j];
             return `<div class="setrow ${s.done ? 'done' : ''}" data-i="${i}" data-j="${j}">
@@ -1529,7 +1558,7 @@ function viewWorkout() {
         <div class="row" style="margin-top:10px;flex-wrap:wrap">
           <button class="btn sm" data-act="add-set" data-i="${i}">+ Add ${isCardio(e) ? 'part' : 'set'}</button>
           ${we.sets.length > 1 ? `<button class="btn sm ghost" data-act="del-set" data-i="${i}">− Remove ${isCardio(e) ? 'part' : 'set'}</button>` : ''}
-          ${other ? `<button class="btn sm ghost" data-act="swap-wo" data-i="${i}" title="Switch to ${esc(other.name)}">⇄ ${esc(other.name)}</button>` : ''}
+          ${others.map(o => `<button class="btn sm ghost" data-act="swap-wo" data-i="${i}" data-to="${o.id}" title="Switch to ${esc(o.name)}">⇄ ${esc(o.name)}</button>`).join('')}
         </div>
       </div>`;
     }).join('')}
@@ -1605,7 +1634,7 @@ function viewCalendar(sel) {
 
 // ---------- Stats ----------
 // Three tabs: Overview (the big picture), Exercises (list with mini charts → detail), Body weight.
-let progEx = null, progMetric = 'top';
+let progEx = null, progMetric = 'top', progMt = null;
 const statsTabs = on => `<div class="seg glass" style="margin-top:14px">
     <button class="${on === 'overview' ? 'on' : ''}" data-go="#/progress">📊 Overview</button>
     <button class="${on === 'ex' ? 'on' : ''}" data-go="#/progress/ex">💪 Exercises</button>
@@ -1613,11 +1642,12 @@ const statsTabs = on => `<div class="seg glass" style="margin-top:14px">
 const loggedExIds = () => [...new Set(db.sessions.flatMap(s => (s.exercises || []).filter(e => e.sets.length).map(e => e.exId)))];
 
 // one point per session for an exercise, with every number we can chart
-function exPoints(exId) {
-  const pts = db.sessions.filter(s => s.exercises?.some(e => e.exId === exId && e.sets.length))
+// mt: only workouts on that kind of machine (📍 pin / 🔩 plates)
+function exPoints(exId, mt) {
+  const pts = db.sessions.filter(s => s.exercises?.some(e => sameEx(e, exId, mt)))
     .sort((a, b) => a.date.localeCompare(b.date) || a.start - b.start)
     .map(s => {
-      const sets = s.exercises.find(e => e.exId === exId).sets;
+      const sets = s.exercises.find(e => sameEx(e, exId, mt)).sets;
       return {
         sess: s,
         date: s.date,
@@ -1656,8 +1686,8 @@ function findRecords() {
   for (const s of db.sessions.slice().sort((a, b) => a.date.localeCompare(b.date) || a.start - b.start)) {
     for (const e of s.exercises || []) {
       if (!e.sets.length) continue;
-      const x = findEx(e.exId) || {}, b = best[e.exId] = best[e.exId] || {};
-      const add = (kind, val, prev, better) => { if (prev !== undefined && better) out.push({ s, exId: e.exId, kind, val, prev }); };
+      const x = findEx(e.exId) || {}, mt = isMachine(x) ? mtOf(e) : '', key = e.exId + (mt === 'plates' ? '|plates' : ''), b = best[key] = best[key] || {};
+      const add = (kind, val, prev, better) => { if (prev !== undefined && better) out.push({ s, exId: e.exId, mt, kind, val, prev }); };
       if (isRun(x)) {
         const d = km(e.sets), p = Math.min(...e.sets.map(paceOf).filter(Boolean), Infinity);
         add('km', d, b.km, d > b.km); if (b.km === undefined || d > b.km) b.km = d;
@@ -1734,7 +1764,7 @@ function viewOverview() {
     <div class="card stack">${balance}</div>
     <h2>Recent records 🏆</h2>
     ${records.length ? `<div class="stack">${records.map(r => `<button class="card hist-row" data-go="#/progress/ex/${r.exId}">
-        <div class="row between"><b>${esc(exName(r.exId))}</b><span class="chev">›</span></div>
+        <div class="row between"><b>${esc(exName(r.exId))}${r.mt === 'plates' ? ' 🔩' : ''}</b><span class="chev">›</span></div>
         <div class="small" style="margin-top:4px">🏆 ${recordText(r)}</div>
         <div class="muted small" style="margin-top:2px">${esc(look(r.s).name)} · ${agoText(r.s.date)}</div>
       </button>`).join('')}</div>`
@@ -1755,21 +1785,21 @@ function sparkline(vals) {
 function viewExercises() {
   const ids = loggedExIds();
   const rows = ids.map(id => {
-    const pts = exPoints(id), [key] = exMetrics(id, pts)[0], vals = pts.map(p => p[key]).filter(v => v > 0);
-    return { id, pts, key, vals, last: pts.at(-1) };
-  }).sort((a, b) => b.pts.length - a.pts.length || b.last.date.localeCompare(a.last.date));
+    const mt = isMachine(findEx(id) || {}) ? mtOf(lastExFor(id)) : '', pts = exPoints(id, mt), [key] = exMetrics(id, pts)[0], vals = pts.map(p => p[key]).filter(v => v > 0);
+    return { id, mt, pts, key, vals, last: pts.at(-1), count: exPoints(id).length };
+  }).sort((a, b) => b.count - a.count || b.last.date.localeCompare(a.last.date));
   const total = new Set(PLANS.flatMap(p => withAlts(p.exercises).map(e => e.id))).size;
   return `
     <div class="eyebrow">Your numbers</div>
     <h1>Stats</h1>
     ${statsTabs('ex')}
     <div class="muted small" style="margin:14px 0 10px">${rows.length ? 'Most trained first. Tap one for its chart and history.' : ''}</div>
-    ${rows.length ? `<div class="stack">${rows.map(({ id, pts, key, vals, last }) => {
+    ${rows.length ? `<div class="stack">${rows.map(({ id, mt, key, vals, last, count }) => {
       const first = vals[0], now = vals.at(-1), better = key === 'pace' ? now < first : now > first, same = vals.length < 2 || now === first;
       const pct = first && !same ? Math.round(Math.abs(now - first) / first * 100) : 0;
       return `<button class="card ex-row" data-go="#/progress/ex/${id}">
         <span class="ex-info"><span class="row" style="gap:8px"><span class="dot" style="background:${look(last.sess).color}"></span><b>${esc(exName(id))}</b></span>
-          <span class="muted small">${pts.length} session${pts.length === 1 ? '' : 's'} · last ${agoText(last.date)}</span>
+          <span class="muted small">${count} session${count === 1 ? '' : 's'} · last ${agoText(last.date)}${mt && exPoints(id, mt === 'pin' ? 'plates' : 'pin').length ? ` · ${MT[mt]}` : ''}</span>
           <span class="small">${vals.length ? (same ? `${metricText(key, now)} ${metricUnit(key)}` : `${metricText(key, first)} → ${metricText(key, now)} ${metricUnit(key)} <b style="color:${better ? 'var(--accent)' : 'var(--coral)'}">${better ? '▲' : '▼'} ${pct}%</b>`) : ''}</span></span>
         ${sparkline(vals)}<span class="chev">›</span>
       </button>`;
@@ -1780,8 +1810,10 @@ function viewExercises() {
 
 // the full chart + history for one exercise
 function viewExercise(id) {
-  if (progEx !== id) { progEx = id; progMetric = null; }
-  const pts = exPoints(id), metrics = exMetrics(id, pts);
+  if (progEx !== id) { progEx = id; progMetric = null; progMt = null; }
+  const kinds = isMachine(findEx(id) || {}) ? ['pin', 'plates'].filter(k => exPoints(id, k).length) : [];
+  if (!kinds.includes(progMt)) progMt = kinds.includes(mtOf(lastExFor(id))) ? mtOf(lastExFor(id)) : kinds[0] || null;
+  const pts = exPoints(id, progMt), metrics = exMetrics(id, pts);
   if (!metrics.some(([k]) => k === progMetric)) progMetric = metrics[0][0];
   // for pace, lower is better
   const paced = progMetric === 'pace' ? pts.filter(p => p.pace) : pts;
@@ -1791,6 +1823,7 @@ function viewExercise(id) {
     <button class="back" data-go="#/progress/ex">‹ All exercises</button>
     <div class="eyebrow" style="margin-top:6px">Exercise</div>
     <h1 style="font-size:26px">${esc(exName(id))}</h1>
+    ${kinds.length > 1 ? `<div class="seg mt-seg" style="margin-top:10px">${kinds.map(k => `<button class="${k === progMt ? 'on' : ''}" data-act="prog-mt" data-mt="${k}">${MT[k]}</button>`).join('')}</div><div class="muted small">Pin and plate machines are counted separately: their kg can't be compared.</div>` : kinds.length ? `<div class="muted small">${MT[kinds[0]]} machine</div>` : ''}
     <div class="seg" style="margin-top:12px">${metrics.map(([k, l]) => `<button class="${k === progMetric ? 'on' : ''}" data-act="metric" data-m="${k}">${l}</button>`).join('')}</div>
     <div class="card" style="margin-top:10px">
       ${paced.length >= 1 ? chart(paced.map(p => ({ x: p.date, y: Math.round(p[progMetric] * 100) / 100 })), u) : `<div class="empty">No sets logged for this exercise yet.<br>Start a workout and your progress will show here.</div>`}
@@ -2456,10 +2489,12 @@ function startWorkout(planId, opts = {}) {
     const sets = saved?.sets.length ? saved.sets.map(s => ({ ...s, done: true })) : [...Array(Math.max(1, parseInt(ex(e).sets) || 3))].map(() => emptyRow(e));
     // holds keep the goal they started with, so finishing can tell if you beat it
     const goal = isHold(e) ? saved?.goal || holdGoal(e.id, opts.edit?.id).goal : 0;
-    return { exId: e.id, sets, ...(goal ? { goal } : {}) };
+    // machines start on the kind you used last time (📍 pin / 🔩 plates); an edited workout keeps its own
+    const mt = isMachine(e) ? (saved ? saved.mt : lastExFor(e.id)?.mt) : '';
+    return { exId: e.id, sets, ...(goal ? { goal } : {}), ...(mt === 'plates' ? { mt } : {}) };
   });
   // editing an old workout: keep exercises that have since left the class (like the grip moves in Back Day)
-  for (const x of opts.edit?.exercises || []) if (!slotOf(p, x.exId) && x.sets.length) exercises.push({ exId: x.exId, sets: x.sets.map(s => ({ ...s, done: true })), ...(x.goal ? { goal: x.goal } : {}) });
+  for (const x of opts.edit?.exercises || []) if (!slotOf(p, x.exId) && x.sets.length) exercises.push({ exId: x.exId, sets: x.sets.map(s => ({ ...s, done: true })), ...(x.goal ? { goal: x.goal } : {}), ...(x.mt ? { mt: x.mt } : {}) });
   db.active = { planId, date, start: opts.edit?.start || Date.now(), exercises, ...(home ? { home } : {}), ...(opts.edit ? { editId: opts.edit.id } : {}) };
   db.planned = db.planned.filter(x => !(x.date === date && x.planId === planId));
   save();
@@ -2475,7 +2510,7 @@ function finishWorkout() {
     ? { exId: e.exId, sets: e.sets.filter(s => parseTime(s.m) > 0).map(s => ({ m: parseTime(s.m), v: num(s.v), i: num(s.i) })) }
     : isHold(findEx(e.exId))
     ? { exId: e.exId, goal: e.goal || holdGoal(e.exId, a.editId).goal, sets: e.sets.filter(s => num(s.t) > 0).map(s => ({ w: num(s.w), t: Math.round(num(s.t)), ...(num(s.tl) ? { tl: num(s.tl), tr: num(s.tr) } : {}) })) }
-    : { exId: e.exId, sets: e.sets.filter(s => num(s.r) > 0).map(s => ({ w: num(s.w), r: num(s.r) })) }));
+    : { exId: e.exId, ...(e.mt && isMachine(findEx(e.exId)) ? { mt: e.mt } : {}), sets: e.sets.filter(s => num(s.r) > 0).map(s => ({ w: num(s.w), r: num(s.r) })) }));
   const count = exercises.reduce((n, e) => n + e.sets.length, 0);
   if (!count) {
     if (confirm('Nothing logged yet (enter reps, or minutes for cardio).\n\nDiscard this workout?')) { db.active = null; save(); location.hash = isLive(a) ? '#/' : '#/calendar/' + a.date; }
@@ -2490,13 +2525,15 @@ function finishWorkout() {
       const prevTop = Math.max(0, ...db.sessions.filter(s => s.id !== a.editId).flatMap(s => (s.exercises || []).filter(x => x.exId === e.exId).flatMap(x => x.sets.map(y => num(y.t)))));
       return top > prevTop && prevTop > 0 ? `${exName(e.exId)}: ${top} s (was ${prevTop} s)` : null;
     }
+    // machines: only against the same kind (📍 pin / 🔩 plates)
+    const mt = isMachine(findEx(e.exId)) ? mtOf(e) : '';
     const top = Math.max(...e.sets.map(s => s.w));
-    const prevTop = Math.max(0, ...db.sessions.filter(s => s.id !== a.editId).flatMap(s => (s.exercises || []).filter(x => x.exId === e.exId).flatMap(x => x.sets.map(y => num(y.w)))));
-    return top > prevTop && prevTop > 0 ? `${exName(e.exId)}: ${top} ${unit()} (was ${prevTop})` : null;
+    const prevTop = Math.max(0, ...db.sessions.filter(s => s.id !== a.editId).flatMap(s => (s.exercises || []).filter(x => x.exId === e.exId && (!mt || mtOf(x) === mt)).flatMap(x => x.sets.map(y => num(y.w)))));
+    return top > prevTop && prevTop > 0 ? `${exName(e.exId)}${mt === 'plates' ? ' 🔩' : ''}: ${top} ${unit()} (was ${prevTop})` : null;
   }).filter(Boolean);
   // a leg day counts as "home" when most of its swappable exercises were the home versions
-  const altIds = new Set(p.exercises.filter(x => x.alt).map(x => x.alt.id));
-  const home = !!p.modes && a.exercises.filter(e => altIds.has(e.exId)).length * 2 > altIds.size;
+  const swappable = p.exercises.filter(x => x.alt);
+  const home = !!p.modes && swappable.filter(x => a.exercises.some(e => e.exId !== x.id && options(x).some(o => o.id === e.exId))).length * 2 > swappable.length;
   // live workouts are timed; ones typed in afterwards keep their old time (or none)
   const duration = isLive(a) ? Math.round((Date.now() - a.start) / 1000) : (old?.duration || 0);
   const s = { id: old?.id || uid(), planId: a.planId, date: a.date, start: a.start, duration, exercises, ...(home ? { home } : {}),
@@ -2888,7 +2925,7 @@ document.addEventListener('click', e => {
       break;
     }
     case 'copy-prev': {
-      const pv = (lastSetsFor(a.exercises[row.dataset.i].exId) || [])[row.dataset.j];
+      const cw = a.exercises[row.dataset.i], pv = (lastSetsFor(cw.exId, isMachine(findEx(cw.exId)) ? mtOf(cw) : '') || [])[row.dataset.j];
       if (!pv) return;
       const s = a.exercises[row.dataset.i].sets[row.dataset.j];
       if (pv.t !== undefined) Object.assign(s, { w: pv.w || '', t: pv.t });
@@ -2900,14 +2937,23 @@ document.addEventListener('click', e => {
     }
     case 'swap-plan': {
       const slot = planById(b.dataset.plan).exercises.find(x => x.id === b.dataset.slot);
-      useAlt()[slot.id] = !useAlt()[slot.id]; save(); render();
+      pickOption(slot, b.dataset.to); save(); render();
       break;
     }
     case 'swap-wo': {
       // keeps the numbers you already typed, and remembers the choice for next time
       const we = a.exercises[b.dataset.i], slot = slotFor(planById(a.planId), we.exId);
-      we.exId = we.exId === slot.id ? slot.alt.id : slot.id;
-      useAlt()[slot.id] = we.exId !== slot.id; save(); render();
+      we.exId = b.dataset.to; delete we.mt;
+      if (slotOf(planById(a.planId), we.exId)) pickOption(slot, we.exId);
+      if (isMachine(findEx(we.exId))) { const l = lastExFor(we.exId); if (l?.mt) we.mt = l.mt; } // start on the machine you used last time
+      save(); render();
+      break;
+    }
+    case 'mt': {
+      // 📍 pin or 🔩 plates for this exercise in this workout: "Previous" and the hint follow
+      const we = a.exercises[b.dataset.i];
+      if (b.dataset.mt === 'plates') we.mt = 'plates'; else delete we.mt;
+      save(); render();
       break;
     }
     case 'add-set': {
@@ -2949,7 +2995,7 @@ document.addEventListener('click', e => {
         ${s.warmup || s.cooldown ? `<div class="small" style="margin-top:4px">${[s.warmup && '🔥 Warm-up ✓', s.cooldown && '🧘 Cool-down ✓'].filter(Boolean).join(' · ')}</div>` : ''}
         <div class="sess-detail" style="margin-top:12px">${s.quick
           ? '<div class="muted">No sets logged yet. Add your sets and weights so this workout counts in your progress.</div>'
-          : s.exercises.filter(e => e.sets.length).map(e => `<div><b>${esc(exName(e.exId))}</b> <span class="muted">${e.sets.map(setText).join(', ')}</span></div>`).join('')}</div>
+          : s.exercises.filter(e => e.sets.length).map(e => `<div><b>${esc(exName(e.exId))}${e.mt === 'plates' ? ' 🔩' : ''}</b> <span class="muted">${e.sets.map(setText).join(', ')}</span></div>`).join('')}</div>
         <div class="stack" style="margin-top:16px">
           <button class="btn primary block" data-act="edit-session" data-id="${s.id}">${s.quick ? '+ Add details' : '✏️ Edit'}</button>
           <button class="btn block ghost danger" data-act="del-session" data-id="${s.id}">Delete</button>
@@ -2973,6 +3019,7 @@ document.addEventListener('click', e => {
     case 'del-session': if (confirm('Delete this workout from your history?')) { db.sessions = db.sessions.filter(s => s.id !== b.dataset.id); document.querySelectorAll('.overlay').forEach(o => o.remove()); save(); render(); } break;
     case 'del-plan': db.planned = db.planned.filter(p => p.id !== b.dataset.id); save(); render(); break;
     case 'metric': progMetric = b.dataset.m; render(); break;
+    case 'prog-mt': progMt = b.dataset.mt; render(); break;
     case 'log-weight': logWeightSheet(); break;
     case 'add-scan': addScan(); break;
     case 'type-scan': scanForm(); break;
@@ -3010,7 +3057,7 @@ document.addEventListener('input', e => {
     if (t.dataset.f === 'w' && db.active.home) {
       // home workout: the rep target follows the weight you type
       const we = db.active.exercises[row.dataset.i], slot = slotFor(planById(db.active.planId), we.exId);
-      const r = recFor(db.active, ex(slot.alt?.id === we.exId ? slot.alt : slot), we);
+      const r = recFor(db.active, ex(optionOf(slot, we.exId)), we);
       $(`[data-rec="${row.dataset.i}"]`).innerHTML = r.target;
       $(`[data-recnote="${row.dataset.i}"]`).textContent = r.note;
     }

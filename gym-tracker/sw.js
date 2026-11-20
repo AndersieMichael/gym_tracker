@@ -1,7 +1,7 @@
 // Offline support: keeps the app and your guide pictures on the phone.
 // Bump VERSION when you change any file so phones pick up the new version (bug fixes: 11.1, 11.2…).
 // Keep the number the same as APP_VERSION.n in index.html.
-const VERSION = 'gym-v20.3';
+const VERSION = 'gym-v21';
 // Folders in images/: 3d (cut-outs), photos (jpg), videos (tutorials), moves (warm-up / cool-down),
 // grip (drawn pictures), avatars.
 const FILES = [
@@ -22,6 +22,7 @@ const FILES = [
     'hammer-curl', 'ab-crunch-machine', 'leg-press', 'chair-dips', 'calf-raise', 'seated-dumbbell-press', 'dumbbell-reverse-fly', 'single-leg-rdl'].map(n => `images/videos/${n}.mp4`),
   ...['cat-cow', 'thoracic-rotation', 'hip-hinge', 'high-knees', 'ankle-circles', 'lying-twist', 'quad-stretch', 'hamstring-stretch', 'calf-stretch', 'figure-four', 'hip-flexor-stretch'].map(n => `images/moves/${n}.svg`),
   ...['wrist-curl', 'reverse-wrist-curl'].map(n => `images/grip/${n}.svg`),
+  'images/home/good-morning.svg',
   ...['hamster', 'cat', 'mike', 'squidward', 'gigachad', 'dumbbelldore'].map(n => `images/avatars/${n}.jpg`),
 ];
 
