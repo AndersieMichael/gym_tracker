@@ -221,6 +221,22 @@ select.field option, select.field optgroup { background: #15191d; color: var(--t
 .setrow input:focus { outline: none; border-color: var(--accent); }
 .setrow .tbtn { width: 100%; text-align: center; background: rgba(255, 255, 255, .06); border: 1px solid var(--glass-line); border-radius: 13px; padding: 10px 2px; font-weight: 700; font-variant-numeric: tabular-nums; color: var(--text); font-size: 14px; white-space: nowrap; overflow: hidden; }
 .mt-seg { margin-bottom: 10px; }
+/* friends: compare rows and the group board */
+.cmp-row { display: grid; grid-template-columns: 1fr 1.4fr 1fr; align-items: center; gap: 8px; padding: 10px 0; border-top: 1px solid var(--glass-line); text-align: center; }
+.cmp-row:first-child { border-top: 0; }
+.cmp-row b:first-child { text-align: left; }
+.cmp-row .win { color: var(--accent); }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.chip-btn { border: 1px solid var(--glass-line); background: rgba(255, 255, 255, .05); color: var(--muted); border-radius: 99px; padding: 6px 12px; font-size: 13px; font-weight: 700; }
+.chip-btn.on { background: var(--accent); color: var(--accent-ink); border-color: transparent; }
+.board-row { display: grid; grid-template-columns: 22px 36px 1fr auto; align-items: center; gap: 10px; width: 100%; padding: 10px 6px; background: none; border: 0; border-top: 1px solid var(--glass-line); color: var(--text); text-align: left; border-radius: 12px; }
+.board-row:first-child { border-top: 0; }
+.board-row.me { background: rgba(47, 230, 181, .1); opacity: 1; }
+.board-row .rank { font-weight: 800; color: var(--muted); text-align: center; }
+.board-row .who { display: flex; flex-direction: column; gap: 5px; min-width: 0; }
+.board-row .bar { display: block; height: 6px; border-radius: 99px; background: rgba(255, 255, 255, .08); }
+.board-row .bar i { display: block; height: 100%; border-radius: 99px; background: var(--accent); }
+.board-row .val { font-variant-numeric: tabular-nums; }
 .mt-seg button { padding: 8px 4px; font-size: 14px; }
 .setrow .tbtn.empty { color: var(--muted); font-weight: 600; }
 /* hours : minutes : seconds boxes */
@@ -427,9 +443,14 @@ label .field, label input { color: var(--text); }
 
 <script>
 // App version: shown in More. Bump `n` together with VERSION in sw.js on every update.
-const APP_VERSION = { n: 22, date: '2026-11-20' };
+const APP_VERSION = { n: 23, date: '2026-11-25' };
 // What's new, shown in Settings under the version. Add the new version at the top.
 const CHANGELOG = [
+  { n: 23, date: '2026-11-25', groups: [
+    ['📤 Share your training', ['“Share my week” on Home makes a picture of your week: classes, workouts, time, sets, streak, records and badges', '“Share” on the finish screen (and in any workout’s details) makes a picture of that workout with your best set per exercise', 'It opens your phone’s share menu: WhatsApp, Instagram, save to gallery and more', 'Body weight, body scans and BMI are never on the pictures']],
+    ['👥 Compare with friends', ['Every shared message now has a compare link. A friend taps it (or pastes the whole message in Profile → Friends) and sees “You vs them” for the same week', 'Profile → Friends: a board with you and all your friends, ranked on workouts, time, sets, classes, streak, plank, run or lifts, for this week or last week', 'Lifts only compare barbell and dumbbell exercises you both did; machines differ between gyms', 'No account and no server: the numbers travel inside the link. Only a summary is shared, never your body weight or scans']],
+    ['🧙 Dumbbelldore avatar', ['Zoomed out, so his flexing fists show instead of just his face']],
+  ]},
   { n: 22, date: '2026-11-20', groups: [
     ['📈 Next weight', ['Lifts now tell you what to lift: did the top of the rep range on every set last time? “📈 Try 32.5 kg today”', 'Not yet? “🎯 Stay at 30 kg: get 12 reps on every set, then go heavier”', 'The grey boxes are filled in with that weight and reps, so one tap on ✓ logs it', 'Steps: dumbbells +2 kg, barbell and plate machines +2.5 kg, pin machines +5 kg. Pin and plate machines are followed separately']],
     ['🏠 Easier Home screen', ['All classes are now right under the suggested class, so you can pick another one without scrolling down', 'Today’s motivation, weekly activity, body weight and quick actions moved below the classes']],
@@ -661,7 +682,7 @@ const COLOR = id => `var(--c-${id})`;
 // ---------- Storage ----------
 const KEY = 'gymtracker.v1';
 // weights: your body weight log, one entry per day [{ date, w }]
-const blank = () => ({ sessions: [], planned: [], weights: [], scans: [], badges: {}, overrides: {}, settings: { unit: 'kg', rest: 90, useAlt: {}, goalWeight: null, heightCm: null }, active: null });
+const blank = () => ({ sessions: [], planned: [], weights: [], scans: [], badges: {}, friends: {}, overrides: {}, settings: { unit: 'kg', rest: 90, useAlt: {}, goalWeight: null, heightCm: null }, active: null });
 let db = load();
 function load() {
   try {
@@ -678,6 +699,7 @@ function migrate(d) {
   d.weights = d.weights || [];
   d.scans = d.scans || [];
   d.badges = d.badges || {}; // badge id → day you earned it
+  d.friends = d.friends || {}; // friend id → the summary from their last compare link
   return d;
 }
 function save() {
@@ -1206,11 +1228,14 @@ const PHOTO_AVATARS = [
   { file: 'mike', name: 'Mike Wazowski' },
   { file: 'squidward', name: 'Handsome Squidward' },
   { file: 'gigachad', name: 'Gigachad' },
-  { file: 'dumbbelldore', name: 'Dumbbelldore' },
+  // zoom < 1 shows the whole photo smaller inside the circle (bg fills around it), so the flexing fists in the corners aren't cut off
+  { file: 'dumbbelldore', name: 'Dumbbelldore', zoom: 0.72, bg: '#4b4844' },
 ];
 let avatarSeq = 0;
 function avatar(i = 0, size = 48) {
   const pic = PHOTO_AVATARS[i - AVATARS.length];
+  // a zoomed-out photo is a background, so only the circle's outer edge clips it (an <img> would be rounded too)
+  if (pic?.zoom) return `<span class="avatar" role="img" style="width:${size}px;height:${size}px;background:${pic.bg} url(images/avatars/${pic.file}.jpg) center / ${Math.round(pic.zoom * 100)}% no-repeat"></span>`;
   if (pic) return `<img class="avatar" src="images/avatars/${pic.file}.jpg" width="${size}" height="${size}" alt="" style="object-fit:cover;background:#fff">`;
   const a = AVATARS[i] || AVATARS[0], k = 'av' + (++avatarSeq);
   const [sl, sb, ss] = a.skin;
@@ -1379,7 +1404,8 @@ function viewToday() {
         <div><span class="dot" style="background:var(--coral)"></span>Workouts<b>${weekSess.length}</b></div>
         <div><span class="dot" style="background:var(--sky)"></span>Time<b>${mins} min</b></div>
         <div><span class="dot" style="background:var(--amber)"></span>Sets<b>${sets}</b></div>
-      </div></div>
+      </div>
+      <button class="btn sm" style="margin-top:12px;width:100%" data-act="share-week">📤 Share my week</button></div>
     </div>
 
     <div style="margin-top:12px">${hero}</div>
@@ -2403,6 +2429,255 @@ function weekStreak() {
   while (has(w)) { n++; w = addDays(w, -7); }
   return n;
 }
+
+// ---------- Share cards ----------
+// "Share my week" and "Share this workout" draw a 1080 × 1350 picture (fits WhatsApp, Instagram feed and stories)
+// and open the phone's share menu; where that isn't possible (a computer) the picture is downloaded.
+// Body weight, scans and BMI are never on a card.
+const cssVar = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+const FONT = '"Plus Jakarta Sans", system-ui, sans-serif';
+// your avatar as a picture the canvas can draw (drawn avatars are SVG, fun ones are photos)
+function avatarImage() {
+  const html = avatar(db.settings.avatar || 0, 240), img = new Image();
+  const photoSrc = html.match(/src="([^"]+)"/)?.[1] || html.match(/url\(([^)]+)\)/)?.[1];
+  img.src = photoSrc || 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(html.replace('<svg ', '<svg xmlns="http://www.w3.org/2000/svg" '));
+  return new Promise(res => { img.onload = () => res(img); img.onerror = () => res(null); });
+}
+function shareCanvas() {
+  const c = Object.assign(document.createElement('canvas'), { width: 1080, height: 1350 }), g = c.getContext('2d');
+  g.fillStyle = '#07090C'; g.fillRect(0, 0, 1080, 1350);
+  const glow = g.createRadialGradient(160, 80, 0, 160, 80, 760); glow.addColorStop(0, 'rgba(47,230,181,.22)'); glow.addColorStop(1, 'rgba(47,230,181,0)');
+  g.fillStyle = glow; g.fillRect(0, 0, 1080, 1350);
+  return [c, g];
+}
+const rrect = (g, x, y, w, h, r, fill) => { g.beginPath(); g.roundRect(x, y, w, h, r); g.fillStyle = fill; g.fill(); };
+const txt = (g, s, x, y, size, color, weight = 500, align = 'left', maxW = 0) => {
+  g.font = `${weight} ${size}px ${FONT}`; g.fillStyle = color; g.textAlign = align; g.textBaseline = 'alphabetic';
+  let t = String(s); if (maxW) while (t.length > 1 && g.measureText(t).width > maxW) t = t.slice(0, -2) + '…';
+  g.fillText(t, x, y); return g.measureText(t).width;
+};
+// rounded label in a class color, returns its width
+const chip = (g, label, x, y, color) => { g.font = `700 34px ${FONT}`; const w = g.measureText(label).width + 44; rrect(g, x, y, w, 58, 29, color); txt(g, label, x + 22, y + 41, 34, '#04130F', 700); return w; };
+async function cardHeader(g, title, sub) {
+  const img = await avatarImage();
+  g.save(); g.beginPath(); g.arc(140, 150, 62, 0, Math.PI * 2); g.clip();
+  const pic = PHOTO_AVATARS[(db.settings.avatar || 0) - AVATARS.length], z = pic?.zoom || 1, s = 124 * z;
+  g.fillStyle = pic?.bg || '#2FE6B5'; g.fillRect(78, 88, 124, 124);
+  if (img) g.drawImage(img, 140 - s / 2, 150 - s / 2, s, s);
+  g.restore();
+  txt(g, title, 230, 145, 60, '#F2F6F4', 800, 'left', 770);
+  txt(g, sub, 230, 196, 34, '#93A49E', 500, 'left', 770);
+}
+const cardFooter = (g, left) => { txt(g, left, 80, 1280, 32, '#6F817B', 600); txt(g, 'Gym Tracker', 1000, 1280, 32, '#2FE6B5', 800, 'right'); };
+const recordLine = r => `${exName(r.exId)}${r.mt === 'plates' ? ' 🔩' : ''}: ${metricText(r.kind, r.val)}${metricUnit(r.kind) ? ' ' + metricUnit(r.kind) : ''}`;
+async function shareImage(canvas, file, text) {
+  text = `${text}
+Compare with me: ${compareLink()}`;
+  const blob = await new Promise(r => canvas.toBlob(r, 'image/png')), f = new File([blob], file, { type: 'image/png' });
+  try { if (navigator.canShare?.({ files: [f] })) { await navigator.share({ files: [f], text }); return; } }
+  catch (e) { if (e.name === 'AbortError') return; } // closed the share menu
+  const a = Object.assign(document.createElement('a'), { href: URL.createObjectURL(blob), download: file });
+  a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+  // no share menu here: the picture is downloaded and the message with your compare link is copied
+  try { await navigator.clipboard.writeText(text); toast('📥 Picture saved · message with your link copied', null, 3500); } catch (e) { toast('📥 Picture saved to your downloads', null, 3000); }
+}
+async function shareWeek() {
+  await document.fonts?.ready;
+  const ws = monday(new Date()), keys = [dayKey(ws), dayKey(addDays(ws, 6))], inWeek = d => d >= keys[0] && d <= keys[1];
+  const sess = db.sessions.filter(s => inWeek(s.date)), name = (db.settings.name || '').trim();
+  const [c, g] = shareCanvas();
+  await cardHeader(g, name ? `${name}’s week` : 'My week', `${fmtDay(keys[0], { day: 'numeric', month: 'short' })} – ${fmtDay(keys[1], { day: 'numeric', month: 'short' })}`);
+  // the classes you did, in their colors
+  let x = 80, y = 270;
+  for (const p of PLANS.filter(p => sess.some(s => s.planId === p.id))) {
+    const label = GROUPS[p.group] || p.name; // Shoulders, Chest, Back, Legs, Core…
+    g.font = `700 34px ${FONT}`; const w = g.measureText(label).width + 44;
+    if (x + w > 1000) { x = 80; y += 74; }
+    x += chip(g, label, x, y, cssVar('--c-' + p.id) || '#2FE6B5') + 14;
+  }
+  if (!sess.length) txt(g, 'A fresh week: let’s get moving 💪', 80, 312, 38, '#C7D3CF', 600);
+  // four numbers
+  const mins = Math.round(sess.reduce((a, s) => a + (s.duration || 0), 0) / 60);
+  const sets = sess.reduce((a, s) => a + (s.exercises || []).reduce((n, e) => n + e.sets.length, 0), 0);
+  const stats = [[sess.length, sess.length === 1 ? 'workout' : 'workouts'], [mins >= 60 ? `${Math.floor(mins / 60)}h ${pad(mins % 60)}m` : `${mins}m`, 'time'], [sets, 'sets'], [`${weekStreak()} 🔥`, 'week streak']];
+  y += 110;
+  stats.forEach(([v, l], i) => { const bx = 80 + (i % 2) * 470, by = y + Math.floor(i / 2) * 220; rrect(g, bx, by, 450, 200, 32, 'rgba(255,255,255,.07)'); txt(g, v, bx + 36, by + 108, 76, '#F2F6F4', 800); txt(g, l, bx + 36, by + 160, 34, '#93A49E', 600); });
+  // this week's records and badges
+  y += 490;
+  const lines = [...findRecords().filter(r => inWeek(r.s.date)).map(r => '🏆 ' + recordLine(r)),
+    ...BADGES.filter(([id]) => inWeek(db.badges?.[id] || '')).map(([, emoji, bname]) => `${emoji} ${bname}`)];
+  if (lines.length) { txt(g, 'This week', 80, y, 34, '#93A49E', 700); lines.slice(0, 5).forEach((l, i) => txt(g, l, 80, y + 66 + i * 62, 42, '#F2F6F4', 600, 'left', 920)); if (lines.length > 5) txt(g, `+${lines.length - 5} more`, 80, y + 66 + 5 * 62, 34, '#93A49E', 600); }
+  else if (sess.length) txt(g, 'Every workout counts 💪', 80, y + 40, 42, '#C7D3CF', 600);
+  cardFooter(g, name || '');
+  await shareImage(c, `gym-week-${keys[0]}.png`, `${name ? name + '’s' : 'My'} week: ${sess.length} workout${sess.length === 1 ? '' : 's'} 💪`);
+}
+// the best set of an exercise, as one short line
+function bestSet(e) {
+  const x = findEx(e.exId) || {};
+  if (isRun(x)) return `${round1(km(e.sets))} km · ${fmtTime(mins(e.sets))}`;
+  if (isCardio(x)) return fmtTime(mins(e.sets));
+  const top = e.sets.slice().sort((a, b) => num(b.w) - num(a.w) || num(b.t ?? b.r) - num(a.t ?? a.r))[0];
+  return setText(top) + (!isHold(x) && num(top.w) ? ` ${unit()}` : '');
+}
+async function shareWorkout(id) {
+  await document.fonts?.ready;
+  const s = db.sessions.find(x => x.id === id); if (!s) return;
+  const name = (db.settings.name || '').trim(), l = look(s), exs = s.exercises.filter(e => e.sets.length);
+  const [c, g] = shareCanvas();
+  await cardHeader(g, 'Workout done', [fmtDay(s.date, { weekday: 'short', day: 'numeric', month: 'short' }), s.duration ? fmtDur(s.duration) : '', `${exs.reduce((n, e) => n + e.sets.length, 0)} sets`].filter(Boolean).join(' · '));
+  chip(g, l.name, 80, 260, cssVar('--c-' + s.planId) || '#2FE6B5');
+  let y = 410;
+  exs.slice(0, 8).forEach((e, i) => {
+    if (i) { g.fillStyle = 'rgba(255,255,255,.08)'; g.fillRect(80, y - 52, 920, 2); }
+    txt(g, exName(e.exId) + (e.mt === 'plates' ? ' 🔩' : ''), 80, y, 40, '#F2F6F4', 600, 'left', 560);
+    txt(g, bestSet(e), 1000, y, 40, '#93A49E', 600, 'right', 360);
+    y += 92;
+  });
+  if (exs.length > 8) { txt(g, `+${exs.length - 8} more`, 80, y, 34, '#93A49E', 600); y += 70; }
+  const recs = findRecords().filter(r => r.s.id === s.id);
+  recs.slice(0, 3).forEach((r, i) => txt(g, '🏆 New record · ' + recordLine(r), 80, y + 30 + i * 60, 38, '#FFB547', 700, 'left', 920));
+  cardFooter(g, name || '');
+  await shareImage(c, `gym-${s.planId}-${s.date}.png`, `${l.name} done 💪`);
+}
+
+// ---------- Friends: compare links ----------
+// No server: your summary travels inside a link (…#/compare/<code>). A friend taps it (or pastes it in Profile → Friends),
+// their app shows "you vs them" and keeps your summary in db.friends. A new link from the same person replaces the old one.
+// In the link: name, avatar, the last 4 weeks (classes, workouts, minutes, sets), week streak, badges, longest plank,
+// dead hang and run, best pace, and barbell / dumbbell best lifts. Never: body weight, scans, BMI or machine weights.
+const shareId = () => (db.settings.shareId = db.settings.shareId || uid());
+const toCode = obj => { const b = new TextEncoder().encode(JSON.stringify(obj)); let s = ''; b.forEach(x => { s += String.fromCharCode(x); }); return btoa(s).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, ''); };
+const fromCode = code => { try { const s = atob(code.replace(/-/g, '+').replace(/_/g, '/')); return JSON.parse(new TextDecoder().decode(Uint8Array.from(s, ch => ch.charCodeAt(0)))); } catch (e) { return null; } };
+const weekOf = d => dayKey(monday(fromKey(d)));
+// one week's numbers from your own history
+function weekStats(wk) {
+  const end = dayKey(addDays(fromKey(wk), 6)), sess = db.sessions.filter(s => s.date >= wk && s.date <= end);
+  return { k: wk, c: new Set(sess.map(s => planById(s.planId)?.group).filter(g => GROUPS[g])).size, o: sess.length,
+    m: Math.round(sess.reduce((a, s) => a + (s.duration || 0), 0) / 60), s: sess.reduce((a, s) => a + (s.exercises || []).reduce((n, e) => n + e.sets.length, 0), 0) };
+}
+// all-time highlights that compare fairly between people (and gyms)
+function highlights() {
+  const all = db.sessions.flatMap(s => s.exercises || []), best = (id, f) => Math.max(0, ...all.filter(e => e.exId === id).flatMap(e => e.sets.map(f)));
+  const runs = all.filter(e => isRun(findEx(e.exId) || {}));
+  const paces = runs.flatMap(e => e.sets.map(paceOf)).filter(Boolean);
+  const lifts = {};
+  for (const e of all) { const x = findEx(e.exId) || {}; if ((x.bar || x.db) && !x.type) { const w = Math.max(0, ...e.sets.map(s => num(s.w))); if (w > (lifts[e.exId] || 0)) lifts[e.exId] = w; } }
+  return { p: best('plank', s => num(s.t)), h: best('dead-hang', s => num(s.t)), r: round1(Math.max(0, ...runs.map(e => km(e.sets)))), pc: paces.length ? Math.min(...paces) : 0, l: lifts };
+}
+function mySummary() {
+  const wk = weekOf(dayKey());
+  return { v: 1, id: shareId(), n: (db.settings.name || '').trim() || 'Friend', a: db.settings.avatar || 0, u: unit(), d: dayKey(),
+    w: [0, 1, 2, 3].map(i => weekStats(dayKey(addDays(fromKey(wk), -7 * i)))), st: weekStreak(), b: Object.keys(db.badges || {}).length, ...highlights() };
+}
+const compareLink = () => `${location.origin}${location.pathname}#/compare/${toCode(mySummary())}`;
+// a pasted message or link → the code inside it (or the code itself)
+const codeIn = text => (String(text).match(/#\/compare\/([A-Za-z0-9_-]+)/) || String(text).trim().match(/^([A-Za-z0-9_-]{20,})$/) || [])[1];
+const friendOk = f => f && f.v === 1 && f.id && Array.isArray(f.w);
+// the same numbers for you, so every comparison is like for like
+const meAsFriend = () => ({ ...mySummary(), n: 'You', me: true });
+const weekRow = (p, wk) => p.w.find(x => x.k === wk);
+// rows of a comparison: [label, your value, their value, how to show it, lower is better?]
+function compareRows(me, f, wk) {
+  const a = weekStats(wk), b = weekRow(f, wk) || {}, t = m => (m >= 60 ? `${Math.floor(m / 60)}h ${pad(m % 60)}m` : `${m}m`);
+  const rows = [['Classes', a.c, b.c], ['Workouts', a.o, b.o], ['Time', a.m, b.m, t], ['Sets', a.s, b.s],
+    ['Week streak', me.st, f.st], ['Badges', me.b, f.b], ['Longest plank', me.p, f.p, fmtDur], ['Longest dead hang', me.h, f.h, fmtDur],
+    ['Longest run', me.r, f.r, v => `${v} km`], ['Best pace', me.pc, f.pc, v => `${fmtPace(v)} /km`, true]];
+  // lifts: only barbell / dumbbell exercises you both did (machines differ between gyms)
+  for (const id of Object.keys(me.l || {}).filter(id => f.l?.[id])) rows.push([exName(id), me.l[id], f.l[id], v => `${v} ${unit()}`]);
+  return rows.filter(([, x, y]) => x || y);
+}
+const weekLabel = wk => { const n = Math.round((fromKey(weekOf(dayKey())) - fromKey(wk)) / 6048e5); return n === 0 ? 'This week' : n === 1 ? 'Last week' : `${n} weeks ago`; };
+let cmpWeek = null;
+// you vs one friend: from a link (code) or a saved friend (id)
+function viewCompare(code, savedId) {
+  const f = savedId ? db.friends[savedId] : fromCode(code || '');
+  if (!friendOk(f)) return `<button class="back" data-back>‹ Back</button><h1>Compare</h1><div class="card empty">This compare link doesn’t work. Ask your friend to share it again, or paste the whole message in Profile → Friends.</div>`;
+  if (f.id === db.settings.shareId) return `<button class="back" data-go="#/friends">‹ Friends</button><h1>That’s your link</h1><div class="card empty">Send it to a friend: they tap it to compare with you.</div>`;
+  const me = meAsFriend(), weeks = f.w.map(x => x.k).filter(k => k <= weekOf(dayKey()));
+  if (!weeks.includes(cmpWeek)) cmpWeek = weeks[0];
+  const saved = db.friends[f.id], fresh = !saved || saved.d < f.d;
+  const rows = compareRows(me, f, cmpWeek);
+  return `
+    <button class="back" data-go="#/friends">‹ Friends</button>
+    <div class="row between" style="margin-top:8px;align-items:center">
+      <div class="row" style="gap:10px">${avatar(db.settings.avatar, 48)}<b>You</b></div><span class="muted">vs</span>
+      <div class="row" style="gap:10px"><b>${esc(f.n)}</b>${avatar(f.a, 48)}</div></div>
+    <div class="muted small" style="text-align:center;margin-top:6px">Shared ${agoText(f.d)}</div>
+    ${savedId || !fresh ? '' : `<button class="btn primary block" style="margin-top:12px" data-act="friend-add" data-code="${esc(code)}">${saved ? `Update ${esc(f.n)}’s numbers` : `Add ${esc(f.n)} to your friends`}</button>`}
+    <div class="seg" style="margin-top:12px">${weeks.map(k => `<button class="${k === cmpWeek ? 'on' : ''}" data-act="cmp-week" data-k="${k}">${weekLabel(k)}</button>`).join('')}</div>
+    <div class="card" style="margin-top:12px">${rows.map(([label, x, y, fmt = v => v, lower]) => {
+      const win = x && y && x !== y ? ((lower ? x < y : x > y) ? 'me' : 'them') : !y && x ? 'me' : !x && y ? 'them' : '';
+      const show = v => (v ? fmt(v) : '–');
+      return `<div class="cmp-row"><b class="${win === 'me' ? 'win' : ''}">${show(x)}</b><span class="muted small">${esc(label)}</span><b class="${win === 'them' ? 'win' : ''}" style="text-align:right">${show(y)}</b></div>`;
+    }).join('') || '<div class="empty">No numbers for this week yet.</div>'}</div>
+    <div class="muted small" style="margin-top:6px">Green = ahead in that row. Lifts only show barbell and dumbbell exercises you both did.</div>
+    <button class="btn block" style="margin-top:12px" data-act="share-numbers">📤 Share mine back</button>
+    ${savedId ? `<button class="btn block ghost danger" style="margin-top:8px" data-act="friend-remove" data-id="${f.id}">Remove ${esc(f.n)}</button>` : ''}`;
+}
+// the group board: you and every friend, ranked on one number, for the same week
+const BOARD = [['o', 'Workouts'], ['m', 'Time'], ['s', 'Sets'], ['c', 'Classes'], ['st', 'Streak'], ['p', 'Plank'], ['r', 'Run'], ['lifts', 'Lifts']];
+let boardWeek = 0, boardMetric = 'o';
+function viewFriends() {
+  const wk = dayKey(addDays(fromKey(weekOf(dayKey())), -7 * boardWeek)), me = meAsFriend(), friends = Object.values(db.friends);
+  const people = [me, ...friends];
+  const fmt = { m: v => (v >= 60 ? `${Math.floor(v / 60)}h ${pad(v % 60)}m` : `${v}m`), p: fmtDur, r: v => `${v} km` };
+  const val = (p, k) => (['o', 'm', 's', 'c'].includes(k) ? weekRow(p, wk)?.[k] : p[k] || null);
+  // v: undefined = no numbers for that week (old link) · null = never done (no plank, no run yet)
+  const row = (p, v, rank, top) => `<button class="board-row ${p.me ? 'me' : ''}" ${p.me ? 'disabled' : `data-go="#/friend/${p.id}"`}>
+      <span class="rank">${rank || '–'}</span>${avatar(p.a, 36)}
+      <span class="who"><b>${esc(p.n)}</b>${v === undefined ? '<span class="muted small">No numbers for this week · ask for a new link</span>' : v === null ? '<span class="muted small">Not done yet</span>' : `<i class="bar"><i style="width:${top ? Math.max(4, v / top * 100) : 0}%"></i></i>`}</span>
+      <b class="val">${v == null ? '' : (fmt[boardMetric] || (x => x))(v)}</b></button>`;
+  let list;
+  if (boardMetric === 'lifts') {
+    // one ranking per barbell / dumbbell exercise, for the people who did it
+    const ids = [...new Set(people.flatMap(p => Object.keys(p.l || {})))].filter(id => people.filter(p => p.l?.[id]).length > 1);
+    list = ids.length ? ids.map(id => { const rk = people.filter(p => p.l?.[id]).sort((a, b) => b.l[id] - a.l[id]);
+      return `<div class="eyebrow" style="margin:14px 0 4px">${esc(exName(id))}</div>${rk.map(p => row(p, p.l[id], 1 + rk.filter(x => x.l[id] > p.l[id]).length, rk[0].l[id]).replace(/<b class="val">[^<]*<\/b>/, `<b class="val">${p.l[id]} ${unit()}</b>`)).join('')}`; }).join('')
+      : '<div class="empty">Lifts show up when two of you have done the same barbell or dumbbell exercise.</div>';
+  } else {
+    const ranked = people.map(p => ({ p, v: val(p, boardMetric) })).sort((a, b) => (b.v ?? -1) - (a.v ?? -1));
+    const top = Math.max(0, ...ranked.map(x => x.v || 0));
+    // the same number shares a place (3 and 3 are both 1st); no numbers = no place
+    list = ranked.map(({ p, v }) => row(p, v, v == null ? 0 : 1 + ranked.filter(x => x.v != null && x.v > v).length, top)).join('');
+  }
+  return `
+    <button class="back" data-go="#/more">‹ Profile</button>
+    <div class="row between" style="align-items:center"><h1>Friends</h1><button class="btn sm" data-act="friend-paste">📋 Paste link</button></div>
+    ${friends.length ? '' : `<div class="card" style="margin-top:12px"><b>Compare with friends</b><div class="muted small" style="margin-top:6px">Tap “Share my numbers” and send the message to a friend. When they share theirs back, tap the link (or paste it here) and you’ll both show up on this board.</div></div>`}
+    <div class="seg" style="margin-top:12px">${['This week', 'Last week'].map((l, i) => `<button class="${boardWeek === i ? 'on' : ''}" data-act="board-week" data-i="${i}">${l}</button>`).join('')}</div>
+    <div class="chips" style="margin-top:10px">${BOARD.map(([k, l]) => `<button class="chip-btn ${boardMetric === k ? 'on' : ''}" data-act="board-metric" data-k="${k}">${l}</button>`).join('')}</div>
+    <div class="card" style="margin-top:10px">${list}</div>
+    <button class="btn primary block" style="margin-top:12px" data-act="share-numbers">📤 Share my numbers</button>
+    <div class="muted small" style="margin-top:8px">Only a summary is shared: workouts, time, sets, streak, badges, plank, run and barbell / dumbbell lifts. Never your body weight or scans.</div>`;
+}
+function addFriend(code) {
+  const f = fromCode(code || '');
+  if (!friendOk(f)) { toast('That link doesn’t work. Ask for a new one.', null, 3500); return false; }
+  if (f.id === db.settings.shareId) { toast('That’s your own link 🙂', null, 3000); return false; }
+  const old = db.friends[f.id];
+  if (old && old.d > f.d) { toast(`You already have newer numbers from ${f.n}`, null, 3000); return false; }
+  db.friends[f.id] = f; save(); toast(old ? `✓ ${f.n}’s numbers updated` : `✓ ${f.n} added to your friends`, null, 3000);
+  return true;
+}
+function pasteFriendSheet() {
+  const o = sheet(`<h2 style="margin-top:0">📋 Paste a friend’s link</h2>
+    <div class="muted small">Copy the whole message your friend sent (press and hold it in WhatsApp → Copy), then paste it here.</div>
+    <textarea class="field" id="fLink" rows="4" style="margin-top:12px;width:100%" placeholder="Michael’s week: 4 workouts 💪 Compare with me: https://…"></textarea>
+    <div class="small" id="fErr" style="color:var(--amber);margin-top:6px"></div>
+    <button class="btn primary block" style="margin-top:10px" id="fAdd">Add friend</button>`);
+  const t = o.querySelector('#fLink');
+  navigator.clipboard?.readText?.().then(x => { if (codeIn(x) && !t.value) t.value = x; }).catch(() => {});
+  o.querySelector('#fAdd').addEventListener('click', () => {
+    const code = codeIn(t.value);
+    if (!code || !friendOk(fromCode(code))) { o.querySelector('#fErr').textContent = 'No compare link found. Paste the whole message with the link.'; return; }
+    if (addFriend(code)) { o.remove(); location.hash = '#/friends'; render(); }
+  });
+}
+async function shareNumbers() {
+  const name = (db.settings.name || '').trim(), text = `${name ? name + '’s' : 'My'} gym numbers 💪 Compare with me: ${compareLink()}`;
+  try { if (navigator.share) { await navigator.share({ text }); return; } } catch (e) { if (e.name === 'AbortError') return; }
+  try { await navigator.clipboard.writeText(text); toast('🔗 Link copied: paste it in WhatsApp', null, 3500); } catch (e) { prompt('Copy this and send it to a friend:', text); }
+}
 // opts.goal: draws a dashed goal line; opts.time: space points by date instead of evenly
 function chart(data, u, opts = {}) {
   const W = 600, H = 260, L = 56, R = 16, T = 16, B = 36;
@@ -2444,6 +2719,7 @@ function viewMore() {
       <div class="display" style="font-size:22px">${esc((db.settings.name || '').trim() || 'Your name')}</div>
       <div class="muted small">${db.sessions.length} workouts · ${weekStreak()} week streak 🔥</div>
     </div>
+    <button class="card hist-row" style="margin-top:12px" data-go="#/friends"><div class="row between"><span class="row" style="gap:10px"><span style="font-size:28px">👥</span><span><b>Friends</b><br><span class="muted small">${Object.keys(db.friends || {}).length ? `${Object.keys(db.friends).length} friend${Object.keys(db.friends).length > 1 ? 's' : ''} · compare your training` : 'Compare your training with friends'}</span></span></span><span class="chev">›</span></div></button>
     <h2>You</h2>
     <div class="card stack">
       <div><label class="muted small" for="nameIn">Name</label>
@@ -2517,7 +2793,7 @@ function viewSettings() {
 // ---------- Router ----------
 function render() {
   const [, route, arg, arg2] = (location.hash || '#/').split('/');
-  const tab = route === 'calendar' ? 'calendar' : route === 'progress' ? 'progress' : route === 'more' || route === 'settings' ? 'more' : 'today';
+  const tab = route === 'calendar' ? 'calendar' : route === 'progress' ? 'progress' : ['more', 'settings', 'friends', 'friend', 'compare'].includes(route) ? 'more' : 'today';
   document.querySelectorAll('#tabs a').forEach(a => a.classList.toggle('on', a.dataset.tab === tab));
   const html = route === 'class' ? viewClass(arg)
     : route === 'workout' ? viewWorkout()
@@ -2525,6 +2801,9 @@ function render() {
     : route === 'progress' ? (arg === 'weight' ? viewWeight() : arg === 'ex' ? (arg2 ? viewExercise(decodeURIComponent(arg2)) : viewExercises()) : viewOverview())
     : route === 'more' ? viewMore()
     : route === 'settings' ? viewSettings()
+    : route === 'friends' ? viewFriends()
+    : route === 'friend' ? viewCompare('', arg)
+    : route === 'compare' ? viewCompare(arg)
     : viewToday();
   $('#app').innerHTML = html;
 }
@@ -2627,7 +2906,7 @@ function finishWorkout() {
     ${prs.length ? `<h2>New records 🏆</h2><div class="card stack small">${prs.map(x => `<div>${esc(x)}</div>`).join('')}</div>` : ''}
     ${goals.length ? `<h2>Next time</h2><div class="card stack small">${goals.map(x => `<div>${esc(x)}</div>`).join('')}</div>` : ''}
     ${live ? `<button class="btn block" style="margin-top:16px" data-act="cool-start" data-id="${s.id}">🧘 Cool-down stretch · ~${routineMins(routine(s.planId, 'cool'))} min</button>` : ''}
-    <button class="btn primary block" style="margin-top:${live ? 10 : 16}px" data-close>Nice</button>`);
+    <div class="row" style="margin-top:${live ? 10 : 16}px"><button class="btn" style="flex:1" data-act="share-workout" data-id="${s.id}">📤 Share</button><button class="btn primary" style="flex:1" data-close>Nice</button></div>`);
 }
 
 let restEnd = 0;
@@ -2944,6 +3223,15 @@ document.addEventListener('click', e => {
     case 'sw-stop': if (a.sw) swStopSheet(); break;
     case 'hold-open': holdOpen(Number(b.dataset.i)); break;
     case 'bar-calc': barSheet(Number(b.dataset.i)); break;
+    case 'share-week': shareWeek(); break;
+    case 'share-numbers': shareNumbers(); break;
+    case 'friend-paste': pasteFriendSheet(); break;
+    case 'friend-add': if (addFriend(b.dataset.code)) render(); break;
+    case 'friend-remove': if (confirm('Remove this friend from your board?')) { delete db.friends[b.dataset.id]; save(); location.hash = '#/friends'; } break;
+    case 'cmp-week': cmpWeek = b.dataset.k; render(); break;
+    case 'board-week': boardWeek = Number(b.dataset.i); render(); break;
+    case 'board-metric': boardMetric = b.dataset.k; render(); break;
+    case 'share-workout': shareWorkout(b.dataset.id); break;
     case 'time-edit':
       if (a.sw && a.sw.i === Number(row.dataset.i) && a.sw.j === Number(row.dataset.j)) break; // the stopwatch is timing it
       timeSheet(Number(row.dataset.i), Number(row.dataset.j)); break;
@@ -3063,6 +3351,7 @@ document.addEventListener('click', e => {
           : s.exercises.filter(e => e.sets.length).map(e => `<div><b>${esc(exName(e.exId))}${e.mt === 'plates' ? ' 🔩' : ''}</b> <span class="muted">${e.sets.map(setText).join(', ')}</span></div>`).join('')}</div>
         <div class="stack" style="margin-top:16px">
           <button class="btn primary block" data-act="edit-session" data-id="${s.id}">${s.quick ? '+ Add details' : '✏️ Edit'}</button>
+          ${s.quick ? '' : `<button class="btn block" data-act="share-workout" data-id="${s.id}">📤 Share this workout</button>`}
           <button class="btn block ghost danger" data-act="del-session" data-id="${s.id}">Delete</button>
           <button class="btn block ghost" data-close>Close</button>
         </div>`);

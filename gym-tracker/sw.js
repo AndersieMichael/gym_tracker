@@ -1,7 +1,7 @@
 // Offline support: keeps the app and your guide pictures on the phone.
 // Bump VERSION when you change any file so phones pick up the new version (bug fixes: 11.1, 11.2…).
 // Keep the number the same as APP_VERSION.n in index.html.
-const VERSION = 'gym-v22';
+const VERSION = 'gym-v23';
 // Folders in images/: 3d (cut-outs), photos (jpg), videos (tutorials), moves (warm-up / cool-down),
 // grip (drawn pictures), avatars.
 const FILES = [
